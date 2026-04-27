@@ -1,10 +1,11 @@
-import type { Route } from "next";
+﻿import type { Route } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { EventStatus } from "@prisma/client";
 import { CategoryMagicBento } from "@/components/home/category-magic-bento";
 import { HeroParallaxImage } from "@/components/home/hero-parallax-image";
 import { TrendingParallaxGallery } from "@/components/home/trending-parallax-gallery";
+import { WeekEventCard, type WeekEventCardItem } from "@/components/home/week-event-card";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, toNumber } from "@/lib/utils";
 
@@ -153,6 +154,7 @@ type TrendingItem = {
 };
 
 const FEATURED_EVENTS_TIMEOUT_MS = 1500;
+const UPCOMING_WINDOW_DAYS = 7;
 
 export default async function HomePage() {
   const featuredEvents = await getFeaturedEvents();
@@ -208,6 +210,71 @@ export default async function HomePage() {
     };
   });
 
+  const now = new Date();
+  const nextWeekBoundary = new Date(now);
+  nextWeekBoundary.setDate(nextWeekBoundary.getDate() + UPCOMING_WINDOW_DAYS);
+
+  const upcomingWeekFromData: WeekEventCardItem[] = featuredEvents
+    .filter((event) => {
+      const startsAt = new Date(event.startsAt);
+      return startsAt >= now && startsAt <= nextWeekBoundary;
+    })
+    .slice(0, 4)
+    .map((event, index) => {
+      const visual = cardVisuals[index] ?? cardVisuals[0];
+      const startingPrice = event.ticketTypes.length
+        ? Math.min(...event.ticketTypes.map((item) => toNumber(item.price)))
+        : 0;
+      const remaining = event.ticketTypes.reduce(
+        (sum, item) => sum + Math.max(0, item.quantityTotal - item.quantitySold),
+        0
+      );
+      const startsAt = new Date(event.startsAt);
+      const urgency = getWeekUrgency(startsAt, remaining, now);
+      const imageSrc = galleryImageSources[index] ?? galleryImageSources[0];
+
+      return {
+        title: event.title,
+        href: `/events/${event.slug}` as Route,
+        imageSrc,
+        imageAlt: event.title,
+        objectPosition: visual.objectPosition,
+        datePrimaryLabel: formatWeekDatePrimary(startsAt),
+        dateSecondaryLabel: formatWeekDateSecondary(startsAt),
+        venueLabel: `${event.venue.name}, ${event.venue.city}`,
+        priceLabel: startingPrice > 0 ? formatTugrik(startingPrice, event.currency) : "Үнэгүй",
+        availabilityLabel: remaining > 0 ? `Only ${remaining} left` : "Registration required",
+        urgencyBadge: urgency.badge,
+        countdownLabel: urgency.countdown
+      };
+    });
+
+  const upcomingWeekFallback: WeekEventCardItem[] = placeholderCards.slice(0, 4).map((placeholder, index) => {
+    const visual = cardVisuals[index] ?? cardVisuals[0];
+    const startsAt = new Date(now);
+    startsAt.setDate(now.getDate() + index);
+    startsAt.setHours(17 + index, 0, 0, 0);
+    const urgency = getWeekUrgency(startsAt, Math.max(8, 28 - index * 6), now);
+    const imageSrc = galleryImageSources[index] ?? galleryImageSources[0];
+
+    return {
+      title: placeholder.title,
+      href: "/events" as Route,
+      imageSrc,
+      imageAlt: placeholder.title,
+      objectPosition: visual.objectPosition,
+      datePrimaryLabel: formatWeekDatePrimary(startsAt),
+      dateSecondaryLabel: formatWeekDateSecondary(startsAt),
+      venueLabel: `${placeholder.venue}, ${placeholder.city}`,
+      priceLabel: placeholder.priceLabel,
+      availabilityLabel: index === 1 ? "Only 12 left" : index === 2 ? "Selling fast" : "Limited seats",
+      urgencyBadge: urgency.badge,
+      countdownLabel: urgency.countdown
+    };
+  });
+
+  const upcomingWeekEvents = upcomingWeekFromData.length ? upcomingWeekFromData : upcomingWeekFallback;
+
   return (
     <>
       <section className="home-enter relative min-h-[calc(100vh-5.5rem)] overflow-hidden bg-[#06070d]">
@@ -234,34 +301,7 @@ export default async function HomePage() {
               ))}
             </div>
 
-            <form action="/events" className="home-enter__item hero-search-shell mt-10 w-full max-w-3xl [--enter-delay:260ms]">
-              <div className="flex flex-1 items-center gap-3 px-4 sm:px-5">
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  className="h-5 w-5 shrink-0 text-white/55"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="m20 20-3.5-3.5" />
-                </svg>
-                <input
-                  type="search"
-                  name="q"
-                  placeholder="Event, artist, venue хайх..."
-                  className="w-full bg-transparent py-3 text-sm text-white outline-none placeholder:text-white/35 sm:text-[0.95rem]"
-                />
-              </div>
-              <button type="submit" className="hero-primary-btn">
-                Хайх
-              </button>
-            </form>
-
-            <div className="home-enter__item mt-7 flex flex-col gap-3 sm:flex-row [--enter-delay:360ms]">
+            <div className="home-enter__item mt-10 flex flex-col gap-3 sm:flex-row [--enter-delay:360ms]">
               <Link href="/events" className="hero-primary-btn px-8 py-4">
                 Тасалбар авах
               </Link>
@@ -342,6 +382,31 @@ export default async function HomePage() {
             })}
           </div>
           ) : null}
+        </div>
+      </section>
+
+      <section
+        id="upcoming-this-week"
+        className="section-reveal week-events-section relative bg-[linear-gradient(180deg,#070a11_0%,#080b12_100%)] px-4 pb-20 pt-4 sm:px-8 lg:px-8"
+      >
+        <div className="mx-auto max-w-7xl">
+          <div className="week-events-header">
+            <div className="week-events-header__title-wrap">
+              <span className="week-events-header__badge">LIVE SOON</span>
+              <h2 className="week-events-header__title">This Week</h2>
+              <p className="week-events-header__subtitle">Энэ 7 хоногт болох онцлох event-үүд</p>
+            </div>
+
+            <Link href="/events" className="week-events-header__cta">
+              View All
+            </Link>
+          </div>
+
+          <div className="week-events-grid">
+            {upcomingWeekEvents.map((event, index) => (
+              <WeekEventCard key={`${event.title}-${index}`} event={event} />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -429,6 +494,43 @@ function getPromoLabel(slug: string) {
   if (slug === "festival") return "FESTIVAL";
   if (slug === "conference") return "TECH";
   return "EVENT";
+}
+
+function formatWeekDatePrimary(value: Date) {
+  const month = new Intl.DateTimeFormat("en-US", { month: "short" }).format(value).toUpperCase();
+  const day = new Intl.DateTimeFormat("en-US", { day: "2-digit" }).format(value);
+
+  return `${month} ${day}`;
+}
+
+function formatWeekDateSecondary(value: Date) {
+  const weekday = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(value);
+  const time = new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(value);
+
+  return `${weekday} · ${time}`;
+}
+
+function getWeekUrgency(startsAt: Date, remaining: number, now: Date) {
+  const diffMs = startsAt.getTime() - now.getTime();
+  const diffHours = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
+  const days = Math.floor(diffHours / 24);
+  const hours = diffHours % 24;
+
+  let badge = "LIVE SOON";
+  if (diffHours <= 0) badge = "Happening Now";
+  else if (days === 0) badge = "Today";
+  else if (days === 1) badge = "Tomorrow";
+  else if (remaining > 0 && remaining <= 12) badge = "Almost Sold Out";
+  else if (remaining > 0 && remaining <= 30) badge = "Selling Fast";
+
+  const countdown =
+    diffHours <= 0 ? "Starts now" : `Starts in ${days > 0 ? `${days}d ` : ""}${hours}h`;
+
+  return { badge, countdown };
 }
 
 function renderCategoryIcon(kind: (typeof categoryTiles)[number]["icon"]) {
@@ -618,3 +720,4 @@ function renderHowItWorksIcon(kind: (typeof howItWorksSteps)[number]["icon"]) {
     </svg>
   );
 }
+

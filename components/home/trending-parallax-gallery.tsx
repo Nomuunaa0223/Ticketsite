@@ -249,7 +249,7 @@ export function TrendingParallaxGallery({
               opacity: 0.4
             }}
           >
-            <div className="absolute inset-0 overflow-hidden bg-transparent">
+            <div className="gallery-image-zoom absolute inset-0 overflow-hidden bg-transparent">
               <Image
                 src={item.imageSrc}
                 alt={item.imageAlt}
