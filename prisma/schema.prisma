@@ -1,0 +1,421 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ORGANIZER
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum OrganizerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EventStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum TicketStatus {
+  ACTIVE
+  CHECKED_IN
+  TRANSFERRED
+  VOID
+}
+
+enum ResaleStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  CANCELLED
+  EXPIRED
+}
+
+enum AuditActorType {
+  USER
+  SYSTEM
+}
+
+enum NotificationType {
+  ORDER_CREATED
+  QR_CHECKED_IN
+  EVENT_REMINDER_24H
+  EVENT_ENDING_30M
+}
+
+enum NotificationChannel {
+  APP
+  EMAIL
+}
+
+model User {
+  id                        String                   @id @default(cuid())
+  email                     String                   @unique
+  passwordHash              String
+  fullName                  String
+  role                      Role                     @default(USER)
+  status                    UserStatus               @default(ACTIVE)
+  emailVerifiedAt           DateTime?
+  organizerProfile          OrganizerProfile?
+  approvedOrganizerProfiles OrganizerProfile[]       @relation("OrganizerApprovedBy")
+  createdEvents             Event[]                  @relation("EventCreator")
+  reviewedEvents            Event[]                  @relation("EventReviewer")
+  orders                    Order[]
+  payments                  Payment[]
+  ownedTickets              Ticket[]                 @relation("TicketCurrentOwner")
+  initiatedCheckIns         CheckIn[]                @relation("CheckInActor")
+  resaleListingsForSale     ResaleListing[]          @relation("ResaleSeller")
+  purchasedResales          ResaleListing[]          @relation("ResaleBuyer")
+  ownershipTransfersFrom    TicketOwnershipHistory[] @relation("OwnershipFromUser")
+  ownershipTransfersTo      TicketOwnershipHistory[] @relation("OwnershipToUser")
+  auditLogs                 AuditLog[]               @relation("AuditActor")
+  notifications             Notification[]
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+
+  @@index([role, status])
+}
+
+model OrganizerProfile {
+  id           String          @id @default(cuid())
+  userId       String          @unique
+  companyName  String
+  slug         String          @unique
+  description  String?
+  websiteUrl   String?
+  status       OrganizerStatus @default(PENDING)
+  approvedAt   DateTime?
+  approvedById String?
+  user         User            @relation(fields: [userId], references: [id])
+  approvedBy   User?           @relation("OrganizerApprovedBy", fields: [approvedById], references: [id])
+  events       Event[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([status])
+}
+
+model Category {
+  id            String        @id @default(cuid())
+  name          String        @unique
+  slug          String        @unique
+  description   String?
+  displayOrder  Int           @default(0)
+  isActive      Boolean       @default(true)
+  subcategories Subcategory[]
+  events        Event[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Subcategory {
+  id          String    @id @default(cuid())
+  categoryId  String
+  name        String
+  slug        String
+  description String?
+  isActive    Boolean   @default(true)
+  category    Category  @relation(fields: [categoryId], references: [id])
+  events      Event[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([categoryId, slug])
+  @@index([categoryId, isActive])
+}
+
+model Venue {
+  id         String   @id @default(cuid())
+  name       String
+  city       String
+  country    String
+  address    String
+  timezone   String
+  capacity   Int
+  latitude   Float?
+  longitude  Float?
+  events     Event[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([city, country])
+}
+
+model Event {
+  id             String          @id @default(cuid())
+  organizerId    String
+  createdById    String
+  reviewedById   String?
+  categoryId     String
+  subcategoryId  String?
+  venueId        String
+  title          String
+  slug           String          @unique
+  summary        String
+  description    String
+  startsAt       DateTime
+  endsAt         DateTime
+  saleStartsAt   DateTime
+  saleEndsAt     DateTime
+  status         EventStatus     @default(DRAFT)
+  reviewNotes    String?
+  publishedAt    DateTime?
+  currency       String          @default("USD")
+  platformFeeBps Int             @default(900)
+  serviceFeeBps  Int             @default(350)
+  transparentFee Boolean         @default(true)
+  organizer      OrganizerProfile @relation(fields: [organizerId], references: [id])
+  createdBy      User             @relation("EventCreator", fields: [createdById], references: [id])
+  reviewedBy     User?            @relation("EventReviewer", fields: [reviewedById], references: [id])
+  category       Category         @relation(fields: [categoryId], references: [id])
+  subcategory    Subcategory?     @relation(fields: [subcategoryId], references: [id])
+  venue          Venue            @relation(fields: [venueId], references: [id])
+  ticketTypes    TicketType[]
+  orders         Order[]
+  tickets        Ticket[]
+  checkIns       CheckIn[]
+  resaleListings ResaleListing[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([status, startsAt])
+  @@index([organizerId, status])
+  @@index([categoryId, startsAt])
+}
+
+model TicketType {
+  id             String          @id @default(cuid())
+  eventId        String
+  name           String
+  description    String?
+  price          Decimal         @db.Decimal(10, 2)
+  quantityTotal  Int
+  quantitySold   Int             @default(0)
+  maxPerOrder    Int             @default(8)
+  resaleAllowed  Boolean         @default(true)
+  resalePriceCap Decimal?        @db.Decimal(10, 2)
+  startsAt       DateTime?
+  endsAt         DateTime?
+  event          Event           @relation(fields: [eventId], references: [id])
+  orderItems     OrderItem[]
+  tickets        Ticket[]
+  resaleListings ResaleListing[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([eventId])
+}
+
+model Order {
+  id         String          @id @default(cuid())
+  userId     String
+  eventId    String
+  status     OrderStatus     @default(PENDING_PAYMENT)
+  subtotal   Decimal         @db.Decimal(10, 2)
+  buyerFee   Decimal         @db.Decimal(10, 2)
+  sellerFee  Decimal         @default(0) @db.Decimal(10, 2)
+  total      Decimal         @db.Decimal(10, 2)
+  currency   String          @default("USD")
+  user       User            @relation(fields: [userId], references: [id])
+  event      Event           @relation(fields: [eventId], references: [id])
+  items      OrderItem[]
+  payment    Payment?
+  tickets    Ticket[]
+  resaleSale ResaleListing[] @relation("ResaleSaleOrder")
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([userId, status])
+  @@index([eventId, status])
+}
+
+model OrderItem {
+  id            String     @id @default(cuid())
+  orderId       String
+  ticketTypeId  String
+  quantity      Int
+  unitPrice     Decimal    @db.Decimal(10, 2)
+  lineSubtotal  Decimal    @db.Decimal(10, 2)
+  lineBuyerFee  Decimal    @db.Decimal(10, 2)
+  lineSellerFee Decimal    @default(0) @db.Decimal(10, 2)
+  lineTotal     Decimal    @db.Decimal(10, 2)
+  order         Order      @relation(fields: [orderId], references: [id])
+  ticketType    TicketType @relation(fields: [ticketTypeId], references: [id])
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  orderId           String        @unique
+  userId            String
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @default("USD")
+  provider          String
+  providerReference String?
+  status            PaymentStatus @default(PENDING)
+  paidAt            DateTime?
+  metadata          Json?
+  order             Order         @relation(fields: [orderId], references: [id])
+  user              User          @relation(fields: [userId], references: [id])
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([userId, status])
+}
+
+model Ticket {
+  id                 String                   @id @default(cuid())
+  code               String                   @unique
+  qrToken            String                   @unique
+  eventId            String
+  ticketTypeId       String
+  orderId            String?
+  currentOwnerId     String
+  status             TicketStatus             @default(ACTIVE)
+  resaleAllowed      Boolean                  @default(true)
+  originalPrice      Decimal                  @db.Decimal(10, 2)
+  currentListedPrice Decimal?                 @db.Decimal(10, 2)
+  checkedInAt        DateTime?
+  event              Event                    @relation(fields: [eventId], references: [id])
+  ticketType         TicketType               @relation(fields: [ticketTypeId], references: [id])
+  order              Order?                   @relation(fields: [orderId], references: [id])
+  currentOwner       User                     @relation("TicketCurrentOwner", fields: [currentOwnerId], references: [id])
+  checkIn            CheckIn?
+  resaleListings     ResaleListing[]
+  ownershipHistory   TicketOwnershipHistory[]
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+
+  @@index([currentOwnerId, status])
+  @@index([eventId, status])
+}
+
+model CheckIn {
+  id            String   @id @default(cuid())
+  ticketId      String   @unique
+  eventId       String
+  checkedInById String
+  scannedAt     DateTime @default(now())
+  ticket        Ticket   @relation(fields: [ticketId], references: [id])
+  event         Event    @relation(fields: [eventId], references: [id])
+  checkedInBy   User     @relation("CheckInActor", fields: [checkedInById], references: [id])
+
+  @@index([eventId, scannedAt])
+}
+
+model ResaleListing {
+  id           String       @id @default(cuid())
+  ticketId     String
+  sellerId     String
+  buyerId      String?
+  saleOrderId  String?
+  eventId      String
+  ticketTypeId String
+  status       ResaleStatus @default(DRAFT)
+  askPrice     Decimal      @db.Decimal(10, 2)
+  buyerFee     Decimal      @default(0) @db.Decimal(10, 2)
+  sellerFee    Decimal      @default(0) @db.Decimal(10, 2)
+  listedAt     DateTime     @default(now())
+  expiresAt    DateTime?
+  soldAt       DateTime?
+  ticket       Ticket       @relation(fields: [ticketId], references: [id])
+  seller       User         @relation("ResaleSeller", fields: [sellerId], references: [id])
+  buyer        User?        @relation("ResaleBuyer", fields: [buyerId], references: [id])
+  saleOrder    Order?       @relation("ResaleSaleOrder", fields: [saleOrderId], references: [id])
+  event        Event        @relation(fields: [eventId], references: [id])
+  ticketType   TicketType   @relation(fields: [ticketTypeId], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([ticketId, status])
+  @@index([eventId, status])
+  @@index([sellerId, status])
+}
+
+model TicketOwnershipHistory {
+  id          String   @id @default(cuid())
+  ticketId    String
+  fromUserId  String?
+  toUserId    String
+  acquiredVia String
+  notes       String?
+  createdAt   DateTime @default(now())
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+  fromUser    User?    @relation("OwnershipFromUser", fields: [fromUserId], references: [id])
+  toUser      User     @relation("OwnershipToUser", fields: [toUserId], references: [id])
+
+  @@index([ticketId, createdAt])
+  @@index([toUserId, createdAt])
+}
+
+model AuditLog {
+  id          String         @id @default(cuid())
+  actorType   AuditActorType @default(USER)
+  actorUserId String?
+  action      String
+  entityType  String
+  entityId    String
+  description String?
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+  actorUser   User?          @relation("AuditActor", fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+model Notification {
+  id          String              @id @default(cuid())
+  userId      String
+  type        NotificationType
+  channel     NotificationChannel @default(APP)
+  title       String
+  message     String
+  actionUrl   String?
+  eventId     String?
+  ticketId    String?
+  orderId     String?
+  dedupeKey   String?             @unique
+  isRead      Boolean             @default(false)
+  readAt      DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  user        User                @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, type, createdAt])
+}

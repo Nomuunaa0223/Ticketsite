@@ -1,0 +1,7 @@
+.next
+node_modules
+.codex-runtime
+tsconfig.tsbuildinfo
+npm-debug.log*
+.env
+.git

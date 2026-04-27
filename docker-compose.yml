@@ -1,0 +1,41 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tixora-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tixora?schema=public
+      JWT_SECRET: this-is-a-local-dev-secret-change-me-please-12345
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      SEED_ADMIN_EMAIL: admin@tixora.local
+      SEED_ADMIN_PASSWORD: ChangeMe123!
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "3000:3000"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: tixora-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tixora
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - tixora-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tixora"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  tixora-postgres-data:
