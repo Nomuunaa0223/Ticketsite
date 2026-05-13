@@ -308,7 +308,7 @@ export default async function HomePage() {
 
         <div className="relative px-4 pb-12 pt-10 sm:px-8 lg:px-12 lg:pt-16">
           <div className="mx-auto flex min-h-[calc(100vh-11rem)] max-w-5xl flex-col items-center justify-center text-center">
-            <h1 className="home-enter__item max-w-4xl text-balance font-goldman text-4xl font-extrabold leading-[1.16] tracking-[-0.04em] text-white sm:text-5xl lg:text-[4rem]">
+            <h1 className="home-enter__item max-w-4xl text-balance font-goldman text-4xl font-bold leading-[1.16] tracking-[-0.04em] text-white sm:text-5xl lg:text-[4rem]">
               <span className="block">Амьд мэдрэмжийг мэдэр.</span>
               <span className="mt-6 block text-3xl font-semibold tracking-[-0.02em] text-white/90 sm:text-[2.25rem]">
                 Дараагийн шилдэг үдэш таныг хүлээж байна.
