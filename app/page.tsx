@@ -188,6 +188,7 @@ export default async function HomePage() {
       city: event.venue.city,
       dateLabel: formatMongolianDate(event.startsAt),
       priceLabel: startingPrice > 0 ? formatTugrik(startingPrice, event.currency) : "Үнэгүй",
+      summary: event.summary ?? "",
       badge: remaining > 0 && remaining <= 25 ? "Дуусаж байна" : null,
     };
   });
@@ -401,11 +402,10 @@ export default async function HomePage() {
       {/* Highlights toggle section */}
       <section className="relative bg-[linear-gradient(180deg,#06080d_0%,#070a11_100%)] px-4 pb-24 pt-16 sm:px-8 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-10 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#ff7224]">Онцлох</p>
-              <h2 className="mt-1 font-goldman text-3xl font-bold text-white">Highlights</h2>
-            </div>
+          <div className="mb-8 flex items-end justify-between">
+            <h2 className="font-goldman text-base font-bold text-white sm:text-lg">
+              Хамтран ажилласан эвентүүд HIGHLIGHT хэсэг
+            </h2>
             <Link href="/events" className="text-sm font-semibold text-white/40 transition hover:text-white">
               Бүгдийг харах
             </Link>

@@ -1,7 +1,7 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
 
 type HighlightEvent = {
   title: string;
@@ -12,85 +12,88 @@ type HighlightEvent = {
   city: string;
   dateLabel: string;
   priceLabel: string;
+  summary?: string;
   badge?: string | null;
 };
 
-const TABS = [
-  { label: "Бүгд", slug: "all" },
-  { label: "Хөгжим", slug: "music" },
-  { label: "Спорт", slug: "sports" },
-  { label: "Театр", slug: "theater-arts" },
-  { label: "Фестиваль", slug: "festival" },
+const BRAND_IMAGES = [
+  "/brand/1deh.jpg",
+  "/brand/2deh.jpeg",
+  "/brand/3deh.webp",
+  "/brand/4deh.webp",
 ] as const;
 
 export function HighlightsToggle({ events }: { events: HighlightEvent[] }) {
-  const [active, setActive] = useState<string>("all");
+  const featured = events[0];
+  const cards = events.slice(1, 4);
 
-  const filtered =
-    active === "all" ? events : events.filter((e) => e.categorySlug === active);
+  if (!featured) return null;
 
   return (
-    <div>
-      <div className="flex flex-wrap gap-2">
-        {TABS.map((tab) => (
-          <button
-            key={tab.slug}
-            type="button"
-            onClick={() => setActive(tab.slug)}
-            className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] transition ${
-              active === tab.slug
-                ? "bg-[#ff7224] text-white shadow-[0_0_18px_rgba(255,114,36,0.4)]"
-                : "bg-white/[0.05] text-white/52 hover:bg-white/[0.09] hover:text-white"
-            }`}
+    <div className="space-y-4">
+      <Link
+        href={`/events/${featured.slug}`}
+        className="group relative flex min-h-[220px] overflow-hidden rounded-2xl bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] transition hover:bg-white/[0.06] sm:min-h-[260px]"
+      >
+        <div className="flex flex-1 flex-col justify-center gap-4 p-7 sm:p-10">
+          <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#ff7224]">
+            {featured.category}
+          </p>
+          <h3 className="font-goldman text-xl font-bold uppercase leading-tight text-white sm:text-2xl lg:text-3xl">
+            {featured.title}
+          </h3>
+          {featured.summary && (
+            <p className="line-clamp-4 max-w-md text-sm leading-relaxed text-white/50">
+              {featured.summary}
+            </p>
+          )}
+        </div>
+
+        <div className="relative hidden w-[44%] shrink-0 sm:block">
+          <Image
+            src={BRAND_IMAGES[0]}
+            alt={featured.title}
+            fill
+            className="object-cover"
+            sizes="44vw"
+          />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,12,20,0.88)_0%,rgba(9,12,20,0.1)_50%,transparent_100%)]" />
+        </div>
+      </Link>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {cards.map((event, i) => (
+          <Link
+            key={event.slug}
+            href={`/events/${event.slug}`}
+            className="group flex flex-col overflow-hidden rounded-2xl bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] transition hover:bg-white/[0.06]"
           >
-            {tab.label}
-          </button>
+            <div className="flex flex-col gap-2 p-5">
+              <p className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-[#ff7224]">
+                {event.category}
+              </p>
+              <h3 className="font-goldman line-clamp-2 text-base font-bold leading-snug text-white">
+                {event.title}
+              </h3>
+              {event.summary && (
+                <p className="line-clamp-2 text-xs leading-relaxed text-white/45">
+                  {event.summary}
+                </p>
+              )}
+            </div>
+
+            <div className="relative mt-auto h-44 w-full overflow-hidden">
+              <Image
+                src={BRAND_IMAGES[i + 1]}
+                alt={event.title}
+                fill
+                className="object-cover transition duration-500 group-hover:scale-105"
+                sizes="(max-width: 640px) 100vw, 33vw"
+              />
+            </div>
+          </Link>
         ))}
       </div>
-
-      {filtered.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-white/30">
-          Энэ ангилалд event байхгүй байна.
-        </p>
-      ) : (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((event) => (
-            <Link
-              key={event.slug}
-              href={`/events/${event.slug}`}
-              className="group flex flex-col gap-3 rounded-2xl bg-white/[0.04] p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] transition hover:bg-white/[0.07]"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[0.64rem] font-bold uppercase tracking-[0.16em] text-[#ff7224]">
-                    {event.category}
-                  </p>
-                  <h3 className="mt-1 truncate font-semibold text-white transition group-hover:text-[#ff8a50]">
-                    {event.title}
-                  </h3>
-                </div>
-                {event.badge ? (
-                  <span className="shrink-0 rounded-full bg-[#ff7224]/20 px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.1em] text-[#ff7224]">
-                    {event.badge}
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="space-y-1 text-xs text-white/45">
-                <p>{event.venue}, {event.city}</p>
-                <p>{event.dateLabel}</p>
-              </div>
-
-              <div className="mt-auto flex items-center justify-between border-t border-white/[0.06] pt-3">
-                <p className="text-base font-bold text-white">{event.priceLabel}</p>
-                <span className="text-xs font-semibold text-[#ff7224] opacity-0 transition group-hover:opacity-100">
-                  Дэлгэрэнгүй →
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
