@@ -1,9 +1,30 @@
-export function formatCurrency(amount: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2
-  }).format(amount);
+export function formatCurrency(amount: unknown, currency: unknown = "MNT") {
+  const parsedAmount = Number(amount);
+  const safeAmount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+  const normalizedCurrency = typeof currency === "string" ? currency.trim().toUpperCase() : "MNT";
+  const safeCurrency = /^[A-Z]{3}$/.test(normalizedCurrency) ? normalizedCurrency : "MNT";
+
+  if (safeCurrency === "MNT") {
+    const formattedAmount = new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 0
+    }).format(safeAmount);
+
+    return `₮ ${formattedAmount}`;
+  }
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: safeCurrency,
+      maximumFractionDigits: 2
+    }).format(safeAmount);
+  } catch {
+    return new Intl.NumberFormat("mn-MN", {
+      style: "currency",
+      currency: "MNT",
+      maximumFractionDigits: 0
+    }).format(safeAmount);
+  }
 }
 
 export function formatDateTime(value: Date | string) {

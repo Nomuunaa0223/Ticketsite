@@ -12,12 +12,21 @@ export const ticketTypeInputSchema = z.object({
   endsAt: z.coerce.date().optional()
 });
 
+export const relatedImageInputSchema = z.object({
+  type: z.string().min(2).max(40),
+  title: z.string().min(2).max(80),
+  url: z.string().max(500)
+});
+
 export const eventInputSchema = z
   .object({
-    categoryId: z.string().min(1),
-    subcategoryId: z.string().optional(),
-    venueId: z.string().min(1),
+    categoryId: z.coerce.number().int().positive(),
+    subcategoryId: z.coerce.number().int().positive().optional(),
+    venueId: z.coerce.number().int().positive(),
     title: z.string().min(4).max(120),
+    imageUrl: z.string().max(500).optional(),
+    cardImageUrl: z.string().max(500).optional(),
+    relatedImages: z.array(relatedImageInputSchema).max(12).optional(),
     summary: z.string().min(10).max(240),
     description: z.string().min(40),
     startsAt: z.coerce.date(),

@@ -10,7 +10,6 @@ datasource db {
 enum Role {
   USER
   ORGANIZER
-  MODERATOR
   ADMIN
 }
 
@@ -23,6 +22,17 @@ enum OrganizerStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum OrganizerApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum OrganizerAccountStatus {
+  ACTIVE
+  SUSPENDED
 }
 
 enum EventStatus {
@@ -82,15 +92,21 @@ enum NotificationChannel {
 }
 
 model User {
-  id                        String                   @id @default(cuid())
+  id                        Int                      @id @default(autoincrement())
   email                     String                   @unique
-  passwordHash              String
+  passwordHash              String?
   fullName                  String
+  phone                     String?
+  avatarUrl                 String?
   role                      Role                     @default(USER)
   status                    UserStatus               @default(ACTIVE)
+  organizerId               Int?
+  organizer                 Organizer?               @relation(fields: [organizerId], references: [id])
   emailVerifiedAt           DateTime?
   organizerProfile          OrganizerProfile?
   approvedOrganizerProfiles OrganizerProfile[]       @relation("OrganizerApprovedBy")
+  reviewedOrganizerApplications OrganizerApplication[] @relation("OrganizerApplicationReviewedBy")
+  passwordSetupTokens       PasswordSetupToken[]
   createdEvents             Event[]                  @relation("EventCreator")
   reviewedEvents            Event[]                  @relation("EventReviewer")
   orders                    Order[]
@@ -107,18 +123,65 @@ model User {
   updatedAt                 DateTime                 @updatedAt
 
   @@index([role, status])
+  @@index([organizerId])
+}
+
+model OrganizerApplication {
+  id                Int                         @id @default(autoincrement())
+  companyName       String
+  contactName       String
+  email             String
+  phone             String
+  description       String
+  websiteUrl        String?
+  socialUrl         String?
+  status            OrganizerApplicationStatus  @default(PENDING)
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  reviewedAt        DateTime?
+  reviewedByAdminId Int?
+  reviewedByAdmin   User?                       @relation("OrganizerApplicationReviewedBy", fields: [reviewedByAdminId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model Organizer {
+  id           Int                    @id @default(autoincrement())
+  companyName  String
+  contactEmail String
+  phone        String
+  status       OrganizerAccountStatus @default(ACTIVE)
+  users        User[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  @@index([status])
+  @@index([contactEmail])
+}
+
+model PasswordSetupToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, usedAt, expiresAt])
 }
 
 model OrganizerProfile {
-  id           String          @id @default(cuid())
-  userId       String          @unique
+  id           Int             @id @default(autoincrement())
+  userId       Int             @unique
   companyName  String
   slug         String          @unique
   description  String?
   websiteUrl   String?
   status       OrganizerStatus @default(PENDING)
   approvedAt   DateTime?
-  approvedById String?
+  approvedById Int?
   user         User            @relation(fields: [userId], references: [id])
   approvedBy   User?           @relation("OrganizerApprovedBy", fields: [approvedById], references: [id])
   events       Event[]
@@ -129,7 +192,7 @@ model OrganizerProfile {
 }
 
 model Category {
-  id            String        @id @default(cuid())
+  id            Int           @id @default(autoincrement())
   name          String        @unique
   slug          String        @unique
   description   String?
@@ -142,8 +205,8 @@ model Category {
 }
 
 model Subcategory {
-  id          String    @id @default(cuid())
-  categoryId  String
+  id          Int       @id @default(autoincrement())
+  categoryId  Int
   name        String
   slug        String
   description String?
@@ -158,7 +221,7 @@ model Subcategory {
 }
 
 model Venue {
-  id         String   @id @default(cuid())
+  id         Int      @id @default(autoincrement())
   name       String
   city       String
   country    String
@@ -175,15 +238,18 @@ model Venue {
 }
 
 model Event {
-  id             String          @id @default(cuid())
-  organizerId    String
-  createdById    String
-  reviewedById   String?
-  categoryId     String
-  subcategoryId  String?
-  venueId        String
+  id             Int             @id @default(autoincrement())
+  organizerId    Int
+  createdById    Int
+  reviewedById   Int?
+  categoryId     Int
+  subcategoryId  Int?
+  venueId        Int
   title          String
   slug           String          @unique
+  imageUrl       String?
+  cardImageUrl   String?
+  relatedImages  Json?
   summary        String
   description    String
   startsAt       DateTime
@@ -193,6 +259,8 @@ model Event {
   status         EventStatus     @default(DRAFT)
   reviewNotes    String?
   publishedAt    DateTime?
+  isTrending     Boolean          @default(false)
+  trendingOrder  Int?
   currency       String          @default("USD")
   platformFeeBps Int             @default(900)
   serviceFeeBps  Int             @default(350)
@@ -212,13 +280,14 @@ model Event {
   updatedAt      DateTime         @updatedAt
 
   @@index([status, startsAt])
+  @@index([isTrending, trendingOrder])
   @@index([organizerId, status])
   @@index([categoryId, startsAt])
 }
 
 model TicketType {
-  id             String          @id @default(cuid())
-  eventId        String
+  id             Int             @id @default(autoincrement())
+  eventId        Int
   name           String
   description    String?
   price          Decimal         @db.Decimal(10, 2)
@@ -240,9 +309,9 @@ model TicketType {
 }
 
 model Order {
-  id         String          @id @default(cuid())
-  userId     String
-  eventId    String
+  id         Int             @id @default(autoincrement())
+  userId     Int
+  eventId    Int
   status     OrderStatus     @default(PENDING_PAYMENT)
   subtotal   Decimal         @db.Decimal(10, 2)
   buyerFee   Decimal         @db.Decimal(10, 2)
@@ -263,9 +332,9 @@ model Order {
 }
 
 model OrderItem {
-  id            String     @id @default(cuid())
-  orderId       String
-  ticketTypeId  String
+  id            Int        @id @default(autoincrement())
+  orderId       Int
+  ticketTypeId  Int
   quantity      Int
   unitPrice     Decimal    @db.Decimal(10, 2)
   lineSubtotal  Decimal    @db.Decimal(10, 2)
@@ -279,9 +348,9 @@ model OrderItem {
 }
 
 model Payment {
-  id                String        @id @default(cuid())
-  orderId           String        @unique
-  userId            String
+  id                Int           @id @default(autoincrement())
+  orderId           Int           @unique
+  userId            Int
   amount            Decimal       @db.Decimal(10, 2)
   currency          String        @default("USD")
   provider          String
@@ -298,13 +367,13 @@ model Payment {
 }
 
 model Ticket {
-  id                 String                   @id @default(cuid())
+  id                 Int                      @id @default(autoincrement())
   code               String                   @unique
   qrToken            String                   @unique
-  eventId            String
-  ticketTypeId       String
-  orderId            String?
-  currentOwnerId     String
+  eventId            Int
+  ticketTypeId       Int
+  orderId            Int?
+  currentOwnerId     Int
   status             TicketStatus             @default(ACTIVE)
   resaleAllowed      Boolean                  @default(true)
   originalPrice      Decimal                  @db.Decimal(10, 2)
@@ -325,10 +394,10 @@ model Ticket {
 }
 
 model CheckIn {
-  id            String   @id @default(cuid())
-  ticketId      String   @unique
-  eventId       String
-  checkedInById String
+  id            Int      @id @default(autoincrement())
+  ticketId      Int      @unique
+  eventId       Int
+  checkedInById Int
   scannedAt     DateTime @default(now())
   ticket        Ticket   @relation(fields: [ticketId], references: [id])
   event         Event    @relation(fields: [eventId], references: [id])
@@ -338,13 +407,13 @@ model CheckIn {
 }
 
 model ResaleListing {
-  id           String       @id @default(cuid())
-  ticketId     String
-  sellerId     String
-  buyerId      String?
-  saleOrderId  String?
-  eventId      String
-  ticketTypeId String
+  id           Int          @id @default(autoincrement())
+  ticketId     Int
+  sellerId     Int
+  buyerId      Int?
+  saleOrderId  Int?
+  eventId      Int
+  ticketTypeId Int
   status       ResaleStatus @default(DRAFT)
   askPrice     Decimal      @db.Decimal(10, 2)
   buyerFee     Decimal      @default(0) @db.Decimal(10, 2)
@@ -367,10 +436,10 @@ model ResaleListing {
 }
 
 model TicketOwnershipHistory {
-  id          String   @id @default(cuid())
-  ticketId    String
-  fromUserId  String?
-  toUserId    String
+  id          Int      @id @default(autoincrement())
+  ticketId    Int
+  fromUserId  Int?
+  toUserId    Int
   acquiredVia String
   notes       String?
   createdAt   DateTime @default(now())
@@ -383,12 +452,12 @@ model TicketOwnershipHistory {
 }
 
 model AuditLog {
-  id          String         @id @default(cuid())
+  id          Int            @id @default(autoincrement())
   actorType   AuditActorType @default(USER)
-  actorUserId String?
+  actorUserId Int?
   action      String
   entityType  String
-  entityId    String
+  entityId    Int
   description String?
   metadata    Json?
   createdAt   DateTime       @default(now())
@@ -399,16 +468,16 @@ model AuditLog {
 }
 
 model Notification {
-  id          String              @id @default(cuid())
-  userId      String
+  id          Int                 @id @default(autoincrement())
+  userId      Int
   type        NotificationType
   channel     NotificationChannel @default(APP)
   title       String
   message     String
   actionUrl   String?
-  eventId     String?
-  ticketId    String?
-  orderId     String?
+  eventId     Int?
+  ticketId    Int?
+  orderId     Int?
   dedupeKey   String?             @unique
   isRead      Boolean             @default(false)
   readAt      DateTime?
@@ -418,4 +487,13 @@ model Notification {
 
   @@index([userId, isRead, createdAt])
   @@index([userId, type, createdAt])
+}
+
+model ContactInquiry {
+  id         Int      @id @default(autoincrement())
+  phone      String
+  email      String
+  ticketType String
+  message    String
+  createdAt  DateTime @default(now())
 }

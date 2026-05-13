@@ -17,14 +17,15 @@ export async function PATCH(request: Request, context: Context) {
     }
 
     const reviewer = await prisma.user.findUnique({
-      where: { id: session.sub }
+      where: { id: Number(session.sub) }
     });
 
-    if (!reviewer || (reviewer.role !== "ADMIN" && reviewer.role !== "MODERATOR")) {
-      return NextResponse.json({ error: "Moderator access required." }, { status: 403 });
+    if (!reviewer || reviewer.role !== "ADMIN") {
+      return NextResponse.json({ error: "Admin access required." }, { status: 403 });
     }
 
     const { eventId } = await context.params;
+    const parsedEventId = Number(eventId);
     const body = (await request.json()) as {
       decision?: "approve" | "reject";
       reviewNotes?: string;
@@ -38,7 +39,7 @@ export async function PATCH(request: Request, context: Context) {
       body.decision === "approve" ? EventStatus.PUBLISHED : EventStatus.REJECTED;
 
     const event = await prisma.event.update({
-      where: { id: eventId },
+      where: { id: parsedEventId },
       data: {
         status: nextStatus,
         reviewNotes: body.reviewNotes,

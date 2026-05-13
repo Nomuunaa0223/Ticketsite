@@ -2,11 +2,11 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 type AuditInput = {
-  actorUserId?: string | null;
+  actorUserId?: number | null;
   actorType?: "USER" | "SYSTEM";
   action: string;
   entityType: string;
-  entityId: string;
+  entityId: number;
   description?: string;
   metadata?: Prisma.InputJsonValue;
 };

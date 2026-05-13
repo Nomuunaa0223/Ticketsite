@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
-import { OrganizerStatus } from "@prisma/client";
 import { applySessionCookie, createSessionForUser, hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { slugify } from "@/lib/slugs";
 import { registerSchema } from "@/lib/validations/auth";
 import { recordAuditLog } from "@/lib/audit";
 
 export async function POST(request: Request) {
   try {
     const payload = registerSchema.parse(await request.json());
+    if (payload.role === "ORGANIZER") {
+      return NextResponse.json({ error: "Organizer accounts require admin approval. Please submit an application." }, { status: 403 });
+    }
+
     const existingUser = await prisma.user.findUnique({
       where: { email: payload.email.toLowerCase() }
     });
@@ -24,17 +26,6 @@ export async function POST(request: Request) {
         email: payload.email.toLowerCase(),
         passwordHash,
         role: payload.role,
-        organizerProfile:
-          payload.role === "ORGANIZER"
-            ? {
-                create: {
-                  companyName: payload.companyName!,
-                  slug: await createUniqueOrganizerSlug(payload.companyName!),
-                  websiteUrl: payload.websiteUrl,
-                  status: OrganizerStatus.PENDING
-                }
-              }
-            : undefined
       },
       include: { organizerProfile: true }
     });
@@ -55,17 +46,4 @@ export async function POST(request: Request) {
     console.error(error);
     return NextResponse.json({ error: "Unable to register." }, { status: 400 });
   }
-}
-
-async function createUniqueOrganizerSlug(companyName: string) {
-  const baseSlug = slugify(companyName);
-  let slug = baseSlug;
-  let index = 1;
-
-  while (await prisma.organizerProfile.findUnique({ where: { slug } })) {
-    index += 1;
-    slug = `${baseSlug}-${index}`;
-  }
-
-  return slug;
 }

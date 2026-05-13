@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { calculateTransparentFees } from "@/lib/fees";
 import { getSessionFromRequest } from "@/lib/auth";
 import { recordAuditLog } from "@/lib/audit";
+import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { resaleListingSchema } from "@/lib/validations/resale";
+import { NotificationType } from "@prisma/client";
 
 export async function POST(request: Request) {
   try {
@@ -27,7 +29,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ticket not found." }, { status: 404 });
     }
 
-    if (ticket.currentOwnerId !== session.sub) {
+    const sessionUserId = Number(session.sub);
+
+    if (ticket.currentOwnerId !== sessionUserId) {
       return NextResponse.json({ error: "Only the current owner can list this ticket." }, { status: 403 });
     }
 
@@ -57,15 +61,15 @@ export async function POST(request: Request) {
     const fees = calculateTransparentFees({
       unitPrice: payload.askPrice,
       sellerFeeBps: 500,
-      serviceFeeBps: 250,
-      platformFeeBps: 400
+      serviceFeeBps: 0,
+      platformFeeBps: 0
     });
 
     const listing = await prisma.$transaction(async (tx) => {
       const created = await tx.resaleListing.create({
         data: {
           ticketId: ticket.id,
-          sellerId: session.sub,
+          sellerId: sessionUserId,
           eventId: ticket.eventId,
           ticketTypeId: ticket.ticketTypeId,
           status: "ACTIVE",
@@ -87,12 +91,23 @@ export async function POST(request: Request) {
     });
 
     await recordAuditLog({
-      actorUserId: session.sub,
+      actorUserId: sessionUserId,
       action: "RESALE_CREATED",
       entityType: "ResaleListing",
       entityId: listing.id,
       description: `Created resale listing for ticket ${ticket.code}`,
       metadata: { askPrice: payload.askPrice }
+    });
+
+    await createUserNotification({
+      userId: sessionUserId,
+      type: NotificationType.ORDER_CREATED,
+      title: "Resale жагсаалт үүслээ",
+      message: `${ticket.event.title} - ${ticket.ticketType.name} тасалбар дахин худалдаанд гарлаа.`,
+      actionUrl: `/events/${ticket.event.slug}`,
+      eventId: ticket.eventId,
+      ticketId: ticket.id,
+      dedupeKey: `resale:${listing.id}:created`
     });
 
     return NextResponse.json({ ok: true, listing }, { status: 201 });

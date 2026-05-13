@@ -10,6 +10,87 @@ import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slugs";
 import { eventInputSchema, type EventInput } from "@/lib/validations/event";
 
+export async function getAllPublicEvents() {
+  try {
+    return await prisma.event.findMany({
+      where: { status: EventStatus.PUBLISHED },
+      include: {
+        venue: true,
+        category: true,
+        organizer: true,
+        ticketTypes: { orderBy: { price: "asc" } }
+      },
+      orderBy: { startsAt: "asc" }
+    });
+  } catch {
+    return [];
+  }
+}
+
+export type PublicEventListItem = Awaited<ReturnType<typeof getPublicEventsByCategory>>[number];
+
+export async function getPublicEventsByCategory(categorySlug: string, take = 12) {
+  try {
+    return await prisma.event.findMany({
+      where: {
+        status: EventStatus.PUBLISHED,
+        category: { slug: categorySlug }
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        imageUrl: true,
+        cardImageUrl: true,
+        summary: true,
+        currency: true,
+        startsAt: true,
+        category: { select: { name: true, slug: true } },
+        venue: { select: { name: true, city: true } },
+        ticketTypes: {
+          select: { price: true },
+          orderBy: { price: "asc" },
+          take: 1
+        }
+      },
+      orderBy: { startsAt: "asc" },
+      take
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function getTrendingPublicEvents(take = 5) {
+  try {
+    return await prisma.event.findMany({
+      where: { status: EventStatus.PUBLISHED, isTrending: true },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        imageUrl: true,
+        cardImageUrl: true,
+        summary: true,
+        currency: true,
+        startsAt: true,
+        trendingOrder: true,
+        category: { select: { name: true, slug: true } },
+        venue: { select: { name: true, city: true } },
+        ticketTypes: {
+          select: { price: true },
+          orderBy: { price: "asc" },
+          take: 1
+        }
+      },
+      orderBy: [{ trendingOrder: "asc" }, { startsAt: "asc" }],
+      take
+    });
+  } catch {
+    return [];
+  }
+}
+
 export async function getPublicEvents(categorySlug?: string) {
   try {
     return await prisma.event.findMany({
@@ -46,20 +127,26 @@ export async function getEventBySlug(slug: string) {
   try {
     return await prisma.event.findUnique({
       where: { slug },
-      include: {
-        venue: true,
-        category: true,
-        subcategory: true,
-        organizer: {
-          include: {
-            user: true
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        imageUrl: true,
+        summary: true,
+        description: true,
+        startsAt: true,
+        endsAt: true,
+        saleEndsAt: true,
+        currency: true,
+        venue: {
+          select: {
+            name: true,
+            city: true,
+            latitude: true,
+            longitude: true
           }
         },
-        ticketTypes: {
-          orderBy: {
-            price: "asc"
-          }
-        }
+        category: { select: { slug: true } }
       }
     });
   } catch {
@@ -67,7 +154,7 @@ export async function getEventBySlug(slug: string) {
   }
 }
 
-export async function getTicketTypeCards(eventId: string) {
+export async function getTicketTypeCards(eventId: number) {
   let event;
 
   try {
@@ -126,6 +213,9 @@ export async function createEventWithTicketTypes(input: EventInput, actor: User)
       venueId: validated.venueId,
       title: validated.title,
       slug,
+      imageUrl: validated.imageUrl || null,
+      cardImageUrl: validated.cardImageUrl || null,
+      relatedImages: validated.relatedImages ?? Prisma.JsonNull,
       summary: validated.summary,
       description: validated.description,
       startsAt: validated.startsAt,

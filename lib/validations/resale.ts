@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const resaleListingSchema = z.object({
-  ticketId: z.string().min(1),
+  ticketId: z.coerce.number().int().positive(),
   askPrice: z.coerce.number().positive(),
   expiresAt: z.coerce.date().optional()
 });

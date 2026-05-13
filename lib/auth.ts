@@ -8,14 +8,17 @@ import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 
 const SESSION_COOKIE = "tixora_session";
+const SESSION_TOKEN_TTL = "7d";
+const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const encoder = new TextEncoder();
+const useSecureSessionCookie = env.NEXT_PUBLIC_APP_URL.startsWith("https://");
 
 export type SessionPayload = {
   sub: string;
   email: string;
   role: Role;
   fullName: string;
-  organizerProfileId?: string | null;
+  organizerProfileId?: number | null;
 };
 
 export async function hashPassword(password: string) {
@@ -31,7 +34,7 @@ export async function signSession(user: SessionPayload) {
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.sub)
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(SESSION_TOKEN_TTL)
     .sign(encoder.encode(env.JWT_SECRET));
 }
 
@@ -82,7 +85,7 @@ export async function getCurrentUser() {
   }
 
   return prisma.user.findUnique({
-    where: { id: session.sub },
+    where: { id: Number(session.sub) },
     include: { organizerProfile: true }
   });
 }
@@ -99,7 +102,7 @@ export async function requireUser() {
 
 export async function requireRole(minimumRole: Role) {
   const user = await requireUser();
-  const allowedOrder: Role[] = ["USER", "ORGANIZER", "MODERATOR", "ADMIN"];
+  const allowedOrder: Role[] = ["USER", "ORGANIZER", "ADMIN"];
 
   if (allowedOrder.indexOf(user.role) < allowedOrder.indexOf(minimumRole)) {
     redirect("/dashboard");
@@ -108,11 +111,21 @@ export async function requireRole(minimumRole: Role) {
   return user;
 }
 
+export async function requireExactRole(role: Role) {
+  const user = await requireUser();
+
+  if (user.role !== role) {
+    redirect("/dashboard");
+  }
+
+  return user;
+}
+
 export async function createSessionForUser(
-  user: User & { organizerProfile?: { id: string } | null }
+  user: User & { organizerProfile?: { id: number } | null }
 ) {
   const payload: SessionPayload = {
-    sub: user.id,
+    sub: String(user.id),
     email: user.email,
     role: user.role,
     fullName: user.fullName,
@@ -127,10 +140,10 @@ export function applySessionCookie(response: NextResponse, token: string) {
     name: SESSION_COOKIE,
     value: token,
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: useSecureSessionCookie,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7
+    maxAge: SESSION_COOKIE_MAX_AGE
   });
 
   return response;
@@ -141,7 +154,7 @@ export function clearSessionCookie(response: NextResponse) {
     name: SESSION_COOKIE,
     value: "",
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: useSecureSessionCookie,
     sameSite: "lax",
     path: "/",
     expires: new Date(0)

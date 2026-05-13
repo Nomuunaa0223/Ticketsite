@@ -1,211 +1,449 @@
-import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/auth";
-import {
-  ensureReminderNotifications,
-  getUnreadNotificationsCount,
-  getUserNotifications,
-  markAllNotificationsRead
-} from "@/lib/notifications";
+import Link from "next/link";
+import type { Notification } from "@prisma/client";
+import { requireUser } from "@/lib/auth";
+import { getCurrentLang } from "@/lib/i18n-server";
+import { ensureReminderNotifications, markAllNotificationsRead } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/utils";
+import { NotificationsAutoRead } from "@/components/notifications/notifications-auto-read";
 
-export default async function NotificationsPage() {
-  const user = await getCurrentUser();
-  const isPreview = !user;
+const PAGE_SIZE = 9;
+const MAX_PAGE_LINKS = 5;
 
-  if (user) {
-    await ensureReminderNotifications(user.id);
-  }
+const slugImages: Record<string, string> = {
+  "summit-finals-2026": "/uploads/1.jpg",
+  "basketball-league-night": "/uploads/2.jpg",
+  "football-cup-2026": "/uploads/3.jpg",
+  "neon-nights-concert": "/uploads/4.jpg",
+  "acoustic-sessions-live": "/uploads/5.jpg",
+  "rock-the-arena": "/uploads/1.jpg",
+  "hamlet-reimagined": "/uploads/2.jpg",
+  "contemporary-dance-gala": "/uploads/3.jpg",
+  "art-exhibition-opening": "/uploads/4.jpg",
+  "laugh-factory-live": "/uploads/5.jpg",
+  "stand-up-showcase": "/uploads/1.jpg",
+  "comedy-gala-2026": "/uploads/2.jpg",
+  "summer-vibes-festival": "/uploads/3.jpg",
+  "urban-street-fest": "/uploads/4.jpg",
+  "horizon-music-festival": "/uploads/5.jpg",
+  "techforward-summit": "/uploads/1.jpg",
+  "startup-founders-day": "/uploads/2.jpg",
+  "design-ux-conference": "/uploads/3.jpg",
+};
 
-  const [notifications, unreadCount] = user
-    ? await Promise.all([
-        getUserNotifications(user.id),
-        getUnreadNotificationsCount(user.id)
-      ])
-    : [getPreviewNotifications(), getPreviewNotifications().filter((item) => !item.isRead).length];
+const categoryImages: Record<string, string> = {
+  sports: "/uploads/1.jpg",
+  music: "/uploads/2.jpg",
+  "theater-arts": "/uploads/3.jpg",
+  comedy: "/uploads/4.jpg",
+  festival: "/uploads/5.jpg",
+  conference: "/uploads/1.jpg",
+};
 
-  async function markReadAction() {
+type NotificationsPageProps = {
+  searchParams: Promise<{ page?: string | string[] }>;
+};
+
+export default async function NotificationsPage({ searchParams }: NotificationsPageProps) {
+  const user = await requireUser();
+  const lang = await getCurrentLang();
+  const labels = lang === "mn"
+    ? {
+        title: "Мэдэгдэл",
+        new: "шинэ",
+        markAllRead: "Бүгдийг уншсан болгох",
+        empty: "Одоогоор мэдэгдэл байхгүй байна.",
+        view: "Харах",
+        unread: "Шинэ"
+      }
+    : {
+        title: "Notifications",
+        new: "new",
+        markAllRead: "Mark all read",
+        empty: "No notifications yet.",
+        view: "View",
+        unread: "New"
+      };
+  await ensureReminderNotifications(user.id);
+
+  const requestedPage = getPage((await searchParams).page);
+  const [totalNotifications, unreadCount] = await Promise.all([
+    prisma.notification.count({ where: { userId: user.id } }),
+    prisma.notification.count({ where: { userId: user.id, isRead: false } }),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(totalNotifications / PAGE_SIZE));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const notifications = await prisma.notification.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+    skip: (currentPage - 1) * PAGE_SIZE,
+    take: PAGE_SIZE
+  });
+  const notificationContext = await getNotificationContext(notifications);
+
+  async function markAllRead() {
     "use server";
-    if (!user) {
-      return;
-    }
-
     await markAllNotificationsRead(user.id);
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-16">
-      <div className="rounded-[2.5rem] border border-white/10 bg-[linear-gradient(180deg,#050505_0%,#090909_100%)] p-6 shadow-[0_40px_120px_rgba(0,0,0,0.45)] sm:p-8">
-        <div className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">
-          <div className="space-y-6">
-            <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-white/40">Notifications</p>
-              <h1 className="mt-3 font-serif text-5xl text-white">Your updates</h1>
-              <p className="mt-4 max-w-xl text-base leading-8 text-white/65">
-                {isPreview
-                  ? "Demo preview for how Tixora notifications will look when users receive ticket and event updates."
-                  : "Ticket orders, QR scan confirmations, 24-hour reminders, and 30-minute event updates all show up here."}
-              </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-              <div className="rounded-[2rem] border border-white/10 bg-white/5 p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-white/40">Unread</p>
-                <p className="mt-4 font-serif text-5xl text-white">{unreadCount}</p>
-                <p className="mt-2 text-sm text-white/55">New updates waiting for you</p>
-              </div>
-              <div className="rounded-[2rem] border border-white/10 bg-white/5 p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-white/40">Total</p>
-                <p className="mt-4 font-serif text-5xl text-white">{notifications.length}</p>
-                <p className="mt-2 text-sm text-white/55">
-                  {isPreview ? "Preview notification cards" : "Stored app notifications"}
-                </p>
-              </div>
-            </div>
-
-            {isPreview ? (
-              <div className="rounded-[2rem] border border-dashed border-white/15 bg-white/5 p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-white/40">Preview mode</p>
-                <p className="mt-3 text-sm leading-7 text-white/60">
-                  This page is currently showing sample notifications for presentation/demo
-                  purposes.
-                </p>
-              </div>
-            ) : (
-              <form action={markReadAction}>
-                <Button type="submit" variant="secondary" className="w-full">
-                  Mark all as read
-                </Button>
-              </form>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            {notifications.length === 0 ? (
-              <div className="rounded-[2rem] border border-dashed border-white/15 bg-white/5 p-8">
-                <p className="text-xs uppercase tracking-[0.22em] text-white/40">Empty</p>
-                <h2 className="mt-3 font-serif text-3xl text-white">No notifications yet</h2>
-                <p className="mt-3 text-sm leading-7 text-white/60">
-                  When you order tickets, get checked in, or your event gets close, updates will
-                  appear here.
-                </p>
-              </div>
+    <section className="min-h-screen bg-[#07080d] px-4 py-12 sm:px-6 lg:px-8">
+      <NotificationsAutoRead unreadCount={unreadCount} />
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 flex items-center justify-between gap-4">
+          <h1 className="ml-16 mt-1 font-goldman text-3xl font-bold text-white">{labels.title}</h1>
+          <div className="flex items-center gap-3">
+            {unreadCount > 0 ? (
+              <span className="rounded-full bg-[#ff7224]/15 px-3 py-1 text-xs font-bold text-[#ff7224]">
+                {unreadCount} {labels.new}
+              </span>
             ) : null}
-
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="group rounded-[2rem] border border-white/10 bg-white/5 p-6 transition hover:border-white/20 hover:bg-white/[0.07]"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-5">
-                  <div className="flex gap-4">
-                    <div className="mt-1 flex flex-col items-center">
-                      <span
-                        className={`h-3 w-3 rounded-full ${
-                          notification.isRead ? "bg-white/25" : "bg-white"
-                        }`}
-                      />
-                      <span className="mt-3 h-full min-h-16 w-px bg-white/10" />
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-white/10 px-3 py-1 text-[0.68rem] uppercase tracking-[0.22em] text-white/55">
-                          {notification.channel}
-                        </span>
-                        <span className="rounded-full bg-white/10 px-3 py-1 text-[0.68rem] uppercase tracking-[0.22em] text-white/75">
-                          {formatType(notification.type)}
-                        </span>
-                        {!notification.isRead ? (
-                          <span className="rounded-full bg-white px-3 py-1 text-[0.68rem] uppercase tracking-[0.22em] text-black">
-                            New
-                          </span>
-                        ) : null}
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-semibold text-white">
-                          {notification.title}
-                        </h2>
-                        <p className="mt-2 max-w-2xl text-sm leading-7 text-white/65">
-                          {notification.message}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 text-right">
-                    <p className="text-xs uppercase tracking-[0.22em] text-white/40">
-                      {formatDateTime(notification.createdAt)}
-                    </p>
-                    <p className="text-sm text-white/55">
-                      {notification.isRead ? "Read" : "Unread"}
-                    </p>
-                    {notification.actionUrl ? (
-                      <a
-                        href={notification.actionUrl}
-                        className="inline-flex items-center justify-center rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
-                      >
-                        Open
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            ))}
+            {unreadCount > 0 ? (
+              <form action={markAllRead}>
+                <button type="submit" className="rounded-xl bg-white/[0.05] px-4 py-2 text-xs font-bold text-white/50 transition hover:bg-white/10 hover:text-white">
+                  {labels.markAllRead}
+                </button>
+              </form>
+            ) : null}
           </div>
         </div>
+
+        {totalNotifications === 0 ? (
+          <EmptyState label={labels.empty} />
+        ) : (
+          <>
+            <div className="grid gap-5 md:grid-cols-3">
+              {notifications.map((notification, index) => (
+                <NotificationCard
+                  key={notification.id}
+                  index={totalNotifications - (currentPage - 1) * PAGE_SIZE - index}
+                  notification={withTranslatedCopy(notification, notificationContext, lang)}
+                  viewLabel={labels.view}
+                  unreadLabel={labels.unread}
+                />
+              ))}
+            </div>
+            <NotificationPagination currentPage={currentPage} totalPages={totalPages} />
+          </>
+        )}
       </div>
     </section>
   );
 }
 
-function formatType(type: string) {
-  return type.replaceAll("_", " ");
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/[0.03] py-16 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.05] text-white/20">
+        <BellIcon className="h-7 w-7" />
+      </div>
+      <p className="text-sm text-white/30">{label}</p>
+    </div>
+  );
 }
 
-function getPreviewNotifications() {
-  return [
-    {
-      id: "preview-order-created",
-      channel: "APP",
-      type: "ORDER_CREATED",
-      title: "Ticket order confirmed",
-      message: "Your order for 2 VIP tickets to Summer Lights Festival was created successfully.",
-      actionUrl: "/events",
-      isRead: false,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      id: "preview-checked-in",
-      channel: "APP",
-      type: "QR_CHECKED_IN",
-      title: "QR scanned at entry",
-      message: "Your ticket for Summit Finals 2026 was scanned successfully at the venue gate.",
-      actionUrl: "/tickets",
-      isRead: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 18),
-      updatedAt: new Date(Date.now() - 1000 * 60 * 18)
-    },
-    {
-      id: "preview-reminder-24h",
-      channel: "APP",
-      type: "EVENT_REMINDER_24H",
-      title: "Event starts tomorrow",
-      message: "City Laughs Comedy Night starts in less than 24 hours. Get ready.",
-      actionUrl: "/events",
-      isRead: true,
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 4),
-      updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 4)
-    },
-    {
-      id: "preview-ending-30m",
-      channel: "APP",
-      type: "EVENT_ENDING_30M",
-      title: "Event ending in 30 minutes",
-      message: "Tech Vision Conference will end in about 30 minutes.",
-      actionUrl: "/events",
-      isRead: true,
-      createdAt: new Date(Date.now() - 1000 * 60 * 45),
-      updatedAt: new Date(Date.now() - 1000 * 60 * 45)
-    }
-  ];
+type NotificationCardProps = {
+  index: number;
+  viewLabel: string;
+  unreadLabel: string;
+  notification: {
+    id: number;
+    type: string;
+    title: string;
+    message: string;
+    actionUrl: string | null;
+    eventId: number | null;
+    isRead: boolean;
+    createdAt: Date;
+  };
+};
+
+function NotificationCard({ index, notification, viewLabel, unreadLabel }: NotificationCardProps) {
+  const cardClassName = `group relative flex min-h-72 flex-col overflow-hidden rounded-2xl border border-transparent transition-all duration-200 ${
+    notification.isRead
+      ? "bg-[#0d1017] hover:scale-[1.025] hover:border-transparent"
+      : "bg-[#ff7224]/[0.08] hover:scale-[1.025] hover:border-transparent"
+  }`;
+  const cardContent = (
+    <>
+      <div className="relative -mb-px h-32 overflow-hidden bg-[#0d1017]">
+        {notification.eventId ? (
+          <img
+            src={getEventImage(null, null)}
+            alt="event"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="grid h-full w-full place-items-center bg-white/[0.03]">
+            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${getIconStyle(notification.type)}`}>
+              {renderIcon(notification.type)}
+            </div>
+          </div>
+        )}
+        <div className="absolute -bottom-px inset-x-0 top-0 bg-gradient-to-t from-[#0d1017] via-[#0d1017]/55 to-transparent" />
+        <div className="absolute -bottom-px inset-x-0 h-3 bg-[#0d1017]" />
+        <span className="absolute left-3 top-3 flex h-10 min-w-10 items-center justify-center rounded-full border border-white/30 bg-[#ff7224] px-3 text-sm font-black text-white shadow-[0_8px_24px_rgba(255,114,36,0.45)]">
+          {index}
+        </span>
+        {!notification.isRead ? (
+          <span className="absolute right-3 top-3 rounded-full bg-[#ff7224] px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.1em] text-white">
+            {unreadLabel}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="flex flex-1 flex-col p-4">
+        <p className={`text-sm font-semibold leading-5 ${notification.isRead ? "text-white/72" : "text-white"}`}>
+          {notification.title}
+        </p>
+        <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-white/42">
+          {notification.message}
+        </p>
+        <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+          <span className="text-[0.65rem] text-white/25">{formatDateTime(notification.createdAt)}</span>
+          {notification.actionUrl ? (
+            <span className="rounded-full bg-[#ff7224]/15 px-3 py-1.5 text-xs font-black text-[#ff7224] transition group-hover:bg-[#ff7224] group-hover:text-white">
+              {viewLabel}
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </>
+  );
+
+  if (notification.actionUrl) {
+    return (
+      <Link href={notification.actionUrl as never} className={cardClassName}>
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={cardClassName}>
+      {cardContent}
+    </div>
+  );
+}
+
+function NotificationPagination({ currentPage, totalPages }: { currentPage: number; totalPages: number }) {
+  if (totalPages <= 1) return null;
+
+  const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - MAX_PAGE_LINKS + 1));
+  const pages = Array.from({ length: Math.min(MAX_PAGE_LINKS, totalPages) }, (_, index) => startPage + index);
+
+  return (
+    <nav className="mt-8 flex flex-wrap items-center justify-center gap-2" aria-label="Notifications pagination">
+      {pages.map((pageNumber) => (
+        <Link
+          key={pageNumber}
+          href={`/notifications?page=${pageNumber}` as never}
+          className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-3 text-sm font-bold transition ${
+            pageNumber === currentPage
+              ? "bg-[#ff7224] text-white"
+              : "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white"
+          }`}
+        >
+          {pageNumber}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+type NotificationContext = Awaited<ReturnType<typeof getNotificationContext>>;
+
+async function getNotificationContext(notifications: Notification[]) {
+  const eventIds = uniqueIds(notifications.map((notification) => notification.eventId));
+  const ticketIds = uniqueIds(notifications.map((notification) => notification.ticketId));
+  const orderIds = uniqueIds(notifications.map((notification) => notification.orderId));
+
+  const [events, tickets, orders] = await Promise.all([
+    eventIds.length
+      ? prisma.event.findMany({
+          where: { id: { in: eventIds } },
+          select: { id: true, title: true, slug: true, startsAt: true, endsAt: true }
+        })
+      : [],
+    ticketIds.length
+      ? prisma.ticket.findMany({
+          where: { id: { in: ticketIds } },
+          include: {
+            event: { select: { title: true, slug: true } },
+            ticketType: { select: { name: true } }
+          }
+        })
+      : [],
+    orderIds.length
+      ? prisma.order.findMany({
+          where: { id: { in: orderIds } },
+          include: {
+            event: { select: { title: true, slug: true } },
+            items: { include: { ticketType: { select: { name: true } } } }
+          }
+        })
+      : []
+  ]);
+
+  return {
+    events: new Map(events.map((event) => [event.id, event])),
+    tickets: new Map(tickets.map((ticket) => [ticket.id, ticket])),
+    orders: new Map(orders.map((order) => [order.id, order]))
+  };
+}
+
+function withTranslatedCopy(notification: Notification, context: NotificationContext, lang: "en" | "mn") {
+  const ticket = notification.ticketId ? context.tickets.get(notification.ticketId) : null;
+  const event = notification.eventId ? context.events.get(notification.eventId) : null;
+  const order = notification.orderId ? context.orders.get(notification.orderId) : null;
+  const ticketEventTitle = ticket?.event.title ?? event?.title ?? order?.event.title ?? "Event";
+  const ticketTypeName = ticket?.ticketType.name ?? order?.items[0]?.ticketType.name ?? "Ticket";
+  const orderSummary = order?.items.length
+    ? order.items.map((item) => `${item.quantity} ${item.ticketType.name}`).join(", ")
+    : ticketTypeName;
+  const dedupeKey = notification.dedupeKey ?? "";
+
+  if (dedupeKey.startsWith("resale:") && dedupeKey.endsWith(":created")) {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Resale жагсаалт үүслээ" : "Resale listing created",
+      message: lang === "mn"
+        ? `${ticketEventTitle} - ${ticketTypeName} тасалбар дахин худалдаанд гарлаа.`
+        : `${ticketEventTitle} - ${ticketTypeName} ticket is now listed for resale.`
+    };
+  }
+
+  if (dedupeKey.startsWith("resale:") && dedupeKey.endsWith(":buyer")) {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Ticket таны profile руу шилжлээ" : "Ticket moved to your profile",
+      message: lang === "mn"
+        ? `${ticketEventTitle} - ${ticketTypeName} ticket таны эзэмшилд орлоо.`
+        : `${ticketEventTitle} - ${ticketTypeName} ticket is now yours.`
+    };
+  }
+
+  if (dedupeKey.startsWith("resale:") && dedupeKey.endsWith(":seller")) {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Таны ticket зарагдлаа" : "Your ticket was sold",
+      message: lang === "mn"
+        ? `${ticketEventTitle} - ${ticketTypeName} ticket шинэ эзэмшигч рүү шилжлээ.`
+        : `${ticketEventTitle} - ${ticketTypeName} ticket was transferred to the new owner.`
+    };
+  }
+
+  if (notification.type === "ORDER_CREATED" && order) {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Тасалбар амжилттай авлаа" : "Ticket purchase complete",
+      message: lang === "mn"
+        ? `${order.event.title} - ${orderSummary} тасалбар таны эзэмшилд орлоо.`
+        : `${order.event.title} - ${orderSummary} ticket is now in your profile.`
+    };
+  }
+
+  if (notification.type === "QR_CHECKED_IN") {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Ticket check-in хийгдлээ" : "Ticket checked in",
+      message: lang === "mn"
+        ? `${ticketEventTitle} event-ийн ticket амжилттай уншигдлаа.`
+        : `Your ticket for ${ticketEventTitle} was scanned successfully.`
+    };
+  }
+
+  if (notification.type === "EVENT_REMINDER_24H") {
+    const daysUntilStart = event ? Math.ceil((event.startsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+    const isSevenDayReminder = dedupeKey.endsWith(":reminder-7d") && daysUntilStart && daysUntilStart > 1;
+    return {
+      ...notification,
+      title: lang === "mn"
+        ? isSevenDayReminder ? `Event ${daysUntilStart} хоногийн дараа` : "Event сануулга"
+        : isSevenDayReminder ? `Event in ${daysUntilStart} days` : "Event reminder",
+      message: lang === "mn"
+        ? isSevenDayReminder
+          ? `${ticketEventTitle} ${daysUntilStart} хоногийн дараа эхэлнэ. Бэлдэж эхлээрэй.`
+          : `${ticketEventTitle} 24 цагийн дотор эхэлнэ.`
+        : isSevenDayReminder
+          ? `${ticketEventTitle} starts in ${daysUntilStart} days. Get ready.`
+          : `${ticketEventTitle} starts within 24 hours.`
+    };
+  }
+
+  if (notification.type === "EVENT_ENDING_30M") {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Event удахгүй дуусна" : "Event ending soon",
+      message: lang === "mn"
+        ? `${ticketEventTitle} ойролцоогоор 30 минутын дараа дуусна.`
+        : `${ticketEventTitle} will end in about 30 minutes.`
+    };
+  }
+
+  return notification;
+}
+
+function uniqueIds(values: Array<number | null>) {
+  return Array.from(new Set(values.filter((value): value is number => typeof value === "number")));
+}
+
+function getPage(value: string | string[] | undefined) {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  const page = Number(rawValue ?? 1);
+  return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+}
+
+function getEventImage(slug?: string | null, categorySlug?: string | null) {
+  if (slug && slugImages[slug]) return slugImages[slug];
+  if (categorySlug && categoryImages[categorySlug]) return categoryImages[categorySlug];
+  return "/uploads/1.jpg";
+}
+
+function getIconStyle(type: string) {
+  if (type === "ORDER_CREATED") return "bg-emerald-500/10 text-emerald-400";
+  if (type === "QR_CHECKED_IN") return "bg-blue-500/10 text-blue-400";
+  if (type === "EVENT_REMINDER_24H") return "bg-[#ff7224]/10 text-[#ff7224]";
+  if (type === "EVENT_ENDING_30M") return "bg-amber-500/10 text-amber-400";
+  return "bg-purple-500/10 text-purple-400";
+}
+
+function renderIcon(type: string) {
+  if (type === "ORDER_CREATED") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 9a2 2 0 0 0 0 6v3h16v-3a2 2 0 0 0 0-6V6H4z" strokeLinecap="round" />
+        <path d="M12 6v12M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (type === "QR_CHECKED_IN") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 4h5v5H4zM15 4h5v5h-5zM4 15h5v5H4z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="m15 15 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (type === "EVENT_REMINDER_24H" || type === "EVENT_ENDING_30M") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="8" />
+        <path d={type === "EVENT_REMINDER_24H" ? "M12 7v5l3 2" : "M12 7v5l-3 2"} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  return <BellIcon className="h-5 w-5" />;
+}
+
+function BellIcon({ className }: { className: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5" strokeLinecap="round" />
+      <path d="M9 17a3 3 0 0 0 6 0" strokeLinecap="round" />
+    </svg>
+  );
 }

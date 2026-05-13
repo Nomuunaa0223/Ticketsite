@@ -17,7 +17,6 @@ Tixora is a Next.js fullstack ticket marketplace focused on transparent fees, ow
 
 - `USER`
 - `ORGANIZER`
-- `MODERATOR`
 - `ADMIN`
 
 ## Included foundations

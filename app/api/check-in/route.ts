@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: session.sub },
+      where: { id: Number(session.sub) },
       include: { organizerProfile: true }
     });
 

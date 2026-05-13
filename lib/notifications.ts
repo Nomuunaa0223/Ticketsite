@@ -7,15 +7,15 @@ import {
 import { prisma } from "@/lib/prisma";
 
 type NotificationInput = {
-  userId: string;
+  userId: number;
   type: NotificationType;
   title: string;
   message: string;
   actionUrl?: string;
   channel?: NotificationChannel;
-  eventId?: string;
-  ticketId?: string;
-  orderId?: string;
+  eventId?: number;
+  ticketId?: number;
+  orderId?: number;
   dedupeKey?: string;
 };
 
@@ -48,7 +48,7 @@ export async function createUserNotification(input: NotificationInput) {
   }
 }
 
-export async function getUnreadNotificationsCount(userId: string) {
+export async function getUnreadNotificationsCount(userId: number) {
   return prisma.notification.count({
     where: {
       userId,
@@ -57,16 +57,14 @@ export async function getUnreadNotificationsCount(userId: string) {
   });
 }
 
-export async function getUserNotifications(userId: string) {
+export async function getUserNotifications(userId: number) {
   return prisma.notification.findMany({
     where: { userId },
-    orderBy: {
-      createdAt: "desc"
-    }
+    orderBy: { createdAt: "desc" }
   });
 }
 
-export async function markAllNotificationsRead(userId: string) {
+export async function markAllNotificationsRead(userId: number) {
   return prisma.notification.updateMany({
     where: {
       userId,
@@ -79,7 +77,7 @@ export async function markAllNotificationsRead(userId: string) {
   });
 }
 
-export async function ensureReminderNotifications(userId: string) {
+export async function ensureReminderNotifications(userId: number) {
   const now = new Date();
   const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const in30Minutes = new Date(now.getTime() + 30 * 60 * 1000);

@@ -12,7 +12,7 @@ export async function POST(request: Request) {
       include: { organizerProfile: true }
     });
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
     }
 
@@ -23,8 +23,7 @@ export async function POST(request: Request) {
     }
 
     const token = await createSessionForUser(user);
-    const response = NextResponse.json({ ok: true });
-
+    const responseData = NextResponse.json({ ok: true, role: user.role });
     await recordAuditLog({
       actorUserId: user.id,
       action: "LOGIN",
@@ -32,8 +31,7 @@ export async function POST(request: Request) {
       entityId: user.id,
       description: "User signed in"
     });
-
-    return applySessionCookie(response, token);
+    return applySessionCookie(responseData, token);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Unable to sign in." }, { status: 400 });

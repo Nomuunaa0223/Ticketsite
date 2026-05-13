@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-export async function getPublicResaleListings() {
+export async function getPublicResaleListings(take = 12) {
   try {
     return await prisma.resaleListing.findMany({
       where: {
@@ -8,18 +8,30 @@ export async function getPublicResaleListings() {
           in: ["ACTIVE", "SOLD"]
         }
       },
-      include: {
-        seller: true,
+      select: {
+        id: true,
+        status: true,
+        askPrice: true,
+        buyerFee: true,
+        listedAt: true,
+        soldAt: true,
+        sellerId: true,
+        seller: { select: { fullName: true } },
         event: {
-          include: {
-            venue: true,
-            category: true
+          select: {
+            title: true,
+            slug: true,
+            currency: true,
+            imageUrl: true,
+            cardImageUrl: true,
+            venue: { select: { name: true, city: true } },
+            category: { select: { name: true, slug: true } }
           }
         },
-        ticketType: true,
-        ticket: true
+        ticketType: { select: { name: true } }
       },
-      orderBy: [{ status: "asc" }, { listedAt: "desc" }]
+      orderBy: [{ status: "asc" }, { listedAt: "desc" }],
+      take
     });
   } catch {
     return [];

@@ -1,58 +1,82 @@
-import { EventCard } from "@/components/cards/event-card";
-import { getPublicEvents } from "@/lib/events";
+import { getPublicEventsByCategory, getTrendingPublicEvents } from "@/lib/events";
+import { EventsSections } from "@/components/events/events-sections";
+import { TrendingEventsShowcase } from "@/components/events/trending-events-showcase";
+import { CategoryNav } from "@/components/layout/category-nav";
+import { getCurrentUser } from "@/lib/auth";
+import { toNumber } from "@/lib/utils";
 
-const categoryLabels: Record<string, string> = {
-  sports: "Sports",
-  music: "Music",
-  "theater-arts": "Theater & Arts",
-  comedy: "Comedy",
-  festival: "Festival",
-  conference: "Conference"
-};
+const categories = [
+  { label: "Sports", slug: "sports" },
+  { label: "Music", slug: "music" },
+  { label: "Theater & Arts", slug: "theater-arts" },
+  { label: "Comedy", slug: "comedy" },
+  { label: "Festival", slug: "festival" },
+  { label: "Conference", slug: "conference" },
+];
 
-type EventsPageProps = {
-  searchParams?: Promise<{
-    category?: string;
-  }>;
-};
+export default async function EventsPage() {
+  const [categoryEventGroups, trendingEventsRaw, user] = await Promise.all([
+    Promise.all(categories.map((category) => getPublicEventsByCategory(category.slug, 12))),
+    getTrendingPublicEvents(5),
+    getCurrentUser()
+  ]);
+  const showCategoryNav = user?.role === "USER";
+  const trendingEvents = trendingEventsRaw.map((event) => ({
+    id: event.id,
+    title: event.title,
+    slug: event.slug,
+    imageUrl: event.imageUrl,
+    cardImageUrl: event.cardImageUrl,
+    summary: event.summary,
+    currency: event.currency,
+    startsAt: event.startsAt.toISOString(),
+    category: {
+      name: event.category.name,
+      slug: event.category.slug
+    },
+    venue: {
+      name: event.venue.name,
+      city: event.venue.city
+    },
+    ticketTypes: event.ticketTypes.map((ticketType) => ({
+      price: toNumber(ticketType.price)
+    }))
+  }));
 
-export default async function EventsPage({ searchParams }: EventsPageProps) {
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const selectedCategory = resolvedSearchParams?.category;
-  const events = await getPublicEvents(selectedCategory);
-  const categoryLabel = selectedCategory ? categoryLabels[selectedCategory] : null;
-  const isSportsCategory = selectedCategory === "sports";
-  const description = categoryLabel
-    ? `Browse approved ${categoryLabel.toLowerCase()} events. Organizer submissions appear here after admin approval.`
-    : "Browse approved events with visible pricing and verified ticket inventory.";
+  const sections = categories.map((cat, index) => ({
+    ...cat,
+    events: (categoryEventGroups[index] ?? []).map((event) => ({
+      id: event.id,
+      title: event.title,
+      slug: event.slug,
+      imageUrl: event.imageUrl,
+      cardImageUrl: event.cardImageUrl,
+      summary: event.summary,
+      currency: event.currency,
+      startsAt: event.startsAt.toISOString(),
+      category: {
+        name: event.category.name,
+        slug: event.category.slug
+      },
+      venue: {
+        name: event.venue.name,
+        city: event.venue.city
+      },
+      ticketTypes: event.ticketTypes.map((ticketType) => ({
+        price: toNumber(ticketType.price)
+      }))
+    }))
+  }));
 
   return (
-    <section className="min-h-screen bg-[#160905] px-4 py-12 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-      <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#ff7224]">
-          {categoryLabel ? `${categoryLabel} events` : "All events"}
-        </p>
-        <h1 className="mt-3 font-goldman text-4xl font-bold leading-tight text-white sm:text-6xl">
-          <span className={isSportsCategory ? "text-sports-gradient" : ""}>
-            {categoryLabel ? `${categoryLabel} events` : "Live events with visible pricing"}
-          </span>
-        </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-white/62">{description}</p>
-      </div>
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {events.map((event) => (
-          <EventCard key={event.id} event={event} />
-        ))}
-      </div>
-      {events.length === 0 ? (
-        <div className="mt-8 rounded-[1rem] border border-dashed border-white/15 bg-white/5 p-6 text-sm text-white/60">
-          {categoryLabel
-            ? `No ${categoryLabel.toLowerCase()} events are published yet.`
-            : "No events are published yet."}
+    <section className="min-h-screen bg-black px-4 py-12 sm:px-6 lg:px-8">
+      <TrendingEventsShowcase events={trendingEvents} />
+      {showCategoryNav ? (
+        <div className="events-category-nav-wrap">
+          <CategoryNav className="events-category-nav" />
         </div>
       ) : null}
-      </div>
+      <EventsSections sections={sections} />
     </section>
   );
 }
