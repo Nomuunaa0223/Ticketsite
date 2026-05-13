@@ -8,13 +8,15 @@ export type WeekEventCardItem = {
   imageSrc: string;
   imageAlt: string;
   objectPosition?: string;
-  datePrimaryLabel: string;
-  dateSecondaryLabel: string;
+  datePrimaryLabel?: string;
+  dateSecondaryLabel?: string;
+  dateLabel?: string;
+  summary?: string;
   venueLabel: string;
   priceLabel: string;
-  availabilityLabel: string;
-  urgencyBadge: string;
-  countdownLabel: string;
+  availabilityLabel?: string;
+  urgencyBadge?: string;
+  countdownLabel?: string;
 };
 
 type WeekEventCardProps = {
@@ -34,23 +36,23 @@ export function WeekEventCard({ event }: WeekEventCardProps) {
           style={{ objectPosition: event.objectPosition ?? "50% 50%" }}
         />
         <div className="week-event-card__image-overlay" />
-        <span className="week-event-card__urgency">{event.urgencyBadge}</span>
+        <span className="week-event-card__urgency">{event.urgencyBadge ?? "This week"}</span>
       </Link>
 
       <div className="week-event-card__body">
         <div className="week-event-card__date">
-          <span className="week-event-card__date-primary">{event.datePrimaryLabel}</span>
-          <span className="week-event-card__date-secondary">{event.dateSecondaryLabel}</span>
+          <span className="week-event-card__date-primary">{event.datePrimaryLabel ?? event.dateLabel ?? ""}</span>
+          <span className="week-event-card__date-secondary">{event.dateSecondaryLabel ?? ""}</span>
         </div>
 
         <h3 className="week-event-card__title">{event.title}</h3>
         <p className="week-event-card__venue">{event.venueLabel}</p>
-        <p className="week-event-card__countdown">{event.countdownLabel}</p>
+        <p className="week-event-card__countdown">{event.countdownLabel ?? event.summary ?? ""}</p>
 
         <div className="week-event-card__footer">
           <div>
             <p className="week-event-card__price">{event.priceLabel}</p>
-            <p className="week-event-card__availability">{event.availabilityLabel}</p>
+            <p className="week-event-card__availability">{event.availabilityLabel ?? ""}</p>
           </div>
 
           <Link href={event.href} className="week-event-card__cta">

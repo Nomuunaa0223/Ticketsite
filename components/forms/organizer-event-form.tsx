@@ -4,8 +4,8 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type OrganizerEventFormProps = {
-  categories: Array<{ id: string; name: string }>;
-  venues: Array<{ id: string; name: string; city: string }>;
+  categories: Array<{ id: string | number; name: string }>;
+  venues?: Array<{ id: string | number; name: string; city: string }>;
 };
 
 function toIso(value: string) {
@@ -81,7 +81,7 @@ export function OrganizerEventForm({ categories, venues }: OrganizerEventFormPro
         <label className="organizer-field">
           <span>Venue</span>
           <select name="venueId" required>
-            {venues.map((venue) => (
+            {(venues ?? []).map((venue) => (
               <option key={venue.id} value={venue.id}>
                 {venue.name}, {venue.city}
               </option>

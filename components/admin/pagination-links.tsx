@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 export function getPage(value: string | string[] | undefined): number {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -101,7 +102,7 @@ function PaginationItem({
 
   return (
     <Link
-      href={href}
+      href={href as Route}
       aria-label={ariaLabel}
       aria-current={active ? "page" : undefined}
       className={`${base} ${active ? activeClass : normalClass}`}

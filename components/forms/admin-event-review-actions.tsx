@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type AdminEventReviewActionsProps = {
-  eventId: string;
+  eventId: string | number;
 };
 
 export function AdminEventReviewActions({ eventId }: AdminEventReviewActionsProps) {

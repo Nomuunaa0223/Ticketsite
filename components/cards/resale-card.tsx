@@ -3,8 +3,9 @@ import Link from "next/link";
 import { formatCurrency, formatDateTime, toNumber } from "@/lib/utils";
 
 type ResaleCardProps = {
+  labels?: Record<string, string>;
   listing: {
-    id: string;
+    id: string | number;
     status: ResaleStatus;
     askPrice: unknown;
     buyerFee: unknown;
@@ -22,7 +23,7 @@ type ResaleCardProps = {
   };
 };
 
-export function ResaleCard({ listing }: ResaleCardProps) {
+export function ResaleCard({ listing, labels }: ResaleCardProps) {
   const askPrice = toNumber(listing.askPrice);
   const buyerFee = toNumber(listing.buyerFee);
   const total = askPrice + buyerFee;

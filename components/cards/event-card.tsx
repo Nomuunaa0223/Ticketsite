@@ -12,6 +12,7 @@ type EventCardProps = {
     venue: { name: string; city: string };
     ticketTypes: Array<{ price: unknown }>;
   };
+  ctaLabel?: string;
 };
 
 const categoryVisuals: Record<string, string> = {
@@ -29,7 +30,7 @@ const categoryVisuals: Record<string, string> = {
     "from-[#071225] via-[#173869] to-[#030711] before:bg-[radial-gradient(circle_at_50%_35%,rgba(85,171,255,0.52),transparent_24%),linear-gradient(120deg,transparent_24%,rgba(255,255,255,0.18)_25%,transparent_38%)]"
 };
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, ctaLabel = "View Tickets" }: EventCardProps) {
   const prices = event.ticketTypes.map((ticketType) => toNumber(ticketType.price));
   const startingPrice = prices.length ? Math.min(...prices) : 0;
   const visual = categoryVisuals[event.category.slug ?? ""] ?? categoryVisuals.music;
@@ -68,7 +69,7 @@ export function EventCard({ event }: EventCardProps) {
             <p className="mt-1 text-xl font-bold text-white">{formatCurrency(startingPrice, event.currency)}</p>
           </div>
           <span className="rounded-md bg-[#ff7224] px-3 py-2 text-[0.68rem] font-bold text-white transition group-hover:bg-[#ff8846]">
-            View Tickets
+            {ctaLabel}
           </span>
         </div>
       </div>

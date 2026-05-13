@@ -35,7 +35,7 @@ const newsletterPlaceholder =
   "Имэйлээ оруулна уу";
 const newsletterNote = "No spam. Зөвхөн event update.";
 
-export function SiteFooter() {
+export function SiteFooter({ isLoggedIn: _isLoggedIn }: { isLoggedIn?: boolean } = {}) {
   const [glowPosition, setGlowPosition] = useState({ x: 50, y: 50, active: false });
 
   return (
