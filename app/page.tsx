@@ -158,7 +158,7 @@ type TrendingItem = {
 };
 
 const FEATURED_EVENTS_TIMEOUT_MS = 1500;
-const UPCOMING_WINDOW_DAYS = 7;
+const UPCOMING_WINDOW_DAYS = 30;
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -194,34 +194,34 @@ export default async function HomePage() {
 
   const sourceTrending: TrendingItem[] = adminTrendingEvents.length
     ? adminTrendingEvents.map((event) => {
-        const startingPrice = event.ticketTypes.length
-          ? Math.min(...event.ticketTypes.map((item) => toNumber(item.price)))
-          : 0;
-        return {
-          title: event.title,
-          subtitle: `${event.category.name.toUpperCase()} • ${getPromoLabel(event.category.slug)}`,
-          href: `/events/${event.slug}` as Route,
-          venue: event.venue.name,
-          city: event.venue.city,
-          dateLabel: formatMongolianDate(event.startsAt),
-          priceLabel: startingPrice > 0 ? formatTugrik(startingPrice, event.currency) : "Үнэгүй",
-          metaLabel: event.summary ?? "",
-          badge: null,
-          imageSrc: event.cardImageUrl ?? event.imageUrl ?? null,
-        };
-      })
+      const startingPrice = event.ticketTypes.length
+        ? Math.min(...event.ticketTypes.map((item) => toNumber(item.price)))
+        : 0;
+      return {
+        title: event.title,
+        subtitle: `${event.category.name.toUpperCase()} • ${getPromoLabel(event.category.slug)}`,
+        href: `/events/${event.slug}` as Route,
+        venue: event.venue.name,
+        city: event.venue.city,
+        dateLabel: formatMongolianDate(event.startsAt),
+        priceLabel: startingPrice > 0 ? formatTugrik(startingPrice, event.currency) : "Үнэгүй",
+        metaLabel: event.summary ?? "",
+        badge: null,
+        imageSrc: event.cardImageUrl ?? event.imageUrl ?? null,
+      };
+    })
     : placeholderCards.map((p, i) => ({
-        title: p.title,
-        subtitle: p.subtitle,
-        href: "/events" as Route,
-        venue: p.venue,
-        city: p.city,
-        dateLabel: p.dateLabel,
-        priceLabel: p.priceLabel,
-        metaLabel: p.metaLabel,
-        badge: p.badge,
-        imageSrc: null,
-      }));
+      title: p.title,
+      subtitle: p.subtitle,
+      href: "/events" as Route,
+      venue: p.venue,
+      city: p.city,
+      dateLabel: p.dateLabel,
+      priceLabel: p.priceLabel,
+      metaLabel: p.metaLabel,
+      badge: p.badge,
+      imageSrc: null,
+    }));
 
   const trendingGalleryItems = sourceTrending.slice(0, 5).map((event, index) => {
     const visual = cardVisuals[index] ?? cardVisuals[0];
@@ -242,7 +242,7 @@ export default async function HomePage() {
       const startsAt = new Date(event.startsAt);
       return startsAt >= now && startsAt <= nextWeekBoundary;
     })
-    .slice(0, 4)
+    .slice(0, 3)
     .map((event, index) => {
       const visual = cardVisuals[index] ?? cardVisuals[0];
       const startingPrice = event.ticketTypes.length
@@ -272,7 +272,7 @@ export default async function HomePage() {
       };
     });
 
-  const upcomingWeekFallback: WeekEventCardItem[] = placeholderCards.slice(0, 4).map((placeholder, index) => {
+  const upcomingWeekFallback: WeekEventCardItem[] = placeholderCards.slice(0, 3).map((placeholder, index) => {
     const visual = cardVisuals[index] ?? cardVisuals[0];
     const startsAt = new Date(now);
     startsAt.setDate(now.getDate() + index);
@@ -347,7 +347,7 @@ export default async function HomePage() {
             <div>
               <p className="font-goldman text-4xl font-bold text-white">Trending Events</p>
             </div>
-            
+
           </div>
 
           <TrendingParallaxGallery items={trendingGalleryItems} />
@@ -362,9 +362,9 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl">
           <div className="week-events-header">
             <div className="week-events-header__title-wrap">
-              <span className="week-events-header__badge">LIVE SOON</span>
-              <h2 className="week-events-header__title">This Week</h2>
-              <p className="week-events-header__subtitle">Энэ 7 хоногт болох онцлох event-үүд</p>
+              <span className="week-events-header__badge">COMING UP</span>
+              <h2 className="week-events-header__title">This Month</h2>
+              <p className="week-events-header__subtitle">Энэ сард болох онцлох event-үүд</p>
             </div>
 
             <Link href="/events" className="week-events-header__cta">
@@ -486,7 +486,7 @@ async function getFeaturedEvents() {
           }
         }
       },
-      take: 5,
+      take: 20,
       orderBy: {
         startsAt: "asc"
       }
