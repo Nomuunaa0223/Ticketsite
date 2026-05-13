@@ -1223,7 +1223,7 @@
     margin: 0;
     font-family: var(--font-display);
     font-size: clamp(1.15rem, 1rem + 0.6vw, 1.6rem);
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1.12;
     color: #fff9f3;

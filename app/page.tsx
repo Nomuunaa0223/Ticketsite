@@ -362,9 +362,7 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl">
           <div className="week-events-header">
             <div className="week-events-header__title-wrap">
-              <span className="week-events-header__badge">COMING UP</span>
-              <h2 className="week-events-header__title">This Month</h2>
-              <p className="week-events-header__subtitle">Энэ сард болох онцлох event-үүд</p>
+              <h2 className="week-events-header__title font-goldman">This Month</h2>
             </div>
 
             <Link href="/events" className="week-events-header__cta">
