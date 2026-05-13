@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-type HighlightEvent = {
+export type HighlightEvent = {
   title: string;
   slug: string;
   category: string;
