@@ -6,7 +6,9 @@
 
 @layer components {
   .font-goldman {
-    font-family: var(--font-display);
+    font-family: "Goldman", sans-serif;
+    font-weight: 700;
+    font-style: normal;
   }
 
   .header-join-btn {
