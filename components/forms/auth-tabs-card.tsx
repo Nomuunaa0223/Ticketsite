@@ -30,7 +30,7 @@ export function AuthTabsCard() {
       })
     });
 
-    const payload = (await response.json()) as { error?: string };
+    const payload = (await response.json()) as { error?: string; role?: string };
 
     if (!response.ok) {
       setLoginError(payload.error ?? "Unable to sign in.");
@@ -45,8 +45,13 @@ export function AuthTabsCard() {
       return;
     }
 
-    router.push("/dashboard");
-    router.refresh();
+    if (payload.role === "ADMIN") {
+      window.location.assign("/dashboard/admin");
+    } else if (payload.role === "ORGANIZER") {
+      window.location.assign("/organizer/dashboard");
+    } else {
+      window.location.assign("/events");
+    }
   }
 
   async function handleSignupSubmit(formData: FormData) {

@@ -256,7 +256,7 @@ export function TrendingParallaxGallery({
                 fill
                 quality={100}
                 sizes="(max-width: 768px) 320px, (max-width: 1280px) 82vw, 968px"
-                className="absolute inset-0 h-full w-full object-contain origin-center will-change-transform"
+                className="absolute inset-0 h-full w-full object-cover origin-center will-change-transform"
                 style={{ objectPosition: item.objectPosition ?? "center" }}
                 ref={(node) => {
                   imageRefs.current[index] = node;
