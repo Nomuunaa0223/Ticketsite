@@ -35,7 +35,7 @@ export function HighlightsToggle({ events }: { events: HighlightEvent[] }) {
         href={`/events/${featured.slug}`}
         className="group relative flex min-h-[220px] overflow-hidden rounded-2xl bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] transition hover:bg-white/[0.06] sm:min-h-[260px]"
       >
-        <div className="flex flex-1 flex-col justify-center gap-4 p-7 sm:p-10">
+        <div className="flex flex-1 flex-col justify-center gap-4 p-7 text-right sm:p-10">
           <p className="text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#ff7224]">
             {featured.category}
           </p>
@@ -43,7 +43,7 @@ export function HighlightsToggle({ events }: { events: HighlightEvent[] }) {
             {featured.title}
           </h3>
           {featured.summary && (
-            <p className="line-clamp-4 max-w-md text-sm leading-relaxed text-white/50">
+            <p className="line-clamp-4 text-sm leading-relaxed text-white/50">
               {featured.summary}
             </p>
           )}
