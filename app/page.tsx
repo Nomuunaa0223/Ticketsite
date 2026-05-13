@@ -308,7 +308,7 @@ export default async function HomePage() {
 
         <div className="relative px-4 pb-12 pt-10 sm:px-8 lg:px-12 lg:pt-16">
           <div className="mx-auto flex min-h-[calc(100vh-11rem)] max-w-5xl flex-col items-center justify-center text-center">
-            <h1 className="home-enter__item max-w-4xl text-balance font-display text-4xl font-extrabold leading-[1.16] tracking-[-0.04em] text-white sm:text-5xl lg:text-[4rem]">
+            <h1 className="home-enter__item max-w-4xl text-balance font-goldman text-4xl font-extrabold leading-[1.16] tracking-[-0.04em] text-white sm:text-5xl lg:text-[4rem]">
               <span className="block">Амьд мэдрэмжийг мэдэр.</span>
               <span className="mt-6 block text-3xl font-semibold tracking-[-0.02em] text-white/90 sm:text-[2.25rem]">
                 Дараагийн шилдэг үдэш таныг хүлээж байна.
@@ -325,7 +325,7 @@ export default async function HomePage() {
             </div>
 
             <div className="home-enter__item mt-10 flex flex-col gap-3 sm:flex-row [--enter-delay:360ms]">
-              <Link href="/events" className="hero-primary-btn px-8 py-4">
+              <Link href="/events" className="hero-primary-btn font-goldman px-8 py-4">
                 Тасалбар авах
               </Link>
               <Link href="#trending" className="hero-secondary-btn px-8 py-4">
@@ -381,7 +381,7 @@ export default async function HomePage() {
       <section className="relative bg-[linear-gradient(180deg,#090c12_0%,#06080d_100%)] px-4 pb-24 pt-8 sm:px-8 sm:pb-28 sm:pt-12 lg:px-8 lg:pb-32">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
-            <p className="text-sm font-medium uppercase tracking-[0.24em] ">Хэрхэн ашиглах вэ?</p>
+            <p className="font-goldman text-sm font-medium uppercase tracking-[0.24em]">Хэрхэн ашиглах вэ?</p>
           </div>
 
           <div className="how-it-works-shell mt-14">
