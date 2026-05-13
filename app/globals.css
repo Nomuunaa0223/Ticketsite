@@ -1085,10 +1085,11 @@
     margin: 0;
     font-size: 1.25rem;
     font-weight: 700;
+    font-style: normal;
     line-height: 1.15;
     letter-spacing: -0.025em;
     color: #fff9f4;
-    font-family: "BJCree", serif;
+    font-family: "Goldman", sans-serif;
   }
 
   .magic-bento-spotlight {
