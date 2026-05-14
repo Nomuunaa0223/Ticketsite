@@ -12,6 +12,8 @@ export type TrendingParallaxGalleryItem = {
   venue: string;
   city: string;
   dateLabel: string;
+  dateDay: string;
+  dateMonth: string;
   priceLabel: string;
   metaLabel: string;
   imageSrc: string;
@@ -264,16 +266,42 @@ export function TrendingParallaxGallery({
               />
             </div>
 
+            {/* static overlay — always visible */}
+            <div className="pointer-events-none absolute inset-0">
+              {/* bottom gradient for title readability */}
+              <div className="absolute inset-x-0 bottom-0 h-2/5 bg-[linear-gradient(to_top,rgba(4,5,10,0.88)_0%,rgba(4,5,10,0.4)_55%,transparent_100%)]" />
+
+              {/* date chip — top right */}
+              <div className="absolute right-4 top-4 sm:right-6 sm:top-5">
+                <DateChip day={item.dateDay} month={item.dateMonth} />
+              </div>
+
+              {/* event title — bottom left */}
+              <div className="absolute bottom-0 left-0 right-16 px-5 pb-4 sm:px-7 sm:pb-5">
+                <p className="font-goldman truncate text-base font-bold leading-tight text-white drop-shadow sm:text-xl lg:text-2xl">
+                  {item.title}
+                </p>
+              </div>
+            </div>
+
+            {/* captionRef — kept for parallax animation system */}
             <div
-              ref={(node) => {
-                captionRefs.current[index] = node;
-              }}
-              className="pointer-events-none absolute inset-0"
-              style={{ opacity: 0, transform: "translate3d(0, 18px, 0)" }}
+              ref={(node) => { captionRefs.current[index] = node; }}
+              style={{ opacity: 0 }}
             />
           </Link>
         );
       })}
+    </div>
+  );
+}
+
+function DateChip({ day, month }: { day: string; month: string }) {
+  if (!day || !month) return null;
+  return (
+    <div className="flex min-w-[58px] flex-col items-center rounded-2xl px-3.5 py-2.5 text-center shadow-[0_4px_24px_rgba(0,0,0,0.5)]" style={{ background: "#ffffff" }}>
+      <span className="font-goldman text-[1.9rem] font-semibold leading-none tracking-tight text-[#0d0f14] sm:text-[2.1rem]">{day}</span>
+      <span className=" mt-1 text-[0.82rem] font-semibold uppercase tracking-[0.13em] text-black">{month} сар</span>
     </div>
   );
 }

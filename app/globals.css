@@ -6,7 +6,7 @@
 
 @layer components {
   .font-goldman {
-    font-family: "Goldman", sans-serif;
+    font-family: "Goldman", "Manrope", sans-serif;
     font-weight: 700;
     font-style: normal;
   }
@@ -965,13 +965,13 @@
   .magic-bento-card {
     position: relative;
     display: flex;
-    min-height: 126px;
+    min-height: 98px;
     width: 100%;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     overflow: hidden;
-    border-radius: 1.35rem;
+    border-radius: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.08);
     padding: 0rem;
     color: #fff7f0;
@@ -1067,27 +1067,32 @@
 
   .magic-bento-card__icon {
     display: inline-flex;
-    height: 1.4rem;
-    width: 1.4rem;
+    height: 1.1rem;
+    width: 1.1rem;
     align-items: center;
     justify-content: center;
     color: #ff8a34;
   }
 
+  .magic-bento-card__icon svg {
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+
   .magic-bento-card__content {
     flex-direction: column;
-    margin-top: 0.7rem;
+    margin-top: 0.4rem;
     align-items: center;
     text-align: center;
   }
 
   .magic-bento-card__title {
     margin: 0;
-    font-size: 1.25rem;
+    font-size: 0.9rem;
     font-weight: 700;
     font-style: normal;
     line-height: 1.15;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
     color: #fff9f4;
     font-family: "Goldman", sans-serif;
   }
@@ -1194,7 +1199,8 @@
     position: relative;
     z-index: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     gap: 1.1rem;
     justify-content: space-between;
     margin-bottom: 1.35rem;
@@ -1692,7 +1698,7 @@
 
   .how-it-works-title {
     margin-top: 1.15rem;
-    font-family: var(--font-display);
+    font-family: "Goldman", "Manrope", sans-serif;
     font-size: clamp(0.92rem, 0.86rem + 0.3vw, 1.18rem);
     font-weight: 700;
     letter-spacing: -0.02em;
@@ -2432,7 +2438,7 @@
     width: fit-content;
     text-decoration: none;
     font-family: "BJCree", serif;
-    font-size: 1.16rem;
+    font-size: 0.88rem;
     line-height: 1.22;
     color: rgba(255, 255, 255, 0.594);
     transition:
@@ -2579,9 +2585,8 @@
 
   .footer-hero__column-title {
     margin: 0 0 0.8rem;
-    font-size: 0.68rem;
+    font-size: 0.82rem;
     font-weight: 800;
-    letter-spacing: 0.22em;
     text-transform: uppercase;
     color: #ffffffdf;
   }
@@ -3454,8 +3459,8 @@
   }
 
   .magic-bento-card {
-    min-height: 6.15rem;
-    border-radius: 0.95rem;
+    min-height: 4.2rem;
+    border-radius: 0.85rem;
     padding: 0.85rem 0.5rem;
     animation: none;
   }
@@ -3465,22 +3470,22 @@
   }
 
   .magic-bento-card__icon {
-    height: 1.15rem;
-    width: 1.15rem;
+    height: 1rem;
+    width: 1rem;
   }
 
   .magic-bento-card__icon svg {
-    height: 1.4rem;
-    width: 1.4rem;
+    height: 1.1rem;
+    width: 1.1rem;
   }
 
   .magic-bento-card__content {
-    margin-top: 0.58rem;
+    margin-top: 0.35rem;
   }
 
   .magic-bento-card__title {
     max-width: 100%;
-    font-size: 0.94rem;
+    font-size: 0.78rem;
     line-height: 1.15;
     letter-spacing: 0;
     overflow-wrap: anywhere;
@@ -3878,38 +3883,12 @@
   --border-strong: rgba(226, 232, 240, 0.28);
 }
 
-html[lang="mn"] {
-  --font-body: "Noto Sans", "Manrope", "Segoe UI Variable", "Arial", sans-serif;
-  --font-display: "Noto Sans", "Manrope", "Segoe UI Variable", "Arial", sans-serif;
+html[lang="mn"] .font-goldman,
+html[lang="mn"] .magic-bento-card__title,
+html[lang="mn"] .how-it-works-title {
+  font-family: "Unbounded", "Unbounded Fallback", sans-serif;
 }
 
-html[lang="mn"] .font-display,
-html[lang="mn"] .font-serif,
-html[lang="mn"] .font-bjcree,
-html[lang="mn"] .events-trending-showcase__title,
-html[lang="mn"] .events-trending-card__title,
-html[lang="mn"] .events-section__title,
-html[lang="mn"] .highlight-events-heading,
-html[lang="mn"] .how-it-works-heading,
-html[lang="mn"] .landing-faq__title,
-html[lang="mn"] .footer-hero__column-title {
-  font-family: var(--font-display);
-  letter-spacing: 0;
-}
-
-html[lang="mn"] .home-hero-title {
-  font-family: "Unbounded", "Noto Sans", "Manrope", "Segoe UI Variable", sans-serif;
-  font-size: clamp(2.15rem, 4.8vw, 4.15rem);
-  line-height: 1.08;
-  letter-spacing: -0.035em;
-}
-
-html[lang="mn"] .home-hero-subtitle {
-  font-family: "Unbounded", "Noto Sans", "Manrope", "Segoe UI Variable", sans-serif;
-  font-size: clamp(1.25rem, 2.25vw, 2.15rem);
-  line-height: 1.18;
-  letter-spacing: -0.02em;
-}
 
 html[lang="mn"] .hero-eyebrow,
 html[lang="mn"] .events-trending-showcase__eyebrow,

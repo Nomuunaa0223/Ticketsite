@@ -29,6 +29,7 @@ export function LangProvider({
   function setLang(newLang: Lang) {
     setLangState(newLang);
     document.cookie = `lang=${newLang};path=/;max-age=31536000`;
+    document.documentElement.lang = newLang;
   }
 
   function t(key: keyof typeof dict.en): string {

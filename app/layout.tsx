@@ -5,7 +5,6 @@ import { getCurrentUser } from "@/lib/auth";
 import { getCurrentLang } from "@/lib/i18n-server";
 import { AiAgentDemoBanner } from "@/components/layout/ai-agent-demo-banner";
 import { HideOnAuthRoutes } from "@/components/layout/hide-on-auth-routes";
-import { GlobalLangToggle } from "@/components/layout/global-lang-toggle";
 import { LangProvider } from "@/components/layout/lang-context";
 import { ScrollAwareHeader } from "@/components/layout/scroll-aware-header";
 import { SessionInactivityLogout } from "@/components/layout/session-inactivity-logout";
@@ -36,7 +35,6 @@ export default async function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <LangProvider initialLang={lang}>
-        <GlobalLangToggle />
         {user ? <SessionInactivityLogout role={user.role} /> : null}
         <HideOnAuthRoutes>
           <ScrollAwareHeader>

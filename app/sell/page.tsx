@@ -13,61 +13,61 @@ export default async function SellPage() {
   const lang = await getCurrentLang();
   const labels = lang === "mn"
     ? {
-        myResale: "Миний resale",
-        noMyResale: "Одоогоор resale хийсэн ticket байхгүй байна.",
-        listedPrice: "Оруулсан үнэ",
-        fee: "Хураамж",
-        payout: "Танд орох дүн",
-        marketplace: "Marketplace",
-        marketplaceTitle: "Бусад хэрэглэгчийн resale ticket",
-        noMarketplace: "Одоогоор resale ticket байхгүй байна.",
-        onResale: "RESALE ДЭЭР",
-        sold: "ЗАРАГДСАН",
-        viewTickets: "Тасалбар харах",
-        resaleCard: { available: "Боломжтой", sold: "Зарагдсан", price: "Үнэ" }
-      }
+      myResale: "Миний resale",
+      noMyResale: "Одоогоор resale хийсэн ticket байхгүй байна.",
+      listedPrice: "Оруулсан үнэ",
+      fee: "Хураамж",
+      payout: "Танд орох дүн",
+      marketplace: "Marketplace",
+      marketplaceTitle: "Бусад хэрэглэгчийн resale ticket",
+      noMarketplace: "Одоогоор resale ticket байхгүй байна.",
+      onResale: "RESALE ДЭЭР",
+      sold: "ЗАРАГДСАН",
+      viewTickets: "Тасалбар харах",
+      resaleCard: { available: "Боломжтой", sold: "Зарагдсан", price: "Үнэ" }
+    }
     : {
-        myResale: "My Resale",
-        noMyResale: "You have not listed any resale tickets yet.",
-        listedPrice: "Listed price",
-        fee: "Fee",
-        payout: "Payout",
-        marketplace: "Marketplace",
-        marketplaceTitle: "Other users' resale tickets",
-        noMarketplace: "No resale tickets have been listed yet.",
-        onResale: "ON RESALE",
-        sold: "SOLD",
-        viewTickets: "View Tickets",
-        resaleCard: { available: "Available", sold: "Sold", price: "Price" }
-      };
+      myResale: "My Resale",
+      noMyResale: "You have not listed any resale tickets yet.",
+      listedPrice: "Listed price",
+      fee: "Fee",
+      payout: "Payout",
+      marketplace: "Marketplace",
+      marketplaceTitle: "Other users' resale tickets",
+      noMarketplace: "No resale tickets have been listed yet.",
+      onResale: "ON RESALE",
+      sold: "SOLD",
+      viewTickets: "View Tickets",
+      resaleCard: { available: "Available", sold: "Sold", price: "Price" }
+    };
 
   const [listings, myResales] = await Promise.all([
     getPublicResaleListings(12),
     user
       ? prisma.resaleListing.findMany({
-          where: {
-            sellerId: user.id,
-            status: { in: ["ACTIVE", "SOLD"] }
+        where: {
+          sellerId: user.id,
+          status: { in: ["ACTIVE", "SOLD"] }
+        },
+        orderBy: { listedAt: "desc" },
+        take: 12,
+        include: {
+          event: {
+            select: {
+              title: true,
+              slug: true,
+              startsAt: true,
+              currency: true,
+              imageUrl: true,
+              cardImageUrl: true,
+              category: { select: { name: true, slug: true } },
+              venue: { select: { name: true, city: true } }
+            }
           },
-          orderBy: { listedAt: "desc" },
-          take: 12,
-          include: {
-            event: {
-              select: {
-                title: true,
-                slug: true,
-                startsAt: true,
-                currency: true,
-                imageUrl: true,
-                cardImageUrl: true,
-                category: { select: { name: true, slug: true } },
-                venue: { select: { name: true, city: true } }
-              }
-            },
-            ticketType: { select: { name: true, price: true } },
-            ticket: { select: { code: true } }
-          }
-        })
+          ticketType: { select: { name: true, price: true } },
+          ticket: { select: { code: true } }
+        }
+      })
       : []
   ]);
   const marketplaceListings = user ? listings.filter((listing) => listing.sellerId !== user.id) : listings;
@@ -101,9 +101,8 @@ export default async function SellPage() {
                         ctaLabel={labels.viewTickets}
                       />
                       <span
-                        className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.1em] ${
-                          listing.status === "ACTIVE" ? "bg-[#ffb000]/18 text-[#ffe3a3]" : "bg-emerald-400/16 text-emerald-300"
-                        }`}
+                        className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.1em] ${listing.status === "ACTIVE" ? "bg-[#ffb000]/18 text-[#ffe3a3]" : "bg-emerald-400/16 text-emerald-300"
+                          }`}
                       >
                         {listing.status === "ACTIVE" ? labels.onResale : labels.sold}
                       </span>

@@ -60,7 +60,7 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
           <div className="mx-auto flex min-h-[calc(100vh-11rem)] max-w-5xl flex-col items-center justify-center text-center">
             <h1 className="home-enter__item max-w-4xl text-balance font-goldman text-4xl font-bold leading-[1.16] tracking-[-0.04em] text-white sm:text-5xl lg:text-[4rem]">
               <span className="block">{t("heroTitle")}</span>
-              <span className="mt-6 block text-3xl font-semibold tracking-[-0.02em] text-white/90 sm:text-[2.25rem]">
+              <span className="mt-6 block font-goldman text-3xl font-semibold tracking-[-0.02em] text-white/90 sm:text-[2.25rem]">
                 {t("heroSubtitle")}
               </span>
             </h1>
@@ -94,7 +94,7 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
           <CategoryMagicBento items={categoryTiles} />
 
           <div className="mt-14 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between px-20">
-            <p className="font-goldman text-4xl font-bold text-white">{t("trendingEvents")}</p>
+            <p className="font-goldman text-3xl font-bold text-white">{t("trendingEvents")}</p>
           </div>
 
           <TrendingParallaxGallery items={trendingGalleryItems} />
@@ -110,8 +110,8 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
             <div className="week-events-header__title-wrap">
               <h2 className="week-events-header__title font-goldman">{t("thisWeek")}</h2>
             </div>
-            <Link href="/events" className="week-events-header__cta">
-              {t("viewAll")}
+            <Link href="/events" className="week-events-header__cta font-bjcree text-[#ff7224] hover:text-[#ff9050]">
+              {t("viewAll")} →
             </Link>
           </div>
 
@@ -123,10 +123,24 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
         </div>
       </section>
 
+      <section className="relative bg-[linear-gradient(180deg,#06080d_0%,#070a11_100%)] px-4 pb-24 pt-16 sm:px-8 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="week-events-header">
+            <div className="week-events-header__title-wrap">
+              <h2 className="week-events-header__title font-goldman">{t("highlightsTitle")}</h2>
+            </div>
+            <Link href="/events" className="week-events-header__cta font-bjcree text-[#ff7224] hover:text-[#ff9050]">
+              {t("viewAll")} →
+            </Link>
+          </div>
+          <HighlightsToggle events={highlightEvents} />
+        </div>
+      </section>
+
       <section className="relative bg-[linear-gradient(180deg,#090c12_0%,#06080d_100%)] px-4 pb-24 pt-8 sm:px-8 sm:pb-28 sm:pt-12 lg:px-8 lg:pb-32">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
-            <p className="font-goldman text-sm font-medium uppercase tracking-[0.24em]">{t("howTitle")}</p>
+            <h2 className="week-events-header__title font-goldman">{t("howTitle")}</h2>
           </div>
 
           <div className="how-it-works-shell mt-14">
@@ -142,62 +156,28 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
         </div>
       </section>
 
-      <section className="relative bg-[linear-gradient(180deg,#06080d_0%,#070a11_100%)] px-4 pb-24 pt-16 sm:px-8 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 flex items-end justify-between">
-            <h2 className="font-goldman text-base font-bold text-white sm:text-lg">
-              {t("highlightsTitle")}
-            </h2>
-            <Link href="/events" className="text-sm font-semibold text-white/40 transition hover:text-white">
-              {t("viewAll")}
-            </Link>
-          </div>
-          <HighlightsToggle events={highlightEvents} />
-        </div>
-      </section>
-
       <section className="relative bg-[linear-gradient(180deg,#070a11_0%,#060810_100%)] px-4 pb-24 pt-16 sm:px-8 lg:px-8">
-        <div className="mx-auto max-w-3xl">
+        <div className="mx-auto max-w-5xl">
           <div className="mb-10 text-center">
-            <h2 className="font-goldman text-3xl font-bold text-white">{t("faqTitle")}</h2>
+            <h2 className="week-events-header__title font-goldman">{t("faqTitle")}</h2>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {faqItems.map((item) => (
               <details
                 key={item.q}
-                className="group rounded-2xl bg-white/[0.03] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] open:bg-white/[0.05]"
+                className="group rounded-[1.5rem] bg-white/[0.04] shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.08)] transition-all duration-200 open:bg-white/[0.07] open:shadow-[inset_0_0_0_1.5px_rgba(255,114,36,0.18)]"
               >
-                <summary className="flex cursor-pointer items-center justify-between gap-4 px-5 py-4 text-sm font-semibold text-white list-none">
+                <summary className="flex cursor-pointer items-center justify-between gap-4 px-7 py-5 text-base font-semibold text-white list-none sm:text-lg">
                   {item.q}
-                  <span className="shrink-0 text-white/40 transition group-open:rotate-45">＋</span>
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-base text-white/50 transition duration-200 group-open:rotate-45 group-open:bg-[#ff7224]/20 group-open:text-[#ff7224]">＋</span>
                 </summary>
-                <p className="px-5 pb-5 text-sm leading-7 text-white/52">{item.a}</p>
+                <p className="px-7 pb-6 text-sm leading-7 text-white/52 sm:text-base sm:leading-8">{item.a}</p>
               </details>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-[linear-gradient(180deg,#060810_0%,#04050b_100%)] px-4 py-24 sm:px-8 lg:px-8">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(255,114,36,0.12),transparent_55%)]" />
-        <div className="relative mx-auto max-w-2xl text-center">
-          <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#ff7224]">Tixora</p>
-          <h2 className="mt-3 font-goldman text-3xl font-bold leading-tight text-white sm:text-4xl">
-            {t("footerCta")}
-          </h2>
-          <p className="mx-auto mt-5 max-w-md text-sm leading-7 text-white/48">
-            {t("footerCtaDesc")}
-          </p>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/login" className="hero-primary-btn px-8 py-4">
-              {t("signupBtn")}
-            </Link>
-            <Link href="/events" className="hero-secondary-btn px-8 py-4">
-              {t("footerBrowse")}
-            </Link>
-          </div>
-        </div>
-      </section>
     </>
   );
 }

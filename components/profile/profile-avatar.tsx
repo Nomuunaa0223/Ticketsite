@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState, useRef } from "react";
 
 type Props = {
@@ -64,59 +63,45 @@ export function ProfileAvatar({ avatarUrl, initials }: Props) {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="group relative h-20 w-20 overflow-hidden rounded-full border-2 border-white/10 transition hover:border-[#ff7224]/50"
+        className="group relative h-44 w-44 overflow-hidden rounded-2xl border-2 border-white/10 transition hover:border-[#ff7224]/50"
         aria-label="Change profile picture"
       >
         {preview ? (
-          <Image
-            src={preview}
-            alt="Profile avatar"
-            fill
-            sizes="80px"
-            className="object-cover"
-          />
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt="Profile avatar" className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-[#ff7224]/20 text-xl font-bold text-[#ff7224]">
+          <div className="flex h-full w-full items-center justify-center bg-[#ff7224]/20 text-2xl font-bold text-[#ff7224]">
             {initials}
           </div>
         )}
 
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/55 opacity-0 transition-opacity group-hover:opacity-100">
           {uploading ? (
             <svg
-              className="h-5 w-5 animate-spin text-white"
+              className="h-6 w-6 animate-spin text-white"
               viewBox="0 0 24 24"
               fill="none"
               aria-hidden="true"
             >
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-                strokeOpacity="0.3"
-              />
-              <path
-                d="M12 2a10 10 0 0 1 10 10"
-                stroke="currentColor"
-                strokeWidth="4"
-                strokeLinecap="round"
-              />
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.3" />
+              <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
             </svg>
           ) : (
-            <svg
-              viewBox="0 0 24 24"
-              className="h-5 w-5 text-white"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
+            <>
+              <svg
+                viewBox="0 0 24 24"
+                className="h-6 w-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span className="text-[0.6rem] font-semibold text-white">Change photo</span>
+            </>
           )}
         </div>
       </button>
@@ -130,10 +115,8 @@ export function ProfileAvatar({ avatarUrl, initials }: Props) {
       />
 
       {error && (
-        <p className="text-center text-[0.65rem] text-red-400">{error}</p>
+        <p className="max-w-[8rem] text-center text-[0.65rem] text-red-400">{error}</p>
       )}
-
-      <p className="text-[0.65rem] text-white/30">Click to change photo</p>
     </div>
   );
 }

@@ -11,52 +11,52 @@ import { formatCurrency, toNumber } from "@/lib/utils";
 
 const placeholderCards = [
   {
-    title: "Night City 2024",
-    subtitle: "MUSIC • FESTIVAL",
-    venue: "Төв цэнгэлдэх хүрээлэн",
+    title: "Mxrningstar Live'26",
+    subtitle: "MUSIC • LIVE",
+    venue: "SocialPay Park",
     city: "Улаанбаатар",
-    dateLabel: "08 сарын 24, 18:00",
-    priceLabel: "45,000₮",
-    metaLabel: "65,000₮",
+    dateLabel: "05 сарын 22, 19:00",
+    priceLabel: "85,000₮",
+    metaLabel: "Selling fast",
+    badge: "LIVE '26"
+  },
+  {
+    title: "Tatar & Gee Live",
+    subtitle: "MUSIC • CONCERT",
+    venue: "UB Palace",
+    city: "Улаанбаатар",
+    dateLabel: "05 сарын 25, 20:00",
+    priceLabel: "60,000₮",
+    metaLabel: "Only 30 left",
     badge: "Sold Out Soon"
   },
   {
-    title: "The Colors Live Concert",
-    subtitle: "MUSIC • LIVE",
-    venue: "UG Arena",
+    title: "Lumino Summer Fest",
+    subtitle: "FESTIVAL • OUTDOOR",
+    venue: "Худалдааны төв тайз",
     city: "Улаанбаатар",
-    dateLabel: "09 сарын 12, 19:00",
-    priceLabel: "80,000₮",
-    metaLabel: "Standard",
+    dateLabel: "05 сарын 31, 16:00",
+    priceLabel: "45,000₮",
+    metaLabel: "Multi-artist lineup",
     badge: null
   },
   {
-    title: "UB Comedy Night",
+    title: "Stand Up UB · Vol.12",
     subtitle: "COMEDY • SPECIAL",
-    venue: "UB Comedy Club",
+    venue: "Grand Tenger Hotel",
     city: "Улаанбаатар",
-    dateLabel: "Өнөөдөр, 20:00",
+    dateLabel: "06 сарын 06, 20:00",
     priceLabel: "35,000₮",
-    metaLabel: "Only 10 left",
+    metaLabel: "Limited seats",
     badge: null
   },
   {
-    title: "ICT Expo 2024",
-    subtitle: "CONFERENCE • TECH",
-    venue: "Misheel Expo",
-    city: "Улаанбаатар",
-    dateLabel: "10 сарын 05, 10:00",
-    priceLabel: "Үнэгүй",
-    metaLabel: "Registration required",
-    badge: null
-  },
-  {
-    title: "Steppe Arena Finals",
-    subtitle: "SPORTS • ARENA",
+    title: "Eejii & The Band",
+    subtitle: "MUSIC • ACOUSTIC",
     venue: "Steppe Arena",
-    city: "Ulaanbaatar",
-    dateLabel: "10 сарын 18, 18:30",
-    priceLabel: "60,000₮",
+    city: "Улаанбаатар",
+    dateLabel: "06 сарын 14, 19:30",
+    priceLabel: "70,000₮",
     metaLabel: "Premium seats moving fast",
     badge: "Hot Right Now"
   }
@@ -106,6 +106,8 @@ type TrendingItem = {
   venue: string;
   city: string;
   dateLabel: string;
+  dateDay: string;
+  dateMonth: string;
   priceLabel: string;
   metaLabel: string;
   badge: string | null;
@@ -152,6 +154,7 @@ export default async function HomePage() {
       const startingPrice = event.ticketTypes.length
         ? Math.min(...event.ticketTypes.map((item) => toNumber(item.price)))
         : 0;
+      const d = new Date(event.startsAt);
       return {
         title: event.title,
         subtitle: `${event.category.name.toUpperCase()} • ${getPromoLabel(event.category.slug)}`,
@@ -159,24 +162,31 @@ export default async function HomePage() {
         venue: event.venue.name,
         city: event.venue.city,
         dateLabel: formatMongolianDate(event.startsAt),
+        dateDay: String(d.getDate()).padStart(2, "0"),
+        dateMonth: String(d.getMonth() + 1).padStart(2, "0"),
         priceLabel: startingPrice > 0 ? formatTugrik(startingPrice, event.currency) : "Үнэгүй",
         metaLabel: event.summary ?? "",
         badge: null,
         imageSrc: event.cardImageUrl ?? event.imageUrl ?? null,
       };
     })
-    : placeholderCards.map((p) => ({
-      title: p.title,
-      subtitle: p.subtitle,
-      href: "/events" as Route,
-      venue: p.venue,
-      city: p.city,
-      dateLabel: p.dateLabel,
-      priceLabel: p.priceLabel,
-      metaLabel: p.metaLabel,
-      badge: p.badge,
-      imageSrc: null,
-    }));
+    : placeholderCards.map((p) => {
+      const m = p.dateLabel.match(/(\d{1,2})\s*сарын\s*(\d{1,2})/);
+      return {
+        title: p.title,
+        subtitle: p.subtitle,
+        href: "/events" as Route,
+        venue: p.venue,
+        city: p.city,
+        dateLabel: p.dateLabel,
+        dateDay: m ? m[2].padStart(2, "0") : "",
+        dateMonth: m ? m[1].padStart(2, "0") : "",
+        priceLabel: p.priceLabel,
+        metaLabel: p.metaLabel,
+        badge: p.badge,
+        imageSrc: null,
+      };
+    });
 
   const trendingGalleryItems = sourceTrending.slice(0, 5).map((event, index) => {
     const visual = cardVisuals[index] ?? cardVisuals[0];

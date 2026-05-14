@@ -1,6 +1,6 @@
 import { getPublicEventsByCategory, getTrendingPublicEvents } from "@/lib/events";
 import { EventsSections } from "@/components/events/events-sections";
-import { TrendingEventsShowcase } from "@/components/events/trending-events-showcase";
+import { TrendingEventsMarquee } from "@/components/events/trending-events-showcase";
 import { CategoryNav } from "@/components/layout/category-nav";
 import { getCurrentUser } from "@/lib/auth";
 import { toNumber } from "@/lib/utils";
@@ -20,27 +20,18 @@ export default async function EventsPage() {
     getTrendingPublicEvents(5),
     getCurrentUser()
   ]);
+
   const showCategoryNav = user?.role === "USER";
+
   const trendingEvents = trendingEventsRaw.map((event) => ({
     id: event.id,
     title: event.title,
     slug: event.slug,
     imageUrl: event.imageUrl,
     cardImageUrl: event.cardImageUrl,
-    summary: event.summary,
-    currency: event.currency,
     startsAt: event.startsAt.toISOString(),
-    category: {
-      name: event.category.name,
-      slug: event.category.slug
-    },
-    venue: {
-      name: event.venue.name,
-      city: event.venue.city
-    },
-    ticketTypes: event.ticketTypes.map((ticketType) => ({
-      price: toNumber(ticketType.price)
-    }))
+    category: { name: event.category.name, slug: event.category.slug },
+    venue: { name: event.venue.name, city: event.venue.city },
   }));
 
   const sections = categories.map((cat, index) => ({
@@ -54,29 +45,23 @@ export default async function EventsPage() {
       summary: event.summary,
       currency: event.currency,
       startsAt: event.startsAt.toISOString(),
-      category: {
-        name: event.category.name,
-        slug: event.category.slug
-      },
-      venue: {
-        name: event.venue.name,
-        city: event.venue.city
-      },
-      ticketTypes: event.ticketTypes.map((ticketType) => ({
-        price: toNumber(ticketType.price)
-      }))
+      category: { name: event.category.name, slug: event.category.slug },
+      venue: { name: event.venue.name, city: event.venue.city },
+      ticketTypes: event.ticketTypes.map((t) => ({ price: toNumber(t.price) }))
     }))
   }));
 
   return (
-    <section className="min-h-screen bg-black px-4 py-12 sm:px-6 lg:px-8">
-      <TrendingEventsShowcase events={trendingEvents} />
-      {showCategoryNav ? (
-        <div className="events-category-nav-wrap">
-          <CategoryNav className="events-category-nav" />
-        </div>
-      ) : null}
-      <EventsSections sections={sections} />
+    <section className="min-h-screen bg-black">
+      <TrendingEventsMarquee events={trendingEvents} />
+      <div className="px-5 py-8 sm:px-8 lg:px-12">
+        {showCategoryNav ? (
+          <div className="events-category-nav-wrap">
+            <CategoryNav className="events-category-nav" />
+          </div>
+        ) : null}
+        <EventsSections sections={sections} />
+      </div>
     </section>
   );
 }

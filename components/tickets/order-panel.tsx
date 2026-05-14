@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type TicketType = {
   id: number;
@@ -22,60 +23,58 @@ type Props = {
 
 function formatPrice(amount: number, currency: string): string {
   if (currency === "MNT") {
-    return `${new Intl.NumberFormat("mn-MN", {
-      maximumFractionDigits: 0,
-    }).format(amount)}₮`;
+    return `${new Intl.NumberFormat("mn-MN", { maximumFractionDigits: 0 }).format(amount)}₮`;
   }
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
 }
 
-export function OrderPanel({
-  currency,
-  salesEndsAt,
-  ticketTypes,
-  className,
-}: Props) {
+function useCountdown(target: Date) {
+  const targetTime = target.getTime();
+  const [diff, setDiff] = useState<number | null>(null);
+
+  useEffect(() => {
+    setDiff(Math.max(0, targetTime - Date.now()));
+    const id = setInterval(() => {
+      setDiff(Math.max(0, targetTime - Date.now()));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [targetTime]);
+
+  if (diff === null) return { days: 0, hours: 0, minutes: 0, seconds: 0, ended: false, ready: false };
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+  return { days, hours, minutes, seconds, ended: diff === 0, ready: true };
+}
+
+export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [quantities, setQuantities] = useState<Record<number, number>>({});
-  const [feedback, setFeedback] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
+  const [feedback, setFeedback] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const saleEnd = new Date(salesEndsAt);
-  const isSaleEnded = saleEnd < new Date();
+  const { days, hours, minutes, seconds, ended: isSaleEnded, ready } = useCountdown(saleEnd);
   const hasTickets = ticketTypes.length > 0;
 
-  function setQty(ticketTypeId: number, value: number) {
-    setQuantities((prev) => ({ ...prev, [ticketTypeId]: value }));
+  function setQty(id: number, value: number) {
+    setQuantities((prev) => ({ ...prev, [id]: value }));
   }
 
   const orderItems = ticketTypes
-    .map((tt) => ({
-      ticketTypeId: tt.id,
-      quantity: quantities[tt.id] ?? 0,
-    }))
+    .map((tt) => ({ ticketTypeId: tt.id, quantity: quantities[tt.id] ?? 0 }))
     .filter((item) => item.quantity > 0);
-
-  const total = orderItems.reduce((sum, item) => {
-    const tt = ticketTypes.find((t) => t.id === item.ticketTypeId);
-    return sum + (tt?.price ?? 0) * item.quantity;
-  }, 0);
 
   function handleOrder(e: React.FormEvent) {
     e.preventDefault();
     setFeedback(null);
-
     if (orderItems.length === 0) {
-      setFeedback({ message: "Select at least one ticket.", type: "error" });
+      setFeedback({ message: "Тасалбар сонгоно уу.", type: "error" });
       return;
     }
-
     startTransition(async () => {
       try {
         const res = await fetch("/api/orders", {
@@ -83,54 +82,50 @@ export function OrderPanel({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ items: orderItems }),
         });
-
         const data = await res.json().catch(() => ({}));
-
         if (!res.ok) {
-          setFeedback({
-            message: data.error ?? "Order failed. Please try again.",
-            type: "error",
-          });
+          setFeedback({ message: data.error ?? "Алдаа гарлаа. Дахин оролдоно уу.", type: "error" });
         } else {
-          setFeedback({
-            message: "Order placed successfully! Check your profile for tickets.",
-            type: "success",
-          });
+          setFeedback({ message: "Амжилттай төлөгдлөө", type: "success" });
           setQuantities({});
           router.refresh();
+          setTimeout(() => setFeedback(null), 3000);
         }
       } catch {
-        setFeedback({
-          message: "Network error. Please try again.",
-          type: "error",
-        });
+        setFeedback({ message: "Сүлжээний алдаа. Дахин оролдоно уу.", type: "error" });
       }
     });
   }
 
   return (
-    <div
-      className={`rounded-2xl border border-white/[0.07] bg-[#0d1017] p-5 shadow-[0_24px_60px_rgba(0,0,0,0.4)] ${className ?? ""}`}
-    >
-      <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#ff7224]">
-        Tickets
-      </p>
+    <div className={`rounded-2xl bg-[#0d1017] p-7 shadow-[0_24px_60px_rgba(0,0,0,0.4)] ${className ?? ""}`}>
 
-      {isSaleEnded ? (
-        <div className="mt-4 rounded-xl bg-white/[0.04] px-4 py-5 text-center">
-          <p className="text-sm font-semibold text-white/60">Sale has ended</p>
-          <p className="mt-1 text-xs text-white/30">
-            {saleEnd.toLocaleDateString(undefined, {
-              dateStyle: "long",
-            })}
+      {/* Countdown */}
+      {!isSaleEnded && (
+        <div className="mb-6 rounded-xl bg-white/[0.04] px-5 py-4">
+          <p className="text-sm text-white/40">Тасалбар зарагдаж дуусахад:</p>
+          <p className="mt-1.5 text-lg font-bold text-white" suppressHydrationWarning>
+            {ready ? (
+              <>
+                {days > 0 && <span>{days} өдөр </span>}
+                {hours > 0 && <span>{hours} цаг </span>}
+                <span>{String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}</span>
+              </>
+            ) : null}
           </p>
         </div>
+      )}
+
+      {isSaleEnded ? (
+        <div className="rounded-xl bg-white/[0.04] px-4 py-5 text-center">
+          <p className="text-sm font-semibold text-white/60">Тасалбар зарагдаж дууслаа</p>
+        </div>
       ) : !hasTickets ? (
-        <div className="mt-4 rounded-xl bg-white/[0.04] px-4 py-5 text-center">
-          <p className="text-sm text-white/40">No tickets available</p>
+        <div className="rounded-xl bg-white/[0.04] px-4 py-5 text-center">
+          <p className="text-sm text-white/40">Тасалбар байхгүй байна</p>
         </div>
       ) : (
-        <form onSubmit={handleOrder} className="mt-4 space-y-4">
+        <form onSubmit={handleOrder} className="space-y-4">
           {ticketTypes.map((tt) => {
             const remaining = tt.quantityTotal - tt.quantitySold;
             const isSoldOut = remaining <= 0;
@@ -138,107 +133,48 @@ export function OrderPanel({
             const maxQty = Math.min(tt.maxPerOrder, remaining);
 
             return (
-              <div
-                key={tt.id}
-                className={`rounded-xl border p-4 transition-colors ${
-                  isSoldOut
-                    ? "border-white/[0.04] opacity-50"
-                    : qty > 0
-                      ? "border-[#ff7224]/30 bg-[#ff7224]/[0.04]"
-                      : "border-white/[0.06] hover:border-white/[0.12]"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-white">{tt.name}</p>
-                    {tt.description && (
-                      <p className="mt-0.5 text-xs text-white/40">
-                        {tt.description}
-                      </p>
-                    )}
-                    <p className="mt-1 text-xs text-white/30">
-                      {isSoldOut
-                        ? "Sold out"
-                        : `${remaining} remaining`}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-[#ff7224]">
-                      {formatPrice(tt.price, currency)}
-                    </p>
-                  </div>
-                </div>
+              <div key={tt.id} className={`rounded-xl p-5 transition-colors ${isSoldOut ? "opacity-40" : "bg-white/[0.03]"}`}>
+                <p className="text-base font-semibold text-white">{tt.name}</p>
+                {tt.description && <p className="mt-1 text-xs text-white/40">{tt.description}</p>}
 
-                {!isSoldOut && (
-                  <div className="mt-3 flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setQty(tt.id, Math.max(0, qty - 1))}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-white transition hover:bg-white/[0.12]"
-                      aria-label="Decrease quantity"
-                    >
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                        <path d="M5 12h14" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                    <span className="w-8 text-center text-sm font-bold text-white">
-                      {qty}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setQty(tt.id, Math.min(maxQty, qty + 1))}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/[0.06] text-white transition hover:bg-white/[0.12]"
-                      aria-label="Increase quantity"
-                    >
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                        <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                  </div>
-                )}
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <p className="text-lg font-bold text-white">{formatPrice(tt.price, currency)}</p>
+
+                  {isSoldOut ? (
+                    <p className="text-sm text-white/30">Дууссан</p>
+                  ) : (
+                    <div className="flex items-center gap-4">
+                      <button type="button" onClick={() => setQty(tt.id, Math.max(0, qty - 1))}
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.08] text-white transition hover:bg-white/[0.14]">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14" strokeLinecap="round" /></svg>
+                      </button>
+                      <span className="w-6 text-center text-base font-bold text-white">{qty}</span>
+                      <button type="button" onClick={() => setQty(tt.id, Math.min(maxQty, qty + 1))}
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.08] text-white transition hover:bg-white/[0.14]">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
 
-          {/* Total */}
-          {total > 0 && (
-            <div className="flex items-center justify-between border-t border-white/[0.06] pt-4">
-              <p className="text-sm text-white/50">Total</p>
-              <p className="text-lg font-bold text-white">
-                {formatPrice(total, currency)}
-              </p>
-            </div>
-          )}
-
-          {/* Sale deadline */}
-          <p className="text-[0.65rem] text-white/25">
-            Sale ends{" "}
-            {saleEnd.toLocaleDateString(undefined, { dateStyle: "medium" })}
-          </p>
+          <button type="submit" disabled={isPending || orderItems.length === 0}
+            className="mt-2 w-full rounded-full bg-[#ff7224] py-4 text-base font-bold text-white transition hover:bg-[#e5641a] disabled:opacity-50">
+            {isPending ? "Боловсруулж байна..." : "Худалдан авах"}
+          </button>
 
           {feedback && (
-            <div
-              className={`rounded-xl px-4 py-3 text-sm ${
-                feedback.type === "success"
-                  ? "bg-emerald-400/10 text-emerald-300"
-                  : "bg-red-400/10 text-red-300"
-              }`}
-            >
+            <div className={`text-sm text-right ${feedback.type === "error" ? "text-red-400" : "text-white"}`}>
               {feedback.message}
+              {feedback.type === "success" && (
+                <Link href="/profile" className="mt-1 block text-xs font-semibold text-white/60 hover:text-white">
+                  Profile →
+                </Link>
+              )}
             </div>
           )}
-
-          <button
-            type="submit"
-            disabled={isPending || orderItems.length === 0}
-            className="w-full rounded-xl bg-[#ff7224] py-3.5 text-sm font-bold text-white shadow-[0_0_24px_rgba(255,114,36,0.3)] transition hover:bg-[#ff8442] hover:shadow-[0_0_32px_rgba(255,114,36,0.45)] disabled:opacity-50"
-          >
-            {isPending
-              ? "Processing..."
-              : orderItems.length === 0
-                ? "Select tickets"
-                : `Buy ${orderItems.reduce((s, i) => s + i.quantity, 0)} ticket${orderItems.reduce((s, i) => s + i.quantity, 0) > 1 ? "s" : ""}`}
-          </button>
         </form>
       )}
     </div>

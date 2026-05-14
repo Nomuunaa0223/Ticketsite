@@ -36,22 +36,21 @@ export default async function AdminRequestsPage({ searchParams }: Props) {
       </div>
 
       <div className="mt-6 overflow-hidden rounded-[1rem] bg-[#121a30] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04),0_16px_32px_rgba(0,0,0,0.18)]">
-        <div className="grid grid-cols-[1fr_0.65fr_1.15fr_0.75fr_1fr] gap-4 px-5 py-3 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-white/30">
+        <div className="grid grid-cols-[1fr_0.65fr_1.4fr_0.85fr] gap-4 px-5 py-3 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-white/30">
           <span>Contact</span>
           <span>Type</span>
-          <span>Intro</span>
+          <span>Message</span>
           <span>Date</span>
-          <span>Action</span>
         </div>
         <div className="space-y-px bg-white/[0.03]">
           {requests.map((request) => (
             <article
               key={request.id}
-              className="grid grid-cols-[1fr_0.65fr_1.15fr_0.75fr_1fr] gap-4 bg-[#121a30] px-5 py-4 text-sm text-white/72"
+              className="grid grid-cols-[1fr_0.65fr_1.4fr_0.85fr] gap-4 bg-[#121a30] px-5 py-4 text-sm text-white/72"
             >
               <div className="min-w-0">
                 <p className="truncate font-semibold text-white">{request.email}</p>
-                <p className="mt-1 truncate text-xs text-white/42">{request.phone || "-"}</p>
+                <p className="mt-1 truncate text-xs text-white/42">{request.phone || "—"}</p>
               </div>
               <span className="h-fit w-fit rounded-full bg-[#ff8b3d]/14 px-2.5 py-1 text-[0.64rem] font-bold text-[#ffb47d]">
                 {request.ticketType}
@@ -60,9 +59,6 @@ export default async function AdminRequestsPage({ searchParams }: Props) {
               <time className="text-xs font-semibold text-white/40" dateTime={request.createdAt.toISOString()}>
                 {formatDate(request.createdAt)}
               </time>
-              <Link href="/admin/organizer-applications" className="text-sm font-semibold text-[#ff8b3d] transition hover:text-[#ffb47d]">
-                Applications
-              </Link>
             </article>
           ))}
           {requests.length === 0 ? (

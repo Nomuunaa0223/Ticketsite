@@ -8,6 +8,8 @@ type EventCardProps = {
     summary: string;
     currency: string;
     startsAt: Date | string;
+    imageUrl?: string | null;
+    cardImageUrl?: string | null;
     category: { name: string; slug?: string };
     venue: { name: string; city: string };
     ticketTypes: Array<{ price: unknown }>;
@@ -34,13 +36,18 @@ export function EventCard({ event, ctaLabel = "View Tickets" }: EventCardProps) 
   const prices = event.ticketTypes.map((ticketType) => toNumber(ticketType.price));
   const startingPrice = prices.length ? Math.min(...prices) : 0;
   const visual = categoryVisuals[event.category.slug ?? ""] ?? categoryVisuals.music;
+  const coverImage = event.cardImageUrl ?? event.imageUrl ?? null;
 
   return (
     <Link
       href={`/events/${event.slug}`}
       className="event-market-card group"
     >
-      <div className={`event-market-card__visual bg-gradient-to-br ${visual}`}>
+      <div className={`event-market-card__visual ${coverImage ? "" : `bg-gradient-to-br ${visual}`}`}>
+        {coverImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={coverImage} alt={event.title} className="absolute inset-0 h-full w-full object-cover" />
+        ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.12)_42%,rgba(0,0,0,0.82)_100%)]" />
         <div className="absolute left-3 top-3 flex gap-2">
           <span className="rounded-full bg-black/70 px-2 py-1 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-white">

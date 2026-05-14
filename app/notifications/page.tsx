@@ -10,35 +10,6 @@ import { NotificationsAutoRead } from "@/components/notifications/notifications-
 const PAGE_SIZE = 9;
 const MAX_PAGE_LINKS = 5;
 
-const slugImages: Record<string, string> = {
-  "summit-finals-2026": "/uploads/1.jpg",
-  "basketball-league-night": "/uploads/2.jpg",
-  "football-cup-2026": "/uploads/3.jpg",
-  "neon-nights-concert": "/uploads/4.jpg",
-  "acoustic-sessions-live": "/uploads/5.jpg",
-  "rock-the-arena": "/uploads/1.jpg",
-  "hamlet-reimagined": "/uploads/2.jpg",
-  "contemporary-dance-gala": "/uploads/3.jpg",
-  "art-exhibition-opening": "/uploads/4.jpg",
-  "laugh-factory-live": "/uploads/5.jpg",
-  "stand-up-showcase": "/uploads/1.jpg",
-  "comedy-gala-2026": "/uploads/2.jpg",
-  "summer-vibes-festival": "/uploads/3.jpg",
-  "urban-street-fest": "/uploads/4.jpg",
-  "horizon-music-festival": "/uploads/5.jpg",
-  "techforward-summit": "/uploads/1.jpg",
-  "startup-founders-day": "/uploads/2.jpg",
-  "design-ux-conference": "/uploads/3.jpg",
-};
-
-const categoryImages: Record<string, string> = {
-  sports: "/uploads/1.jpg",
-  music: "/uploads/2.jpg",
-  "theater-arts": "/uploads/3.jpg",
-  comedy: "/uploads/4.jpg",
-  festival: "/uploads/5.jpg",
-  conference: "/uploads/1.jpg",
-};
 
 type NotificationsPageProps = {
   searchParams: Promise<{ page?: string | string[] }>;
@@ -113,15 +84,20 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
         ) : (
           <>
             <div className="grid gap-5 md:grid-cols-3">
-              {notifications.map((notification, index) => (
-                <NotificationCard
-                  key={notification.id}
-                  index={totalNotifications - (currentPage - 1) * PAGE_SIZE - index}
-                  notification={withTranslatedCopy(notification, notificationContext, lang)}
-                  viewLabel={labels.view}
-                  unreadLabel={labels.unread}
-                />
-              ))}
+              {notifications.map((notification, index) => {
+                const eventData = notification.eventId ? notificationContext.events.get(notification.eventId) : null;
+                const eventImage = eventData?.cardImageUrl ?? eventData?.imageUrl ?? null;
+                return (
+                  <NotificationCard
+                    key={notification.id}
+                    index={totalNotifications - (currentPage - 1) * PAGE_SIZE - index}
+                    notification={withTranslatedCopy(notification, notificationContext, lang)}
+                    viewLabel={labels.view}
+                    unreadLabel={labels.unread}
+                    eventImage={eventImage}
+                  />
+                );
+              })}
             </div>
             <NotificationPagination currentPage={currentPage} totalPages={totalPages} />
           </>
@@ -146,6 +122,7 @@ type NotificationCardProps = {
   index: number;
   viewLabel: string;
   unreadLabel: string;
+  eventImage?: string | null;
   notification: {
     id: number;
     type: string;
@@ -158,7 +135,7 @@ type NotificationCardProps = {
   };
 };
 
-function NotificationCard({ index, notification, viewLabel, unreadLabel }: NotificationCardProps) {
+function NotificationCard({ index, notification, viewLabel, unreadLabel, eventImage }: NotificationCardProps) {
   const cardClassName = `group relative flex min-h-72 flex-col overflow-hidden rounded-2xl border border-transparent transition-all duration-200 ${
     notification.isRead
       ? "bg-[#0d1017] hover:scale-[1.025] hover:border-transparent"
@@ -167,9 +144,9 @@ function NotificationCard({ index, notification, viewLabel, unreadLabel }: Notif
   const cardContent = (
     <>
       <div className="relative -mb-px h-32 overflow-hidden bg-[#0d1017]">
-        {notification.eventId ? (
+        {eventImage ? (
           <img
-            src={getEventImage(null, null)}
+            src={eventImage}
             alt="event"
             className="h-full w-full object-cover"
           />
@@ -262,7 +239,7 @@ async function getNotificationContext(notifications: Notification[]) {
     eventIds.length
       ? prisma.event.findMany({
           where: { id: { in: eventIds } },
-          select: { id: true, title: true, slug: true, startsAt: true, endsAt: true }
+          select: { id: true, title: true, slug: true, startsAt: true, endsAt: true, cardImageUrl: true, imageUrl: true }
         })
       : [],
     ticketIds.length
@@ -394,11 +371,6 @@ function getPage(value: string | string[] | undefined) {
   return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
 }
 
-function getEventImage(slug?: string | null, categorySlug?: string | null) {
-  if (slug && slugImages[slug]) return slugImages[slug];
-  if (categorySlug && categoryImages[categorySlug]) return categoryImages[categorySlug];
-  return "/uploads/1.jpg";
-}
 
 function getIconStyle(type: string) {
   if (type === "ORDER_CREATED") return "bg-emerald-500/10 text-emerald-400";
