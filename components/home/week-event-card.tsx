@@ -47,12 +47,10 @@ export function WeekEventCard({ event }: WeekEventCardProps) {
 
         <h3 className="week-event-card__title">{event.title}</h3>
         <p className="week-event-card__venue">{event.venueLabel}</p>
-        <p className="week-event-card__countdown">{event.countdownLabel ?? event.summary ?? ""}</p>
 
         <div className="week-event-card__footer">
           <div>
             <p className="week-event-card__price">{event.priceLabel}</p>
-            <p className="week-event-card__availability">{event.availabilityLabel ?? ""}</p>
           </div>
 
           <Link href={event.href} className="week-event-card__cta">

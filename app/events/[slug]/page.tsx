@@ -61,6 +61,11 @@ export default async function EventDetailPage({ params }: Props) {
   const categorySlug = event.category.slug ?? "";
   const heroImage = event.imageUrl ?? slugImages[event.slug] ?? categoryImages[categorySlug] ?? "/uploads/1.jpg";
   const venueLine = `${event.venue.name}, ${event.venue.city}`;
+
+  type RelatedImage = { type: string; title: string; url: string };
+  const galleryImages = Array.isArray(event.relatedImages)
+    ? (event.relatedImages as RelatedImage[]).filter((img) => img?.url)
+    : [];
   return (
     <section className="min-h-screen bg-[linear-gradient(180deg,#05070c_0%,#0a0f18_55%,#06080d_100%)] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -110,6 +115,30 @@ export default async function EventDetailPage({ params }: Props) {
                   {event.description}
                 </p>
               </div>
+
+              {galleryImages.length > 0 && (
+                <div className="rounded-[1rem] bg-white/[0.03] p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]">
+                  <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#ff8b46]">
+                    Photos
+                  </p>
+                  <div className={`grid gap-3 ${galleryImages.length === 1 ? "" : "grid-cols-2"}`}>
+                    {galleryImages.map((img, i) => (
+                      <div
+                        key={i}
+                        className="relative h-36 overflow-hidden rounded-xl sm:h-44"
+                      >
+                        <Image
+                          src={img.url}
+                          alt={img.title ?? `Photo ${i + 1}`}
+                          fill
+                          className="object-cover transition duration-500 hover:scale-105"
+                          sizes="(max-width: 640px) 100vw, 50vw"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="event-detail-shell rounded-[1rem] p-5">
                 <p className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#ff8b46]">

@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-const AUTH_ROUTES = ["/login", "/register", "/setup-password"];
+const AUTH_ROUTES = ["/login", "/register", "/setup-password", "/dashboard", "/organizer"];
 
 export function HideOnAuthRoutes({ children }: { children: ReactNode }) {
   const pathname = usePathname();

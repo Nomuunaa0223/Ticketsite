@@ -49,7 +49,7 @@ export default async function TicketPage({ params }: Props) {
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-black/45">Ownership-based ticket</p>
-            <h1 className="mt-2 font-serif text-5xl text-accent">{ticket.event.title}</h1>
+            <h1 className="mt-2 font-serif text-3xl text-accent sm:text-5xl">{ticket.event.title}</h1>
             <p className="mt-3 text-lg text-black/65">{ticket.ticketType.name}</p>
           </div>
           <div className="rounded-[2rem] bg-ink px-6 py-5 text-white">

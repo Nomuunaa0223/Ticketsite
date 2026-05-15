@@ -62,7 +62,7 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
       <NotificationsAutoRead unreadCount={unreadCount} />
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between gap-4">
-          <h1 className="ml-16 mt-1 font-goldman text-3xl font-bold text-white">{labels.title}</h1>
+          <h1 className="mt-1 font-goldman text-2xl font-bold text-white sm:ml-16 sm:text-3xl">{labels.title}</h1>
           <div className="flex items-center gap-3">
             {unreadCount > 0 ? (
               <span className="rounded-full bg-[#ff7224]/15 px-3 py-1 text-xs font-bold text-[#ff7224]">
@@ -83,7 +83,7 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
           <EmptyState label={labels.empty} />
         ) : (
           <>
-            <div className="grid gap-5 md:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
               {notifications.map((notification, index) => {
                 const eventData = notification.eventId ? notificationContext.events.get(notification.eventId) : null;
                 const eventImage = eventData?.cardImageUrl ?? eventData?.imageUrl ?? null;

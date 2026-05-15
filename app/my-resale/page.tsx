@@ -59,7 +59,7 @@ export default async function MyResalePage() {
     <section className="min-h-screen bg-[#07080d] px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-10">
-          <h1 className="ml-16 mt-2 font-goldman text-3xl font-bold text-white">{labels.title}</h1>
+          <h1 className="mt-2 font-goldman text-2xl font-bold text-white sm:ml-16 sm:text-3xl">{labels.title}</h1>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

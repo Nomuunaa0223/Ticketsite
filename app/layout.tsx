@@ -6,6 +6,8 @@ import { getCurrentLang } from "@/lib/i18n-server";
 import { AiAgentDemoBanner } from "@/components/layout/ai-agent-demo-banner";
 import { HideOnAuthRoutes } from "@/components/layout/hide-on-auth-routes";
 import { LangProvider } from "@/components/layout/lang-context";
+import { NavigationProgress } from "@/components/layout/navigation-progress";
+import { PageTransition } from "@/components/layout/page-transition";
 import { ScrollAwareHeader } from "@/components/layout/scroll-aware-header";
 import { SessionInactivityLogout } from "@/components/layout/session-inactivity-logout";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -35,6 +37,7 @@ export default async function RootLayout({
       </head>
       <body className="font-sans antialiased">
         <LangProvider initialLang={lang}>
+        <NavigationProgress />
         {user ? <SessionInactivityLogout role={user.role} /> : null}
         <HideOnAuthRoutes>
           <ScrollAwareHeader>
@@ -42,7 +45,9 @@ export default async function RootLayout({
           </ScrollAwareHeader>
           <AiAgentDemoBanner />
         </HideOnAuthRoutes>
-        <main className="relative z-10 min-h-[calc(100vh-12rem)] pb-16 lg:pb-0">{children}</main>
+        <main className="relative z-10 min-h-[calc(100vh-12rem)] pb-16 lg:pb-0">
+          <PageTransition>{children}</PageTransition>
+        </main>
         <HideOnAuthRoutes>
           <SiteFooter isLoggedIn={!!user} />
         </HideOnAuthRoutes>

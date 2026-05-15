@@ -30,8 +30,16 @@ export default async function EventsPage() {
     imageUrl: event.imageUrl,
     cardImageUrl: event.cardImageUrl,
     startsAt: event.startsAt.toISOString(),
+    summary: event.summary,
+    currency: event.currency,
     category: { name: event.category.name, slug: event.category.slug },
     venue: { name: event.venue.name, city: event.venue.city },
+    ticketTypes: event.ticketTypes.map((t) => ({
+      id: t.id,
+      name: t.name,
+      price: Number(t.price),
+      available: t.quantityTotal - t.quantitySold,
+    })),
   }));
 
   const sections = categories.map((cat, index) => ({
@@ -53,8 +61,8 @@ export default async function EventsPage() {
 
   return (
     <section className="min-h-screen bg-black">
-      <TrendingEventsMarquee events={trendingEvents} />
-      <div className="px-5 py-8 sm:px-8 lg:px-12">
+      <TrendingEventsMarquee events={trendingEvents} isLoggedIn={!!user} />
+      <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
         {showCategoryNav ? (
           <div className="events-category-nav-wrap">
             <CategoryNav className="events-category-nav" />

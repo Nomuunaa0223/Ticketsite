@@ -78,9 +78,8 @@ export async function getTrendingPublicEvents(take = 5) {
         category: { select: { name: true, slug: true } },
         venue: { select: { name: true, city: true } },
         ticketTypes: {
-          select: { price: true },
+          select: { id: true, name: true, price: true, quantityTotal: true, quantitySold: true },
           orderBy: { price: "asc" },
-          take: 1
         }
       },
       orderBy: [{ trendingOrder: "asc" }, { startsAt: "asc" }],
@@ -132,6 +131,7 @@ export async function getEventBySlug(slug: string) {
         title: true,
         slug: true,
         imageUrl: true,
+        relatedImages: true,
         summary: true,
         description: true,
         startsAt: true,
@@ -199,10 +199,7 @@ export async function createEventWithTicketTypes(input: EventInput, actor: User)
 
   const baseSlug = slugify(validated.title);
   const slug = await createUniqueEventSlug(baseSlug);
-  const status =
-    organizerProfile.status === OrganizerStatus.APPROVED
-      ? EventStatus.PENDING_REVIEW
-      : EventStatus.DRAFT;
+  const status = EventStatus.PENDING_REVIEW;
 
   const event = await prisma.event.create({
     data: {

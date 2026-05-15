@@ -11,7 +11,7 @@ export const organizerApplicationSchema = z.object({
   contactName: z.string().min(2, "Contact name is required.").max(100),
   email: z.string().email("Enter a valid email."),
   phone: z.string().min(6, "Phone number is required.").max(40),
-  description: z.string().min(20, "Tell us a little more about your events.").max(2000),
+  description: z.string().min(10, "Тайлбар хэт богино байна.").max(2000),
   websiteUrl: optionalUrl,
   socialUrl: optionalUrl,
 });

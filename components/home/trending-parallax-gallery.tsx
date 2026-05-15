@@ -244,7 +244,7 @@ export function TrendingParallaxGallery({
             ref={(node) => {
               itemRefs.current[index] = node;
             }}
-            className={`gallery-item group relative w-[96%] overflow-hidden will-change-[transform,opacity] max-md:!w-full max-md:!max-w-[460px] ${overlapClassName}`}
+            className={`gallery-item group relative w-[96%] overflow-hidden will-change-[transform,opacity] max-md:!w-full max-md:!max-w-none ${overlapClassName}`}
             style={{
               aspectRatio: `${galleryAspectRatio}`,
               clipPath: "inset(0%)",

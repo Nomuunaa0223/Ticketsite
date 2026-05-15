@@ -12,7 +12,9 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: optionalEnv,
   GOOGLE_CLIENT_SECRET: optionalEnv,
   SEED_ADMIN_EMAIL: z.string().email().default("admin@tixora.local"),
-  SEED_ADMIN_PASSWORD: z.string().min(10).default("ChangeMe123!")
+  SEED_ADMIN_PASSWORD: z.string().min(10).default("ChangeMe123!"),
+  SMTP_USER: z.string().email().optional(),
+  SMTP_PASS: z.string().optional(),
 });
 
 export const env = envSchema.parse({
@@ -22,5 +24,7 @@ export const env = envSchema.parse({
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   SEED_ADMIN_EMAIL: process.env.SEED_ADMIN_EMAIL ?? "admin@tixora.local",
-  SEED_ADMIN_PASSWORD: process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe123!"
+  SEED_ADMIN_PASSWORD: process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe123!",
+  SMTP_USER: process.env.SMTP_USER,
+  SMTP_PASS: process.env.SMTP_PASS,
 });

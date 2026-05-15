@@ -17,8 +17,8 @@ const categorySlugKeys = [
 
 const companyLinks = [
   { key: "footerBrowse" as const, href: "/events" },
-  { key: "footerOrganizers" as const, href: "/dashboard/organizer" },
-  { key: "footerContact" as const, href: "/contact" },
+  { key: "footerOrganizers" as const, href: "/apply" },
+  { key: "footerContact" as const, href: "/partner" },
 ];
 
 const trustIcons = ["qr", "shield", "checkout", "updates"] as const;
@@ -119,6 +119,13 @@ export function SiteFooter({ isLoggedIn }: { isLoggedIn?: boolean } = {}) {
               </Link>
             ))}
           </nav>
+
+          <div className="footer-hero__contact">
+            <p className="footer-hero__column-title">Холбоо барих</p>
+            <span className="footer-hero__nav-link">Email: tixora@gmail.com</span>
+            <span className="footer-hero__nav-link">Phone: 99119911</span>
+            <span className="footer-hero__nav-link">Address: Улаанбаатар, Монгол</span>
+          </div>
         </div>
 
         <div className="footer-hero__meta">

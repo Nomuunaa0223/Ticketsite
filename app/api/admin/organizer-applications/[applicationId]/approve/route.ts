@@ -1,15 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { OrganizerApplicationStatus, OrganizerStatus, Prisma, Role } from "@prisma/client";
-import { getSessionFromRequest } from "@/lib/auth";
-import { env } from "@/lib/env";
-import { sendPasswordSetupEmail } from "@/lib/mail";
-import { createRawPasswordSetupToken, getPasswordSetupExpiry, hashPasswordSetupToken } from "@/lib/password-setup";
+import { getSessionFromRequest, hashPassword } from "@/lib/auth";
+import { sendOrganizerCredentialsEmail } from "@/lib/mail";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slugs";
 
 type Props = {
   params: Promise<{ applicationId: string }>;
 };
+
+function generateSixDigitCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
 
 export async function POST(request: NextRequest, { params }: Props) {
   const admin = await getAdminFromRequest(request);
@@ -23,8 +25,9 @@ export async function POST(request: NextRequest, { params }: Props) {
     return NextResponse.json({ error: "Invalid application id." }, { status: 400 });
   }
 
-  const rawToken = createRawPasswordSetupToken();
-  const tokenHash = hashPasswordSetupToken(rawToken);
+  const registrationCode = generateSixDigitCode();
+  const oneTimePassword = generateSixDigitCode();
+  const passwordHash = await hashPassword(oneTimePassword);
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -47,11 +50,11 @@ export async function POST(request: NextRequest, { params }: Props) {
         },
       });
 
-      const user = await tx.user.create({
+      await tx.user.create({
         data: {
           email: application.email.toLowerCase(),
           fullName: application.contactName,
-          passwordHash: null,
+          passwordHash,
           role: Role.ORGANIZER,
           organizerId: organizer.id,
           organizerProfile: {
@@ -60,20 +63,12 @@ export async function POST(request: NextRequest, { params }: Props) {
               slug: await createUniqueOrganizerSlug(tx, application.companyName),
               description: application.description,
               websiteUrl: application.websiteUrl,
+              registrationCode,
               status: OrganizerStatus.APPROVED,
               approvedAt: new Date(),
               approvedById: admin.id,
             },
           },
-        },
-        include: { organizerProfile: true },
-      });
-
-      await tx.passwordSetupToken.create({
-        data: {
-          userId: user.id,
-          tokenHash,
-          expiresAt: getPasswordSetupExpiry(),
         },
       });
 
@@ -86,15 +81,16 @@ export async function POST(request: NextRequest, { params }: Props) {
         },
       });
 
-      return { application, user };
+      return application;
     });
 
-    const setupUrl = `${env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/setup-password?token=${encodeURIComponent(rawToken)}`;
-    await sendPasswordSetupEmail({
-      to: result.application.email,
-      contactName: result.application.contactName,
-      companyName: result.application.companyName,
-      setupUrl,
+    await sendOrganizerCredentialsEmail({
+      to: result.email,
+      contactName: result.contactName,
+      companyName: result.companyName,
+      loginEmail: result.email,
+      registrationCode,
+      oneTimePassword,
     });
 
     return NextResponse.json({ ok: true });

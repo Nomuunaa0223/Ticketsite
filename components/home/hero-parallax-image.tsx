@@ -65,7 +65,7 @@ export function HeroParallaxImage() {
         priority
         quality={100}
         sizes="100vw"
-        className="home-enter__image object-cover object-center"
+        className="home-enter__image object-cover object-[center_35%] sm:object-center"
       />
     </div>
   );

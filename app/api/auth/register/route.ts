@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 import { applySessionCookie, createSessionForUser, hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validations/auth";
@@ -43,7 +44,10 @@ export async function POST(request: Request) {
 
     return applySessionCookie(response, token);
   } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json({ error: error.issues[0]?.message ?? "Invalid input." }, { status: 400 });
+    }
     console.error(error);
-    return NextResponse.json({ error: "Unable to register." }, { status: 400 });
+    return NextResponse.json({ error: "Unable to register. Please try again." }, { status: 400 });
   }
 }

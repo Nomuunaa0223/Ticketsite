@@ -179,6 +179,7 @@ model OrganizerProfile {
   slug         String          @unique
   description  String?
   websiteUrl   String?
+  registrationCode String?
   status       OrganizerStatus @default(PENDING)
   approvedAt   DateTime?
   approvedById Int?

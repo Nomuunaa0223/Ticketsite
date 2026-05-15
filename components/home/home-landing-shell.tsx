@@ -50,38 +50,44 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
 
   return (
     <>
-      <section className="home-enter relative min-h-[calc(100vh-5.5rem)] overflow-hidden bg-[#06070d]">
+      <section className="home-enter relative min-h-[100svh] overflow-hidden bg-[#06070d] sm:min-h-[calc(100vh-5.5rem)]">
         <HeroParallaxImage />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,10,18,0.1)_0%,rgba(7,10,18,0.32)_20%,rgba(5,6,10,0.66)_58%,rgba(4,4,6,0.9)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,10,18,0.08)_0%,rgba(7,10,18,0.28)_20%,rgba(5,6,10,0.62)_55%,rgba(4,4,6,0.94)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(255,135,55,0.18),transparent_24%),radial-gradient(circle_at_50%_100%,rgba(255,109,31,0.1),transparent_34%)]" />
         <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgba(8,12,23,0.85)_0%,rgba(8,12,23,0)_100%)]" />
 
-        <div className="relative px-4 pb-12 pt-10 sm:px-8 lg:px-12 lg:pt-16">
-          <div className="mx-auto flex min-h-[calc(100vh-11rem)] max-w-5xl flex-col items-center justify-center text-center">
-            <h1 className="home-enter__item max-w-4xl text-balance font-goldman text-4xl font-bold leading-[1.16] tracking-[-0.04em] text-white sm:text-5xl lg:text-[4rem]">
-              <span className="block">{t("heroTitle")}</span>
-              <span className="mt-6 block font-goldman text-3xl font-semibold tracking-[-0.02em] text-white/90 sm:text-[2.25rem]">
-                {t("heroSubtitle")}
-              </span>
-            </h1>
+        <div className="relative flex min-h-[100svh] flex-col items-center justify-center px-5 pb-16 pt-24 text-center sm:min-h-[calc(100vh-5.5rem)] sm:px-8 sm:pb-12 sm:pt-10 lg:px-12 lg:pt-16">
+          <h1 className="home-enter__item max-w-4xl text-balance font-goldman font-bold leading-[1.14] tracking-[-0.03em] text-white">
+            <span className="block text-[2.1rem] sm:text-4xl lg:text-[4rem]">{t("heroTitle")}</span>
+            <span className="mt-3 block font-goldman text-[1.35rem] font-semibold tracking-[-0.01em] text-white/85 sm:mt-6 sm:text-[2.25rem]">
+              {t("heroSubtitle")}
+            </span>
+          </h1>
 
-            <div className="home-enter__item mt-7 flex flex-wrap items-center justify-center gap-3 text-sm text-[#ffd9c5] sm:text-[0.95rem] [--enter-delay:160ms]">
-              {featureBadges.map((badge) => (
-                <div key={badge.icon} className="hero-pill">
-                  <span className="text-[#ff7c34]">{renderFeatureIcon(badge.icon)}</span>
-                  <span>{badge.label}</span>
-                </div>
-              ))}
-            </div>
+          <div className="home-enter__item mt-6 flex flex-wrap items-center justify-center gap-2 sm:mt-7 sm:gap-3 [--enter-delay:160ms]">
+            {featureBadges.map((badge) => (
+              <div key={badge.icon} className="hero-pill">
+                <span className="text-[#ff7c34]">{renderFeatureIcon(badge.icon)}</span>
+                <span>{badge.label}</span>
+              </div>
+            ))}
+          </div>
 
-            <div className="home-enter__item mt-10 flex flex-col gap-3 sm:flex-row [--enter-delay:360ms]">
-              <Link href="/events" className="hero-primary-btn font-goldman px-8 py-4">
-                {t("heroBtnTickets")}
-              </Link>
-              <Link href="#trending" className="hero-secondary-btn px-8 py-4">
-                <span className="font-goldman">{t("heroBtnTrending")}</span>
-              </Link>
-            </div>
+          <div className="home-enter__item mt-8 flex flex-row gap-2.5 sm:mt-10 sm:gap-3 [--enter-delay:360ms]">
+            <Link href="/events" className="hero-primary-btn font-goldman px-5 py-2.5 text-sm sm:px-8 sm:py-4 sm:text-base">
+              {t("heroBtnTickets")}
+            </Link>
+            <Link href="#trending" className="hero-secondary-btn px-5 py-2.5 text-center sm:px-8 sm:py-4">
+              <span className="font-goldman text-sm sm:text-base">{t("heroBtnTrending")}</span>
+            </Link>
+          </div>
+
+          {/* scroll indicator */}
+          <div className="absolute bottom-7 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 sm:hidden">
+            <span className="text-[0.58rem] font-bold uppercase tracking-[0.18em] text-white/30">Scroll</span>
+            <svg viewBox="0 0 16 24" className="h-4 w-3 text-white/20" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8 4v16M2 14l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </div>
         </div>
       </section>
@@ -93,7 +99,7 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
         <div className="mx-auto max-w-7xl">
           <CategoryMagicBento items={categoryTiles} />
 
-          <div className="mt-14 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between px-20">
+          <div className="mt-14 flex flex-col gap-4 px-4 sm:flex-row sm:items-end sm:justify-between sm:px-20">
             <p className="font-goldman text-3xl font-bold text-white">{t("trendingEvents")}</p>
           </div>
 
@@ -103,7 +109,7 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
 
       <section
         id="upcoming-this-week"
-        className="section-reveal week-events-section relative bg-[linear-gradient(180deg,#070a11_0%,#080b12_100%)] px-4 pb-20 pt-4 sm:px-8 lg:px-8"
+        className="section-reveal week-events-section relative bg-[linear-gradient(180deg,#070a11_0%,#080b12_100%)] px-4 pb-12 pt-4 sm:px-8 sm:pb-20 lg:px-8"
       >
         <div className="mx-auto max-w-7xl">
           <div className="week-events-header">
@@ -123,15 +129,13 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
         </div>
       </section>
 
-      <section className="relative bg-[linear-gradient(180deg,#06080d_0%,#070a11_100%)] px-4 pb-24 pt-16 sm:px-8 lg:px-8">
+      <section className="relative bg-[linear-gradient(180deg,#06080d_0%,#070a11_100%)] px-4 pb-14 pt-10 sm:px-8 sm:pb-24 sm:pt-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="week-events-header">
             <div className="week-events-header__title-wrap">
               <h2 className="week-events-header__title font-goldman">{t("highlightsTitle")}</h2>
             </div>
-            <Link href="/events" className="week-events-header__cta font-bjcree text-[#ff7224] hover:text-[#ff9050]">
-              {t("viewAll")} →
-            </Link>
+
           </div>
           <HighlightsToggle events={highlightEvents} />
         </div>

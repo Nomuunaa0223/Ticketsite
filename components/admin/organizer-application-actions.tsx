@@ -20,12 +20,8 @@ export function OrganizerApplicationActions({ applicationId }: Props) {
     startTransition(async () => {
       try {
         const res = await fetch(
-          `/api/admin/organizer-applications/${applicationId}`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action }),
-          }
+          `/api/admin/organizer-applications/${applicationId}/${action}`,
+          { method: "POST" }
         );
 
         const data = await res.json().catch(() => ({}));

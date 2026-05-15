@@ -22,6 +22,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, id: application.id }, { status: 201 });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Unable to submit organizer application." }, { status: 400 });
+    return NextResponse.json({ error: "Хүсэлт илгээхэд алдаа гарлаа. Бүх талбарыг зөв бөглөсөн эсэхийг шалгана уу." }, { status: 400 });
   }
 }

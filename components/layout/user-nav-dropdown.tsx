@@ -31,16 +31,6 @@ const menuItems = [
     ),
   },
   {
-    label: "My Tickets",
-    href: "/profile",
-    icon: (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 9a2 2 0 0 0 0 6v3h16v-3a2 2 0 0 0 0-6V6H4z" />
-        <path d="M12 6v12" />
-      </svg>
-    ),
-  },
-  {
     label: "My Resale",
     href: "/my-resale",
     icon: (
