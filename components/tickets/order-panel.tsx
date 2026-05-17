@@ -98,7 +98,7 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
   }
 
   return (
-    <div className={`rounded-2xl bg-[#0d1017] p-7 shadow-[0_24px_60px_rgba(0,0,0,0.4)] ${className ?? ""}`}>
+    <div className={`rounded-2xl bg-[#0d1017] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.4)] sm:p-7 ${className ?? ""}`}>
 
       {/* Countdown */}
       {!isSaleEnded && (
@@ -133,12 +133,12 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
             const maxQty = Math.min(tt.maxPerOrder, remaining);
 
             return (
-              <div key={tt.id} className={`rounded-xl p-5 transition-colors ${isSoldOut ? "opacity-40" : "bg-white/[0.03]"}`}>
+              <div key={tt.id} className={`rounded-xl p-4 transition-colors sm:p-5 ${isSoldOut ? "opacity-40" : "bg-white/[0.03]"}`}>
                 <p className="text-base font-semibold text-white">{tt.name}</p>
                 {tt.description && <p className="mt-1 text-xs text-white/40">{tt.description}</p>}
 
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <p className="text-lg font-bold text-white">{formatPrice(tt.price, currency)}</p>
+                <div className="mt-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+                  <p className="break-words text-lg font-bold text-white">{formatPrice(tt.price, currency)}</p>
 
                   {isSoldOut ? (
                     <p className="text-sm text-white/30">Дууссан</p>

@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const redirectUri = new URL("/api/auth/google/callback", env.NEXT_PUBLIC_APP_URL).toString();
+    const redirectUri = new URL("/api/auth/google/callback", request.nextUrl.origin).toString();
     const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -126,5 +126,5 @@ function getDestination(role: string, next: string | null) {
   if (next?.startsWith("/")) return next;
   if (role === "ADMIN") return "/dashboard/admin";
   if (role === "ORGANIZER") return "/organizer/dashboard";
-  return "/";
+  return "/events";
 }

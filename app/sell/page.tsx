@@ -78,7 +78,7 @@ export default async function SellPage() {
         {user ? (
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#ff7224]">{labels.myResale}</p>
-            <h1 className="mt-2 font-goldman text-4xl font-bold text-white">{labels.myResale}</h1>
+            <h1 className="mt-2 font-goldman text-3xl font-bold text-white sm:text-4xl">{labels.myResale}</h1>
 
             <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {myResales.length === 0 ? (
@@ -130,7 +130,7 @@ export default async function SellPage() {
 
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#ff7224]">{labels.marketplace}</p>
-          <h2 className="mt-2 font-goldman text-4xl font-bold text-white">{labels.marketplaceTitle}</h2>
+          <h2 className="mt-2 font-goldman text-3xl font-bold text-white sm:text-4xl">{labels.marketplaceTitle}</h2>
 
           {marketplaceListings.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-dashed border-white/10 p-6 text-sm text-white/40">

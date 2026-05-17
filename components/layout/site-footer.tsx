@@ -114,7 +114,7 @@ export function SiteFooter({ isLoggedIn }: { isLoggedIn?: boolean } = {}) {
           <nav className="footer-hero__actions" aria-label="Footer company links">
             <p className="footer-hero__column-title">{t("footerCompany")}</p>
             {companyLinks.map(({ key, href }) => (
-              <Link key={href} href={href} className="footer-hero__nav-link">
+              <Link key={href} href={href as never} className="footer-hero__nav-link">
                 {t(key)}
               </Link>
             ))}

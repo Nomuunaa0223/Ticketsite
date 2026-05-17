@@ -1,5 +1,6 @@
-import { getPublicEventsByCategory, getTrendingPublicEvents } from "@/lib/events";
+import { getPublicEventsByCategory, getTrendingPublicEvents, searchPublicEvents } from "@/lib/events";
 import { EventsSections } from "@/components/events/events-sections";
+import { SearchResults } from "@/components/events/search-results";
 import { TrendingEventsMarquee } from "@/components/events/trending-events-showcase";
 import { CategoryNav } from "@/components/layout/category-nav";
 import { getCurrentUser } from "@/lib/auth";
@@ -14,11 +15,18 @@ const categories = [
   { label: "Conference", slug: "conference" },
 ];
 
-export default async function EventsPage() {
-  const [categoryEventGroups, trendingEventsRaw, user] = await Promise.all([
+type Props = {
+  searchParams: Promise<{ search?: string; category?: string }>;
+};
+
+export default async function EventsPage({ searchParams }: Props) {
+  const { search } = await searchParams;
+
+  const [categoryEventGroups, trendingEventsRaw, user, searchEventsRaw] = await Promise.all([
     Promise.all(categories.map((category) => getPublicEventsByCategory(category.slug, 12))),
     getTrendingPublicEvents(5),
-    getCurrentUser()
+    getCurrentUser(),
+    search ? searchPublicEvents(search) : Promise.resolve([]),
   ]);
 
   const showCategoryNav = user?.role === "USER";
@@ -59,6 +67,20 @@ export default async function EventsPage() {
     }))
   }));
 
+  const searchResults = searchEventsRaw.map((event) => ({
+    id: event.id,
+    title: event.title,
+    slug: event.slug,
+    imageUrl: event.imageUrl,
+    cardImageUrl: event.cardImageUrl,
+    summary: event.summary,
+    currency: event.currency,
+    startsAt: event.startsAt.toISOString(),
+    category: { name: event.category.name, slug: event.category.slug },
+    venue: { name: event.venue.name, city: event.venue.city },
+    ticketTypes: event.ticketTypes.map((t) => ({ price: toNumber(t.price) })),
+  }));
+
   return (
     <section className="min-h-screen bg-black">
       <TrendingEventsMarquee events={trendingEvents} isLoggedIn={!!user} />
@@ -68,7 +90,11 @@ export default async function EventsPage() {
             <CategoryNav className="events-category-nav" />
           </div>
         ) : null}
-        <EventsSections sections={sections} />
+        {search ? (
+          <SearchResults query={search} events={searchResults} />
+        ) : (
+          <EventsSections sections={sections} />
+        )}
       </div>
     </section>
   );

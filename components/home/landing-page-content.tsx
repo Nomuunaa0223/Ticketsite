@@ -4,6 +4,7 @@ import type { TrendingParallaxGalleryItem } from "@/components/home/trending-par
 import type { WeekEventCardItem } from "@/components/home/week-event-card";
 import { WeekEventCard } from "@/components/home/week-event-card";
 import { CategoryMagicBento } from "@/components/home/category-magic-bento";
+import { HeroSearchBar } from "@/components/home/hero-search-bar";
 
 const categoryBentoItems = [
   { label: "Sports", slug: "sports", icon: "sports" },
@@ -38,6 +39,8 @@ export function LandingPageContent({
           <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-white/52 sm:text-lg">
             Your next great night is waiting for you.
           </p>
+
+          <HeroSearchBar />
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
             <Link

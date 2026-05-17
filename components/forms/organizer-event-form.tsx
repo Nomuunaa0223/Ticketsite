@@ -221,7 +221,7 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
             label="Cover image (main)"
             aspect="16/6"
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <ImageUploadSlot
               value={extraImages[0]}
               onChange={(url) => setExtraImage(0, url)}
@@ -378,7 +378,7 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
         </div>
       </Card>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
         <button
           type="submit"
           disabled={isSubmitting}

@@ -64,7 +64,7 @@ export function NavSearch() {
       <div
         className={`flex items-center overflow-hidden rounded-full transition-all duration-300 ${
           open
-            ? "w-52 bg-white/[0.07] ring-1 ring-white/15 sm:w-64"
+            ? "w-[calc(100vw-10rem)] max-w-52 bg-white/[0.07] ring-1 ring-white/15 sm:w-64 sm:max-w-none"
             : "w-9"
         }`}
       >
@@ -93,7 +93,7 @@ export function NavSearch() {
       </div>
 
       {open && (query.length > 0) && (
-        <div className="absolute right-0 top-full mt-2 w-72 overflow-hidden rounded-xl bg-[#0e1220] shadow-xl ring-1 ring-white/10 sm:w-80">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-72 overflow-hidden rounded-xl bg-[#0e1220] shadow-xl ring-1 ring-white/10 sm:w-80 sm:max-w-none">
           {loading ? (
             <p className="px-4 py-3 text-xs text-white/40">Хайж байна...</p>
           ) : results.length === 0 ? (

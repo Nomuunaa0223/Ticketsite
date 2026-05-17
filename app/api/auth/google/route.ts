@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   const state = randomBytes(24).toString("base64url");
   const next = request.nextUrl.searchParams.get("next");
-  const redirectUri = new URL("/api/auth/google/callback", env.NEXT_PUBLIC_APP_URL).toString();
+  const redirectUri = new URL("/api/auth/google/callback", request.nextUrl.origin).toString();
   const authUrl = new URL(GOOGLE_AUTH_URL);
 
   authUrl.searchParams.set("client_id", env.GOOGLE_CLIENT_ID);
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     sameSite: "lax",
     path: "/",
     maxAge: 10 * 60,
-    secure: env.NEXT_PUBLIC_APP_URL.startsWith("https://"),
+    secure: request.nextUrl.protocol === "https:",
   });
 
   return response;

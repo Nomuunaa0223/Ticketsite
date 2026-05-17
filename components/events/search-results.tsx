@@ -15,84 +15,82 @@ type EventItem = {
   ticketTypes: { price: number }[];
 };
 
-type Section = {
-  label: string;
-  slug: string;
+type Props = {
+  query: string;
   events: EventItem[];
 };
 
-type Props = {
-  sections: Section[];
-};
-
-export function EventsSections({ sections }: Props) {
-  const populated = sections.filter((s) => s.events.length > 0);
-
-  if (populated.length === 0) {
-    return (
-      <div className="mt-12 rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-white/40">
-        No events found.
-      </div>
-    );
-  }
-
+export function SearchResults({ query, events }: Props) {
   return (
-    <div className="mt-10 space-y-16">
-      {populated.map((section) => (
-        <section key={section.slug} id={section.slug}>
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div className="pb-4 sm:pl-16">
-              <h2 className="font-goldman text-2xl font-bold text-white sm:text-3xl">
-                {section.label}
-              </h2>
-            </div>
-            <Link
-              href={`/events?category=${section.slug}`}
-              className="shrink-0 text-xs font-semibold text-white/35 transition hover:text-white sm:text-sm"
-            >
-              View all →
-            </Link>
-          </div>
+    <div className="mt-8">
+      <div className="mb-6">
+        <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#ff7224]">
+          Search results
+        </p>
+        <h2 className="mt-1 font-goldman text-2xl font-bold text-white">
+          &ldquo;{query}&rdquo;
+        </h2>
+        <p className="mt-1 text-sm text-white/40">
+          {events.length === 0
+            ? "No events found"
+            : `${events.length} event${events.length === 1 ? "" : "s"} found`}
+        </p>
+      </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {section.events.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
-          </div>
-        </section>
-      ))}
+      {events.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-white/10 p-12 text-center">
+          <p className="text-sm text-white/30">
+            Try a different keyword — artist, venue, or event name.
+          </p>
+          <Link
+            href="/events"
+            className="mt-4 inline-block text-sm font-semibold text-[#ff7224] hover:text-[#ff8442]"
+          >
+            Browse all events →
+          </Link>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {events.map((event) => (
+            <SearchEventCard key={event.id} event={event} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-function EventCard({ event }: { event: EventItem }) {
-  const imageSrc =
-    event.cardImageUrl ?? event.imageUrl ?? "/uploads/1.jpg";
+function SearchEventCard({ event }: { event: EventItem }) {
+  const imageSrc = event.cardImageUrl ?? event.imageUrl ?? "/uploads/1.jpg";
   const startingPrice = event.ticketTypes.length
     ? Math.min(...event.ticketTypes.map((t) => t.price))
     : 0;
 
   const formattedPrice =
     event.currency === "MNT"
-      ? `${new Intl.NumberFormat("mn-MN", {
-        maximumFractionDigits: 0,
-      }).format(startingPrice)}₮`
+      ? `${new Intl.NumberFormat("mn-MN", { maximumFractionDigits: 0 }).format(startingPrice)}₮`
       : new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: event.currency,
-        maximumFractionDigits: 0,
-      }).format(startingPrice);
+          style: "currency",
+          currency: event.currency,
+          maximumFractionDigits: 0,
+        }).format(startingPrice);
 
   const d = new Date(event.startsAt);
-  const datePrimary = new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit" }).format(d).toUpperCase();
-  const dateSecondary = new Intl.DateTimeFormat("en-US", { weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
+  const datePrimary = new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit" })
+    .format(d)
+    .toUpperCase();
+  const dateSecondary = new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d);
 
   return (
     <Link
       href={`/events/${event.slug}`}
       className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#0d1017] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[inset_0_0_0_1px_rgba(255,114,36,0.2),0_28px_56px_rgba(0,0,0,0.55)]"
     >
-      {/* Image */}
       <div className="relative h-52 overflow-hidden">
         <Image
           src={imageSrc}
@@ -106,17 +104,13 @@ function EventCard({ event }: { event: EventItem }) {
           {event.category.name}
         </span>
       </div>
-
-      {/* Content */}
       <div className="flex flex-1 flex-col gap-2 p-4">
-        {/* Date */}
         <div className="flex items-center gap-1.5 text-[0.7rem] font-semibold text-white/40">
           <span>{datePrimary}</span>
           <span className="text-white/20">·</span>
           <span className="truncate">{dateSecondary}</span>
         </div>
-
-        <div className="flex flex-col ">
+        <div className="flex flex-col">
           <h3 className="line-clamp-2 font-goldman text-[1.05rem] font-bold leading-snug text-white">
             {event.title}
           </h3>
@@ -124,7 +118,6 @@ function EventCard({ event }: { event: EventItem }) {
             {event.venue.name}, {event.venue.city}
           </p>
         </div>
-
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] pt-3">
           <p className="font-goldman text-lg font-bold text-white">
             {startingPrice > 0 ? formattedPrice : "Free"}

@@ -11,22 +11,22 @@ export async function SiteHeader() {
 
   return (
     <header className="z-40 bg-[linear-gradient(180deg,rgba(6,8,14,0.95),rgba(6,8,14,0.55),transparent)] backdrop-blur-md">
-      <div className="flex items-center justify-between gap-4 bg-[linear-gradient(180deg,rgba(10,14,25,0.98),rgba(9,12,22,0.9))] px-5 py-4 sm:px-8 lg:px-12">
-        <div className="flex items-center gap-6">
+      <div className="flex items-center justify-between gap-2 bg-[linear-gradient(180deg,rgba(10,14,25,0.98),rgba(9,12,22,0.9))] px-3 py-3 sm:gap-4 sm:px-8 sm:py-4 lg:px-12">
+        <div className="flex min-w-0 items-center gap-4 sm:gap-6">
           <Link href="/" className="flex items-center text-[#ff7224]">
-            <span className="text-xl font-bold uppercase tracking-[0.08em] sm:text-[1.55rem]">TIXORA</span>
+            <span className="text-lg font-bold uppercase tracking-[0.08em] sm:text-[1.55rem]">TIXORA</span>
           </Link>
           {user && (
             <Link
               href="/resale"
-              className="font-goldman hidden mt-2 ml-10 text-sm font-semibold text-white/60 transition hover:text-white sm:block"
+              className="font-goldman ml-4 mt-2 hidden text-sm font-semibold text-white/60 transition hover:text-white md:block lg:ml-10"
             >
               RESALE
             </Link>
           )}
         </div>
 
-        <nav className="flex items-center gap-4 text-sm text-white/82">
+        <nav className="flex min-w-0 items-center gap-2 text-sm text-white/82 sm:gap-4">
           <NavSearch />
           <LangDropdown />
           {user ? (

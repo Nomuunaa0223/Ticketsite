@@ -4,12 +4,12 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 const INACTIVITY_TIMEOUT_MS: Record<string, number> = {
-  ADMIN: 60 * 60 * 1000, // 1 hour
-  ORGANIZER: 2 * 60 * 60 * 1000, // 2 hours
-  USER: 4 * 60 * 60 * 1000, // 4 hours
+  ADMIN: 15 * 60 * 1000,
+  ORGANIZER: 15 * 60 * 1000,
+  USER: 15 * 60 * 1000,
 };
 
-const DEFAULT_TIMEOUT_MS = 4 * 60 * 60 * 1000;
+const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000;
 
 const ACTIVITY_EVENTS = [
   "mousedown",

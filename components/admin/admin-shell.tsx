@@ -114,7 +114,7 @@ export function AdminShell({ user, children }: Props) {
     .join("");
 
   const sidebar = (
-    <aside className={`fixed inset-y-0 left-0 z-30 flex w-60 flex-col border-r border-white/[0.06] bg-[#0a0f1a] transition-transform duration-200 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
+    <aside className={`fixed inset-y-0 left-0 z-30 flex h-dvh w-60 flex-col overflow-hidden border-r border-white/[0.06] bg-[#0a0f1a] transition-transform duration-200 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
       <div className="flex h-16 items-center justify-between border-b border-white/[0.06] px-5">
         <Link href="/dashboard/admin" className="text-lg font-bold uppercase tracking-[0.08em] text-[#ff7224]">
           TIXORA
@@ -138,7 +138,7 @@ export function AdminShell({ user, children }: Props) {
         ))}
       </nav>
 
-      <div className="border-t border-white/[0.06] p-4">
+      <div className="shrink-0 border-t border-white/[0.06] p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7224]/20 text-[0.7rem] font-bold text-[#ff7224]">
             {initials}

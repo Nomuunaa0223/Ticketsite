@@ -32,7 +32,7 @@ export default async function AdminPartnershipsPage({ searchParams }: Props) {
       </div>
 
       <div className="mt-6 overflow-hidden rounded-[1rem] bg-[#121a30] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04),0_16px_32px_rgba(0,0,0,0.18)]">
-        <div className="grid grid-cols-[1fr_0.8fr_1.6fr_0.9fr] gap-4 px-5 py-3 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-white/30">
+        <div className="hidden grid-cols-[1fr_0.8fr_1.6fr_0.9fr] gap-4 px-5 py-3 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-white/30 lg:grid">
           <span>Имэйл</span>
           <span>Утас</span>
           <span>Мессеж</span>
@@ -42,7 +42,7 @@ export default async function AdminPartnershipsPage({ searchParams }: Props) {
           {requests.map((req) => (
             <article
               key={req.id}
-              className="grid grid-cols-[1fr_0.8fr_1.6fr_0.9fr] gap-4 bg-[#121a30] px-5 py-4 text-sm text-white/72"
+              className="grid gap-3 bg-[#121a30] px-4 py-4 text-sm text-white/72 lg:grid-cols-[1fr_0.8fr_1.6fr_0.9fr] lg:gap-4 lg:px-5"
             >
               <p className="truncate font-semibold text-white">{req.email}</p>
               <p className="truncate text-white/60">{req.phone || "—"}</p>

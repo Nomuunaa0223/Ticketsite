@@ -122,6 +122,34 @@ export async function getPublicEvents(categorySlug?: string) {
   }
 }
 
+export async function searchPublicEvents(query: string, take = 24) {
+  try {
+    const q = query.trim();
+    if (!q) return [];
+    return await prisma.event.findMany({
+      where: {
+        status: EventStatus.PUBLISHED,
+        OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { summary: { contains: q, mode: "insensitive" } },
+          { venue: { name: { contains: q, mode: "insensitive" } } },
+          { venue: { city: { contains: q, mode: "insensitive" } } },
+          { category: { name: { contains: q, mode: "insensitive" } } },
+        ],
+      },
+      include: {
+        venue: true,
+        category: true,
+        ticketTypes: { orderBy: { price: "asc" } },
+      },
+      orderBy: { startsAt: "asc" },
+      take,
+    });
+  } catch {
+    return [];
+  }
+}
+
 export async function getEventBySlug(slug: string) {
   try {
     return await prisma.event.findUnique({

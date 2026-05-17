@@ -36,7 +36,7 @@ export default async function AdminRequestsPage({ searchParams }: Props) {
       </div>
 
       <div className="mt-6 overflow-hidden rounded-[1rem] bg-[#121a30] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04),0_16px_32px_rgba(0,0,0,0.18)]">
-        <div className="grid grid-cols-[1fr_0.65fr_1.4fr_0.85fr] gap-4 px-5 py-3 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-white/30">
+        <div className="hidden grid-cols-[1fr_0.65fr_1.4fr_0.85fr] gap-4 px-5 py-3 text-[0.66rem] font-bold uppercase tracking-[0.16em] text-white/30 lg:grid">
           <span>Contact</span>
           <span>Type</span>
           <span>Message</span>
@@ -46,7 +46,7 @@ export default async function AdminRequestsPage({ searchParams }: Props) {
           {requests.map((request) => (
             <article
               key={request.id}
-              className="grid grid-cols-[1fr_0.65fr_1.4fr_0.85fr] gap-4 bg-[#121a30] px-5 py-4 text-sm text-white/72"
+              className="grid gap-3 bg-[#121a30] px-4 py-4 text-sm text-white/72 lg:grid-cols-[1fr_0.65fr_1.4fr_0.85fr] lg:gap-4 lg:px-5"
             >
               <div className="min-w-0">
                 <p className="truncate font-semibold text-white">{request.email}</p>

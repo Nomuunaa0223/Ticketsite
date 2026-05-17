@@ -3294,35 +3294,42 @@
 
   .login-card__socials {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 0.7rem;
   }
 
   .login-card__social {
     display: inline-flex;
-    min-height: 2.8rem;
+    min-height: 2.9rem;
     align-items: center;
     justify-content: center;
-    gap: 0.45rem;
-    border-radius: 0.75rem;
-    background: rgba(255, 255, 255, 0.06);
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.7);
-    transition: transform 0.2s ease, background 0.2s ease;
+    gap: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    background: #000000;
+    box-shadow: none;
+    font-family: Arial, sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #ffffff;
+    transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
   }
 
   .login-card__social:hover {
-    transform: translateY(-1px);
-    background: rgba(255, 255, 255, 0.1);
+    border-color: #ffffff;
+    background: #111111;
+    box-shadow: 0 1px 2px rgba(255, 255, 255, 0.16), 0 1px 3px rgba(255, 255, 255, 0.1);
   }
 
-  .login-card__social-badge {
-    display: inline-flex;
-    width: 1rem;
-    justify-content: center;
-    font-size: 0.88rem;
-    font-weight: 800;
+  .login-card__social:focus-visible {
+    outline: 2px solid #4285f4;
+    outline-offset: 2px;
+  }
+
+  .login-card__google-icon {
+    height: 1.15rem;
+    width: 1.15rem;
+    flex: 0 0 auto;
   }
 
   .login-card__footer-copy {
@@ -3443,6 +3450,56 @@
 }
 
 @media (max-width: 639px) {
+  .header-join-btn {
+    min-width: auto;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  .events-trending-showcase {
+    min-height: auto;
+    margin-bottom: 2rem;
+    padding-top: 1rem;
+  }
+
+  .events-trending-showcase__intro {
+    margin-left: 0;
+    padding-inline: 1.25rem;
+  }
+
+  .events-trending-showcase__marquee {
+    gap: 0.85rem;
+  }
+
+  .events-trending-card {
+    flex-basis: min(82vw, 20rem);
+    min-height: 23rem;
+    border-radius: 1rem;
+  }
+
+  .events-trending-card__copy {
+    padding: 1rem;
+  }
+
+  .events-trending-card__title {
+    font-size: 1rem;
+  }
+
+  .events-category-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    scrollbar-width: none;
+  }
+
+  .events-category-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .events-category-nav a {
+    flex: 0 0 auto;
+  }
+
   #trending {
     padding-top: 2.5rem;
     padding-bottom: 3rem;
@@ -3930,6 +3987,32 @@ html[lang="mn"] .week-events-header__badge,
 html[lang="mn"] .footer-hero__column-title,
 html[lang="mn"] [class*="tracking-"] {
   letter-spacing: 0.02em;
+}
+
+html[lang="mn"] .home-hero-title-text {
+  font-size: 2rem;
+  line-height: 1.14;
+}
+
+html[lang="mn"] .home-hero-subtitle-text {
+  font-size: 1.18rem;
+  line-height: 1.2;
+}
+
+@media (min-width: 640px) {
+  html[lang="mn"] .home-hero-title-text {
+    font-size: 2.25rem;
+  }
+
+  html[lang="mn"] .home-hero-subtitle-text {
+    font-size: 1.9rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  html[lang="mn"] .home-hero-title-text {
+    font-size: 3.75rem;
+  }
 }
 
 html {
@@ -5261,6 +5344,7 @@ body>* {
     opacity: 0;
     transform: translateY(10px);
   }
+
   100% {
     opacity: 1;
     transform: translateY(0);

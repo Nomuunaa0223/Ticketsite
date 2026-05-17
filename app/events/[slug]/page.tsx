@@ -70,7 +70,7 @@ export default async function EventDetailPage({ params }: Props) {
     <section className="min-h-screen bg-[linear-gradient(180deg,#05070c_0%,#0a0f18_55%,#06080d_100%)] px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="bg-[#0a0f17] shadow-[0_28px_80px_rgba(0,0,0,0.42)]">
-          <div className="relative h-[22rem] overflow-hidden sm:h-[28rem] lg:h-[33rem]">
+          <div className="relative h-[18rem] overflow-hidden sm:h-[28rem] lg:h-[33rem]">
             <Image
               src={heroImage}
               alt={event.title}
@@ -82,7 +82,7 @@ export default async function EventDetailPage({ params }: Props) {
             />
           </div>
 
-          <div className="grid gap-6 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(21rem,27rem)] lg:p-6">
+          <div className="grid gap-6 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,27rem)] lg:p-6">
             <div className="grid gap-6">
               <div className="rounded-[1rem] bg-white/[0.03] p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]">
                 <h1 className="max-w-3xl font-goldman text-3xl font-bold leading-tight text-white sm:text-5xl">
@@ -121,7 +121,7 @@ export default async function EventDetailPage({ params }: Props) {
                   <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#ff8b46]">
                     Photos
                   </p>
-                  <div className={`grid gap-3 ${galleryImages.length === 1 ? "" : "grid-cols-2"}`}>
+                  <div className={`grid gap-3 ${galleryImages.length === 1 ? "" : "sm:grid-cols-2"}`}>
                     {galleryImages.map((img, i) => (
                       <div
                         key={i}
