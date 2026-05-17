@@ -72,12 +72,8 @@ To stop it and remove the database volume too:
 docker compose down -v
 ```
 
-## Starter accounts
 
-- Admin: `admin@tixora.local`
-- Organizer: `organizer@tixora.local`
-- Organizer password: `Organizer123!`
-- Admin password: value from `SEED_ADMIN_PASSWORD`
+
 
 ## Key routes
 
