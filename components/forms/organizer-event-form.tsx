@@ -65,13 +65,35 @@ function ImageUploadSlot({
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
     setUploading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/uploads", { method: "POST", body: fd });
-    const data = (await res.json()) as { url?: string };
-    setUploading(false);
-    if (data.url) onChange(data.url);
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+
+    reader.onloadend = async () => {
+      try {
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            image: reader.result,
+          }),
+        });
+
+        const data = (await res.json()) as { url?: string };
+
+        if (data.url) onChange(data.url);
+      } finally {
+        setUploading(false);
+      }
+    };
+
+    reader.onerror = () => {
+      setUploading(false);
+    };
   }
 
   return (

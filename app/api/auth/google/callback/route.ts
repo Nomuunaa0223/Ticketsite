@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { applySessionCookie, createSessionForUser } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { getRequestOrigin } from "@/lib/request-origin";
 
 const STATE_COOKIE = "tixora_google_oauth_state";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -42,7 +43,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const redirectUri = new URL("/api/auth/google/callback", request.nextUrl.origin).toString();
+    const origin = getRequestOrigin(request);
+    const redirectUri = new URL("/api/auth/google/callback", origin).toString();
     const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },

@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
+import { getRequestOrigin, isHttpsRequest } from "@/lib/request-origin";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const STATE_COOKIE = "tixora_google_oauth_state";
@@ -14,7 +15,8 @@ export async function GET(request: NextRequest) {
 
   const state = randomBytes(24).toString("base64url");
   const next = request.nextUrl.searchParams.get("next");
-  const redirectUri = new URL("/api/auth/google/callback", request.nextUrl.origin).toString();
+  const origin = getRequestOrigin(request);
+  const redirectUri = new URL("/api/auth/google/callback", origin).toString();
   const authUrl = new URL(GOOGLE_AUTH_URL);
 
   authUrl.searchParams.set("client_id", env.GOOGLE_CLIENT_ID);
@@ -34,7 +36,7 @@ export async function GET(request: NextRequest) {
     sameSite: "lax",
     path: "/",
     maxAge: 10 * 60,
-    secure: request.nextUrl.protocol === "https:",
+    secure: isHttpsRequest(request),
   });
 
   return response;
