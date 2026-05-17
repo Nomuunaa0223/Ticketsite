@@ -1,8 +1,9 @@
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth";
+import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 
 const allowedTypes = new Map([
@@ -10,6 +11,8 @@ const allowedTypes = new Map([
   ["image/png", "png"],
   ["image/webp", "webp"]
 ]);
+
+const CLOUDINARY_FOLDER = "tixora/events";
 
 export async function POST(request: Request) {
   const session = await getSessionFromRequest(request);
@@ -45,6 +48,12 @@ export async function POST(request: Request) {
   }
 
   const bytes = Buffer.from(await file.arrayBuffer());
+
+  if (isCloudinaryConfigured()) {
+    const uploaded = await uploadToCloudinary(bytes, file.type);
+    return NextResponse.json({ ok: true, url: uploaded.secureUrl });
+  }
+
   const fileName = `${randomUUID()}.${extension}`;
   const uploadDir = path.join(process.cwd(), "public", "uploads", "events");
   const filePath = path.join(uploadDir, fileName);
@@ -53,4 +62,38 @@ export async function POST(request: Request) {
   await writeFile(filePath, bytes);
 
   return NextResponse.json({ ok: true, url: `/uploads/events/${fileName}` });
+}
+
+function isCloudinaryConfigured() {
+  return Boolean(env.CLOUDINARY_CLOUD_NAME && env.CLOUDINARY_API_KEY && env.CLOUDINARY_API_SECRET);
+}
+
+async function uploadToCloudinary(bytes: Buffer, contentType: string) {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const signature = createHash("sha1")
+    .update(`folder=${CLOUDINARY_FOLDER}&timestamp=${timestamp}${env.CLOUDINARY_API_SECRET}`)
+    .digest("hex");
+  const form = new FormData();
+  const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+
+  form.set("file", new Blob([arrayBuffer], { type: contentType }));
+  form.set("api_key", env.CLOUDINARY_API_KEY!);
+  form.set("timestamp", timestamp);
+  form.set("folder", CLOUDINARY_FOLDER);
+  form.set("signature", signature);
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${env.CLOUDINARY_CLOUD_NAME}/image/upload`,
+    {
+      method: "POST",
+      body: form,
+    }
+  );
+  const payload = (await response.json()) as { secure_url?: string; error?: { message?: string } };
+
+  if (!response.ok || !payload.secure_url) {
+    return Promise.reject(new Error(payload.error?.message ?? "Cloudinary upload failed."));
+  }
+
+  return { secureUrl: payload.secure_url };
 }
