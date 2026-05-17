@@ -20,7 +20,7 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
 });
 
-export const env = envSchema.parse({
+const parsedEnv = envSchema.safeParse({
   DATABASE_URL: process.env.DATABASE_URL,
   JWT_SECRET: process.env.JWT_SECRET,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "https://localhost:3000",
@@ -34,3 +34,13 @@ export const env = envSchema.parse({
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASS: process.env.SMTP_PASS,
 });
+
+if (!parsedEnv.success) {
+  const message = parsedEnv.error.issues
+    .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+    .join("; ");
+
+  throw new Error(`Invalid environment variables: ${message}`);
+}
+
+export const env = parsedEnv.data;
