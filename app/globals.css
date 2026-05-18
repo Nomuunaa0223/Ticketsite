@@ -20,7 +20,7 @@
     justify-content: center;
     border: 1px solid #ff7224;
     background: #ff7224;
-    font-family: "BJCree", serif;
+    font-family: "Goldman", "Manrope", sans-serif;
     font-size: 16px;
     overflow: hidden;
     transition:
@@ -4578,6 +4578,7 @@ body>* {
   gap: 0.45rem;
   border-radius: 0.72rem;
   color: rgba(255, 255, 255, 0.36);
+  font-family: "Goldman", "Manrope", sans-serif;
   font-size: 0.78rem;
   font-weight: 750;
 }
@@ -4724,6 +4725,7 @@ body>* {
   justify-content: center;
   border-radius: 0.56rem;
   background: linear-gradient(90deg, #ff4f18 0%, #ff8a1f 100%);
+  font-family: "Goldman", "Manrope", sans-serif;
   font-size: 0.82rem;
   box-shadow: 0 12px 28px rgba(255, 91, 22, 0.22);
 }
