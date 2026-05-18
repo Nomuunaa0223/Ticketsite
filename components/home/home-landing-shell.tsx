@@ -52,9 +52,6 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
     <>
       <section className="home-enter relative min-h-[100svh] overflow-hidden bg-[#06070d] sm:min-h-[calc(100vh-5.5rem)]">
         <HeroParallaxImage />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,10,18,0.08)_0%,rgba(7,10,18,0.28)_20%,rgba(5,6,10,0.62)_55%,rgba(4,4,6,0.94)_100%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(255,135,55,0.18),transparent_24%),radial-gradient(circle_at_50%_100%,rgba(255,109,31,0.1),transparent_34%)]" />
-        <div className="absolute inset-x-0 top-0 h-28 bg-[linear-gradient(180deg,rgba(8,12,23,0.85)_0%,rgba(8,12,23,0)_100%)]" />
 
         <div className="relative flex min-h-[100svh] flex-col items-center justify-center px-5 pb-16 pt-24 text-center sm:min-h-[calc(100vh-5.5rem)] sm:px-8 sm:pb-12 sm:pt-10 lg:px-12 lg:pt-16">
           <h1 className="home-enter__item max-w-4xl text-balance font-goldman font-bold leading-[1.14] tracking-[-0.03em] text-white">
