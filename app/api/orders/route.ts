@@ -121,7 +121,7 @@ export async function POST(request: Request) {
       for (let i = 0; i < item.quantity; i++) {
         const code = `TIX-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
         const qrToken = `QR-${Math.random().toString(36).slice(2, 12).toUpperCase()}`;
-        await prisma.ticket.create({
+        const newTicket = await prisma.ticket.create({
           data: {
             code,
             qrToken,
@@ -132,6 +132,14 @@ export async function POST(request: Request) {
             status: "ACTIVE",
             originalPrice: ticketType.price,
             resaleAllowed: ticketType.resaleAllowed
+          }
+        });
+        await prisma.ticketOwnershipHistory.create({
+          data: {
+            ticketId: newTicket.id,
+            fromUserId: null,
+            toUserId: sessionUserId,
+            acquiredVia: "PURCHASE",
           }
         });
       }

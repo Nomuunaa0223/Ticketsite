@@ -15,6 +15,7 @@ type EventCardProps = {
     ticketTypes: Array<{ price: unknown }>;
   };
   ctaLabel?: string;
+  href?: string;
 };
 
 const categoryVisuals: Record<string, string> = {
@@ -32,7 +33,7 @@ const categoryVisuals: Record<string, string> = {
     "from-[#071225] via-[#173869] to-[#030711] before:bg-[radial-gradient(circle_at_50%_35%,rgba(85,171,255,0.52),transparent_24%),linear-gradient(120deg,transparent_24%,rgba(255,255,255,0.18)_25%,transparent_38%)]"
 };
 
-export function EventCard({ event, ctaLabel = "View Tickets" }: EventCardProps) {
+export function EventCard({ event, ctaLabel = "View Tickets", href }: EventCardProps) {
   const prices = event.ticketTypes.map((ticketType) => toNumber(ticketType.price));
   const startingPrice = prices.length ? Math.min(...prices) : 0;
   const visual = categoryVisuals[event.category.slug ?? ""] ?? categoryVisuals.music;
@@ -40,7 +41,7 @@ export function EventCard({ event, ctaLabel = "View Tickets" }: EventCardProps) 
 
   return (
     <Link
-      href={`/events/${event.slug}`}
+      href={(href ?? `/events/${event.slug}`) as never}
       className="event-market-card group"
     >
       <div className={`event-market-card__visual ${coverImage ? "" : `bg-gradient-to-br ${visual}`}`}>

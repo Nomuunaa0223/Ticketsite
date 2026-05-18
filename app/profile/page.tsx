@@ -134,6 +134,7 @@ export default async function ProfilePage() {
                             summary: `${ticket.ticketType.name} · ${formatDateTime(ticket.event.startsAt)}`,
                             ticketTypes: [{ price: ticket.ticketType.price }]
                           }}
+                          href={`/tickets/${ticket.code}`}
                           ctaLabel={labels.viewTickets}
                         />
                         <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.1em] ${

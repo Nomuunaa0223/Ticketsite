@@ -86,10 +86,9 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
         if (!res.ok) {
           setFeedback({ message: data.error ?? "Алдаа гарлаа. Дахин оролдоно уу.", type: "error" });
         } else {
-          setFeedback({ message: "Амжилттай төлөгдлөө", type: "success" });
+          setFeedback({ message: "Тасалбар амжилттай авлаа! Шилжүүлж байна...", type: "success" });
           setQuantities({});
-          router.refresh();
-          setTimeout(() => setFeedback(null), 3000);
+          setTimeout(() => router.push("/profile"), 1200);
         }
       } catch {
         setFeedback({ message: "Сүлжээний алдаа. Дахин оролдоно уу.", type: "error" });
