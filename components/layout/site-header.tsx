@@ -27,7 +27,7 @@ export async function SiteHeader() {
         </div>
 
         <nav className="flex min-w-0 items-center gap-2 text-sm text-white/82 sm:gap-4">
-          <NavSearch />
+          {user ? <NavSearch /> : null}
           <LangDropdown />
           {user ? (
             <>
