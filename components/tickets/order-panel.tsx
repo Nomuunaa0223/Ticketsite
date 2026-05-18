@@ -116,8 +116,20 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
       )}
 
       {isSaleEnded ? (
-        <div className="rounded-xl bg-white/[0.04] px-4 py-5 text-center">
-          <p className="text-sm font-semibold text-white/60">Тасалбар зарагдаж дууслаа</p>
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-6 py-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.06]">
+            <svg viewBox="0 0 24 24" className="h-6 w-6 text-white/30" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M4 9a2 2 0 0 0 0 6v3h16v-3a2 2 0 0 0 0-6V6H4z" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12 6v12" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-goldman text-sm font-bold uppercase tracking-[0.12em] text-white/50">Sold Out</p>
+            <p className="mt-1 text-xs text-white/25">Тасалбар зарагдаж дууслаа</p>
+          </div>
+          <a href="/resale" className="mt-1 rounded-xl border border-[#ff7224]/30 px-5 py-2.5 text-xs font-bold text-[#ff7224] transition hover:bg-[#ff7224]/10">
+            Resale тасалбар харах →
+          </a>
         </div>
       ) : !hasTickets ? (
         <div className="rounded-xl bg-white/[0.04] px-4 py-5 text-center">
