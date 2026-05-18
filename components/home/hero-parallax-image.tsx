@@ -66,6 +66,7 @@ export function HeroParallaxImage() {
         quality={100}
         sizes="100vw"
         className="home-enter__image object-cover object-[center_35%] sm:object-center"
+        style={{ filter: "brightness(0.88) saturate(0.9)" }}
       />
     </div>
   );
