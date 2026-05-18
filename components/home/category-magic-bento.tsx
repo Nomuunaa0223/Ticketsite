@@ -212,7 +212,7 @@ export function CategoryMagicBento({
       {items.map((item, index) => (
         <Link
           key={item.slug}
-          href={{ pathname: "/events", query: { category: item.slug } }}
+          href={`/events#${item.slug}`}
           ref={(node) => {
             cardRefs.current[index] = node;
           }}

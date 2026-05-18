@@ -103,7 +103,7 @@ export function SiteFooter({ isLoggedIn }: { isLoggedIn?: boolean } = {}) {
             {categorySlugKeys.map(({ key, slug }) => (
               <Link
                 key={slug}
-                href={{ pathname: "/events", query: { category: slug } }}
+                href={`/events#${slug}`}
                 className="footer-hero__nav-link"
               >
                 {t(key)}

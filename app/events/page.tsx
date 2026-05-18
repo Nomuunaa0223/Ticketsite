@@ -5,6 +5,7 @@ import { TrendingEventsMarquee } from "@/components/events/trending-events-showc
 import { CategoryNav } from "@/components/layout/category-nav";
 import { getCurrentUser } from "@/lib/auth";
 import { toNumber } from "@/lib/utils";
+import { redirect } from "next/navigation";
 
 const categories = [
   { label: "Sports", slug: "sports" },
@@ -21,8 +22,11 @@ type Props = {
 
 export default async function EventsPage({ searchParams }: Props) {
   const { search, category } = await searchParams;
-  const activeCategory = categories.find((cat) => cat.slug === category);
-  const activeCategorySlug = activeCategory?.slug;
+  const legacyCategory = categories.find((cat) => cat.slug === category);
+
+  if (legacyCategory && !search) {
+    redirect(`/events#${legacyCategory.slug}`);
+  }
 
   const [categoryEventGroups, trendingEventsRaw, user, searchEventsRaw] = await Promise.all([
     Promise.all(categories.map((category) => getPublicEventsByCategory(category.slug, 12))),
@@ -67,7 +71,7 @@ export default async function EventsPage({ searchParams }: Props) {
       venue: { name: event.venue.name, city: event.venue.city },
       ticketTypes: event.ticketTypes.map((t) => ({ price: toNumber(t.price) }))
     }))
-  })).filter((section) => !activeCategorySlug || section.slug === activeCategorySlug);
+  }));
 
   const searchResults = searchEventsRaw.map((event) => ({
     id: event.id,
@@ -89,7 +93,7 @@ export default async function EventsPage({ searchParams }: Props) {
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8">
         {showCategoryNav ? (
           <div className="events-category-nav-wrap">
-            <CategoryNav className="events-category-nav" activeSlug={activeCategorySlug} />
+            <CategoryNav className="events-category-nav" />
           </div>
         ) : null}
         {search ? (
