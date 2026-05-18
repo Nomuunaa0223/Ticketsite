@@ -52,10 +52,12 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
     <>
       <section className="home-enter relative min-h-[100svh] overflow-hidden bg-[#06070d] sm:min-h-[calc(100vh-5.5rem)]">
         <HeroParallaxImage />
+        {/* general dim */}
+        <div className="absolute inset-0 bg-[rgba(4,3,2,0.32)]" />
         {/* amber tint matching site theme */}
-        <div className="absolute inset-0 bg-[rgba(255,114,36,0.13)]" />
+        <div className="absolute inset-0 bg-[rgba(255,114,36,0.08)]" />
         {/* vignette */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_42%,rgba(8,5,2,0.6)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(4,3,2,0.18)_0%,rgba(6,4,2,0.65)_100%)]" />
         {/* bottom fade into page */}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-[linear-gradient(0deg,rgba(6,7,13,1)_0%,rgba(6,7,13,0)_100%)]" />
 
