@@ -86,6 +86,8 @@ enum NotificationType {
   EVENT_REMINDER_24H
   EVENT_ENDING_30M
   EVENT_SUBMITTED
+  EVENT_PUBLISHED
+  EVENT_REJECTED
 }
 
 enum NotificationChannel {

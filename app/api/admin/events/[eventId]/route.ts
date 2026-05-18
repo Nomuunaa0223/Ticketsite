@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { EventStatus } from "@prisma/client";
 import { getSessionFromRequest } from "@/lib/auth";
 import { recordAuditLog } from "@/lib/audit";
+import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 type Context = {
@@ -45,8 +46,24 @@ export async function PATCH(request: Request, context: Context) {
         reviewNotes: body.reviewNotes,
         reviewedById: reviewer.id,
         publishedAt: nextStatus === EventStatus.PUBLISHED ? new Date() : null
-      }
+      },
+      include: { organizer: { include: { user: true } } }
     });
+
+    if (event.organizer?.user) {
+      const isApproved = body.decision === "approve";
+      await createUserNotification({
+        userId: event.organizer.user.id,
+        type: isApproved ? "EVENT_PUBLISHED" : "EVENT_REJECTED",
+        title: isApproved ? "Таны event нийтлэгдлээ!" : "Event татгалзагдлаа",
+        message: isApproved
+          ? `"${event.title}" event амжилттай нийтлэгдэж, хэрэглэгчид харах боломжтой боллоо.`
+          : `"${event.title}" event татгалзагдлаа.${body.reviewNotes ? ` Шалтгаан: ${body.reviewNotes}` : ""}`,
+        actionUrl: `/organizer/dashboard`,
+        eventId: event.id,
+        dedupeKey: `event:${event.id}:${body.decision}`,
+      });
+    }
 
     await recordAuditLog({
       actorUserId: reviewer.id,
