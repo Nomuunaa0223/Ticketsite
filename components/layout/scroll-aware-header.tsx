@@ -12,25 +12,13 @@ export function ScrollAwareHeader({ children }: { children: ReactNode }) {
     let ticking = false;
     let lastScrollY = window.scrollY;
 
-    const getTriggerTop = () => {
-      const trendingSection = document.getElementById("trending");
-
-      if (!trendingSection) {
-        return Number.POSITIVE_INFINITY;
-      }
-
-      return trendingSection.getBoundingClientRect().top + window.scrollY;
-    };
-
     const updateVisibility = () => {
       ticking = false;
 
       const currentScrollY = window.scrollY;
-      const triggerTop = getTriggerTop();
-      const isBeforeTrending = currentScrollY < triggerTop - 12;
       const delta = currentScrollY - lastScrollY;
 
-      if (isBeforeTrending || currentScrollY <= 8) {
+      if (currentScrollY <= 8) {
         setIsVisible(true);
       } else if (delta > 6) {
         setIsVisible(false);

@@ -10,8 +10,8 @@ export async function SiteHeader() {
   const initial = user?.fullName?.charAt(0).toUpperCase() ?? "";
 
   return (
-    <header className="z-40 bg-[linear-gradient(180deg,rgba(6,8,14,0.95),rgba(6,8,14,0.55),transparent)] backdrop-blur-md">
-      <div className="flex items-center justify-between gap-2 bg-[linear-gradient(180deg,rgba(10,14,25,0.98),rgba(9,12,22,0.9))] px-3 py-3 sm:gap-4 sm:px-8 sm:py-4 lg:px-12">
+    <header className="z-40 bg-black">
+      <div className="flex items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-8 sm:py-4 lg:px-12">
         <div className="flex min-w-0 items-center gap-4 sm:gap-6">
           <Link href="/" className="flex items-center text-[#ff7224]">
             <span className="text-lg font-bold uppercase tracking-[0.08em] sm:text-[1.55rem]">TIXORA</span>
