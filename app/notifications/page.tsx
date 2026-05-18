@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { Notification } from "@prisma/client";
 import { requireUser } from "@/lib/auth";
 import { getCurrentLang } from "@/lib/i18n-server";
@@ -361,10 +361,40 @@ function withTranslatedCopy(notification: Notification, context: NotificationCon
   if (notification.type === "EVENT_SUBMITTED" && event) {
     return {
       ...notification,
-      title: lang === "mn" ? "Ð¨Ð¸Ð½Ñ event Ò¯Ò¯ÑÐ»ÑÑ" : "New event submitted",
+      title: lang === "mn" ? "Шинэ event үүслээ" : "New event submitted",
       message: lang === "mn"
-        ? `${event.title} event-Ð¸Ð¹Ð³ Ñ…ÑÐ½Ð°Ð¶ Ð½Ð¸Ð¹Ñ‚Ð»ÑÑ… ÑˆÐ°Ð°Ñ€Ð´Ð»Ð°Ð³Ð°Ñ‚Ð°Ð¹.`
+        ? `${event.title} event-ийг хэнаж нийтлэх шаардлагатай.`
         : `${event.title} is ready for admin review.`
+    };
+  }
+
+  if (notification.type === "NEW_EVENT" && event) {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Шинэ event нэмэгдлээ!" : "New event available!",
+      message: lang === "mn"
+        ? `${event.title} — Тасалбар авах боломжтой болоод байна.`
+        : `${event.title} — Tickets are now available.`
+    };
+  }
+
+  if (notification.type === "EVENT_PUBLISHED") {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Таны event нийтлэгдлээ!" : "Your event is live!",
+      message: lang === "mn"
+        ? `${ticketEventTitle} амжилттай нийтлэгдж, хэрэглэгчид харах боломжтой боллоо.`
+        : `${ticketEventTitle} is now published and visible to users.`
+    };
+  }
+
+  if (notification.type === "EVENT_REJECTED") {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Event татгалзагдлаа" : "Event rejected",
+      message: lang === "mn"
+        ? `${ticketEventTitle} event татгалзагдлаа.`
+        : `${ticketEventTitle} was not approved.`
     };
   }
 
@@ -388,6 +418,9 @@ function getIconStyle(type: string) {
   if (type === "EVENT_REMINDER_24H") return "bg-[#ff7224]/10 text-[#ff7224]";
   if (type === "EVENT_ENDING_30M") return "bg-amber-500/10 text-amber-400";
   if (type === "EVENT_SUBMITTED") return "bg-violet-500/10 text-violet-300";
+  if (type === "NEW_EVENT") return "bg-[#ff7224]/10 text-[#ff7224]";
+  if (type === "EVENT_PUBLISHED") return "bg-emerald-500/10 text-emerald-400";
+  if (type === "EVENT_REJECTED") return "bg-red-500/10 text-red-400";
   return "bg-purple-500/10 text-purple-400";
 }
 
@@ -424,6 +457,24 @@ function renderIcon(type: string) {
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M5 4h14v16H5z" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M8 8h8M8 12h5M8 16h4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (type === "NEW_EVENT" || type === "EVENT_PUBLISHED") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 9a2 2 0 0 0 0 6v3h16v-3a2 2 0 0 0 0-6V6H4z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 6v12M9 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (type === "EVENT_REJECTED") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M15 9l-6 6M9 9l6 6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }

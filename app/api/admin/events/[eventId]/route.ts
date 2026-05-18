@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { EventStatus } from "@prisma/client";
 import { getSessionFromRequest } from "@/lib/auth";
 import { recordAuditLog } from "@/lib/audit";
-import { createUserNotification } from "@/lib/notifications";
+import { createUserNotification, notifyAllUsersOfNewEvent } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 type Context = {
@@ -47,11 +47,12 @@ export async function PATCH(request: Request, context: Context) {
         reviewedById: reviewer.id,
         publishedAt: nextStatus === EventStatus.PUBLISHED ? new Date() : null
       },
-      include: { organizer: { include: { user: true } } }
+      include: { organizer: { include: { user: true } }, category: true }
     });
 
+    const isApproved = body.decision === "approve";
+
     if (event.organizer?.user) {
-      const isApproved = body.decision === "approve";
       await createUserNotification({
         userId: event.organizer.user.id,
         type: isApproved ? "EVENT_PUBLISHED" : "EVENT_REJECTED",
@@ -62,6 +63,15 @@ export async function PATCH(request: Request, context: Context) {
         actionUrl: `/organizer/dashboard`,
         eventId: event.id,
         dedupeKey: `event:${event.id}:${body.decision}`,
+      });
+    }
+
+    if (isApproved) {
+      void notifyAllUsersOfNewEvent({
+        eventId: event.id,
+        eventTitle: event.title,
+        eventSlug: event.slug,
+        category: event.category.name,
       });
     }
 

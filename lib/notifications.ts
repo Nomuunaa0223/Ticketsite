@@ -77,6 +77,35 @@ export async function markAllNotificationsRead(userId: number) {
   });
 }
 
+export async function notifyAllUsersOfNewEvent(input: {
+  eventId: number;
+  eventTitle: string;
+  eventSlug: string;
+  category: string;
+}) {
+  const users = await prisma.user.findMany({
+    where: { role: "USER", status: "ACTIVE" },
+    select: { id: true },
+  });
+
+  const BATCH = 50;
+  for (let i = 0; i < users.length; i += BATCH) {
+    await Promise.all(
+      users.slice(i, i + BATCH).map((user) =>
+        createUserNotification({
+          userId: user.id,
+          type: NotificationType.NEW_EVENT,
+          title: "Шинэ event нэмэгдлээ!",
+          message: `${input.category} · ${input.eventTitle} — Тасалбар авах боломжтой болоод байна.`,
+          actionUrl: `/events/${input.eventSlug}`,
+          eventId: input.eventId,
+          dedupeKey: `event:${input.eventId}:new:user:${user.id}`,
+        })
+      )
+    );
+  }
+}
+
 export async function notifyAdminsOfEventSubmitted(input: {
   eventId: number;
   eventTitle: string;
