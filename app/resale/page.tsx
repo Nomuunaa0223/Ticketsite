@@ -102,7 +102,7 @@ export default async function ResalePage() {
                         </p>
                       </div>
                       <Link
-                        href={`/events/${listing.event.slug}`}
+                        href={`/resale/${listing.id}`}
                         className="rounded-xl bg-[#ff7224] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ff8c42]"
                       >
                         Авах
