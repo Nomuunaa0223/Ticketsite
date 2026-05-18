@@ -368,6 +368,16 @@ function withTranslatedCopy(notification: Notification, context: NotificationCon
     };
   }
 
+  if (notification.type === "TICKET_SOLD") {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Тасалбар амжилттай зарагдлаа!" : "Your ticket was sold!",
+      message: lang === "mn"
+        ? `${ticketEventTitle} — ${ticketTypeName} тасалбар шинэ эзэмшигч рүү шилжсэн. Хуучин QR код хүчингүй болсон.`
+        : `${ticketEventTitle} — ${ticketTypeName} ticket transferred to the new owner. Old QR code is now invalid.`
+    };
+  }
+
   if (notification.type === "NEW_EVENT" && event) {
     return {
       ...notification,
@@ -457,6 +467,16 @@ function renderIcon(type: string) {
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M5 4h14v16H5z" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M8 8h8M8 12h5M8 16h4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (type === "TICKET_SOLD") return "bg-emerald-500/10 text-emerald-400";
+  if (type === "TICKET_SOLD") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }

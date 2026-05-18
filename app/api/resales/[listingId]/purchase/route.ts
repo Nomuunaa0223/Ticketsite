@@ -117,9 +117,14 @@ export async function POST(request: Request, context: RouteContext) {
         }
       });
 
+      const newCode = `TIX-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      const newQrToken = `QR-${Math.random().toString(36).slice(2, 12).toUpperCase()}`;
+
       await tx.ticket.update({
         where: { id: listing.ticketId },
         data: {
+          code: newCode,
+          qrToken: newQrToken,
           currentOwnerId: buyerId,
           currentListedPrice: null,
           orderId: order.id,
@@ -173,21 +178,19 @@ export async function POST(request: Request, context: RouteContext) {
         userId: buyerId,
         type: "ORDER_CREATED",
         title: "Ticket таны profile рүү шилжлээ",
-        message: `${result.listing.event.title} - ${result.listing.ticketType.name} ticket таны эзэмшилд орлоо.`,
+        message: `${result.listing.event.title} — ${result.listing.ticketType.name} ticket таны эзэмшилд орлоо. Шинэ QR код үүслээ.`,
         actionUrl: "/profile",
         eventId: result.listing.eventId,
-        ticketId: result.listing.ticketId,
         orderId: result.order.id,
         dedupeKey: `resale:${result.listing.id}:buyer`
       }),
       createUserNotification({
         userId: result.listing.sellerId,
-        type: "ORDER_CREATED",
-        title: "Таны ticket зарагдлаа",
-        message: `${result.listing.event.title} - ${result.listing.ticketType.name} ticket шинэ эзэмшигч рүү шилжлээ.`,
+        type: "TICKET_SOLD",
+        title: "Тасалбар амжилттай зарагдлаа!",
+        message: `${result.listing.event.title} — ${result.listing.ticketType.name} тасалбар шинэ эзэмшигч рүү шилжсэн. Хуучин QR код хүчингүй болсон.`,
         actionUrl: "/profile",
         eventId: result.listing.eventId,
-        ticketId: result.listing.ticketId,
         orderId: result.order.id,
         dedupeKey: `resale:${result.listing.id}:seller`
       })

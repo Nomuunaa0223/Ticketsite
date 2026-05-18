@@ -89,6 +89,7 @@ enum NotificationType {
   EVENT_PUBLISHED
   EVENT_REJECTED
   NEW_EVENT
+  TICKET_SOLD
 }
 
 enum NotificationChannel {
