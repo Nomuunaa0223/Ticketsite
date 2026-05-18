@@ -226,7 +226,7 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
 
                 {/* Суудлын зураглал */}
                 {tt.hasSeatMap && isExpanded && (
-                  <div className="mt-4 rounded-xl bg-white/[0.02] p-4">
+                  <div className="mt-4 overflow-hidden rounded-xl bg-white/[0.02] p-4">
                     {seatLoading[tt.id] ? (
                       <div className="flex items-center justify-center py-8 text-xs text-white/30">
                         <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -248,8 +248,26 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
             );
           })}
 
+          {/* Нийт дүн */}
+          {orderItems.length > 0 && (() => {
+            const totalQty = orderItems.reduce((s, item) => s + item.quantity, 0);
+            const totalPrice = orderItems.reduce((s, item) => {
+              const tt = ticketTypes.find((t) => t.id === item.ticketTypeId);
+              return s + (tt ? tt.price * item.quantity : 0);
+            }, 0);
+            return (
+              <div className="flex items-center justify-between rounded-xl bg-white/[0.05] px-4 py-3">
+                <div>
+                  <p className="text-[0.65rem] text-white/40">Нийт дүн</p>
+                  <p className="text-xl font-bold text-white">{formatPrice(totalPrice, currency)}</p>
+                </div>
+                <p className="text-xs text-white/35">{totalQty} тасалбар</p>
+              </div>
+            );
+          })()}
+
           <button type="submit" disabled={isPending || orderItems.length === 0}
-            className="mt-2 w-full rounded-full bg-[#ff7224] py-4 text-base font-bold text-white transition hover:bg-[#e5641a] disabled:opacity-50">
+            className="w-full rounded-full bg-[#ff7224] py-4 text-base font-bold text-white transition hover:bg-[#e5641a] disabled:opacity-50">
             {isPending ? "Боловсруулж байна..." : "Худалдан авах"}
           </button>
 
