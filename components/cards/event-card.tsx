@@ -16,6 +16,7 @@ type EventCardProps = {
   };
   ctaLabel?: string;
   href?: string;
+  hideBadges?: boolean;
 };
 
 const categoryVisuals: Record<string, string> = {
@@ -33,7 +34,7 @@ const categoryVisuals: Record<string, string> = {
     "from-[#071225] via-[#173869] to-[#030711] before:bg-[radial-gradient(circle_at_50%_35%,rgba(85,171,255,0.52),transparent_24%),linear-gradient(120deg,transparent_24%,rgba(255,255,255,0.18)_25%,transparent_38%)]"
 };
 
-export function EventCard({ event, ctaLabel = "View Tickets", href }: EventCardProps) {
+export function EventCard({ event, ctaLabel = "View Tickets", href, hideBadges = false }: EventCardProps) {
   const prices = event.ticketTypes.map((ticketType) => toNumber(ticketType.price));
   const startingPrice = prices.length ? Math.min(...prices) : 0;
   const visual = categoryVisuals[event.category.slug ?? ""] ?? categoryVisuals.music;
@@ -50,14 +51,16 @@ export function EventCard({ event, ctaLabel = "View Tickets", href }: EventCardP
           <img src={coverImage} alt={event.title} className="absolute inset-0 h-full w-full object-cover" />
         ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.12)_42%,rgba(0,0,0,0.82)_100%)]" />
-        <div className="absolute left-3 top-3 flex gap-2">
-          <span className="rounded-full bg-black/70 px-2 py-1 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-white">
-            {event.category.name}
-          </span>
-          <span className="rounded-full bg-[#ff7224] px-2 py-1 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-white">
-            Published
-          </span>
-        </div>
+        {!hideBadges && (
+          <div className="absolute left-3 top-3 flex gap-2">
+            <span className="rounded-full bg-black/70 px-2 py-1 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-white">
+              {event.category.name}
+            </span>
+            <span className="rounded-full bg-[#ff7224] px-2 py-1 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-white">
+              Published
+            </span>
+          </div>
+        )}
         <div className="absolute inset-x-4 bottom-4">
           <h3 className="text-2xl font-bold leading-6 tracking-[-0.03em] text-white">{event.title}</h3>
           <p className="mt-2 line-clamp-2 text-xs leading-5 text-white/72">{event.summary}</p>
