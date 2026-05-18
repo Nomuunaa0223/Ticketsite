@@ -85,6 +85,7 @@ enum NotificationType {
   QR_CHECKED_IN
   EVENT_REMINDER_24H
   EVENT_ENDING_30M
+  EVENT_SUBMITTED
 }
 
 enum NotificationChannel {

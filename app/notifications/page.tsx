@@ -358,6 +358,16 @@ function withTranslatedCopy(notification: Notification, context: NotificationCon
     };
   }
 
+  if (notification.type === "EVENT_SUBMITTED" && event) {
+    return {
+      ...notification,
+      title: lang === "mn" ? "Ð¨Ð¸Ð½Ñ event Ò¯Ò¯ÑÐ»ÑÑ" : "New event submitted",
+      message: lang === "mn"
+        ? `${event.title} event-Ð¸Ð¹Ð³ Ñ…ÑÐ½Ð°Ð¶ Ð½Ð¸Ð¹Ñ‚Ð»ÑÑ… ÑˆÐ°Ð°Ñ€Ð´Ð»Ð°Ð³Ð°Ñ‚Ð°Ð¹.`
+        : `${event.title} is ready for admin review.`
+    };
+  }
+
   return notification;
 }
 
@@ -377,6 +387,7 @@ function getIconStyle(type: string) {
   if (type === "QR_CHECKED_IN") return "bg-blue-500/10 text-blue-400";
   if (type === "EVENT_REMINDER_24H") return "bg-[#ff7224]/10 text-[#ff7224]";
   if (type === "EVENT_ENDING_30M") return "bg-amber-500/10 text-amber-400";
+  if (type === "EVENT_SUBMITTED") return "bg-violet-500/10 text-violet-300";
   return "bg-purple-500/10 text-purple-400";
 }
 
@@ -404,6 +415,15 @@ function renderIcon(type: string) {
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="12" cy="12" r="8" />
         <path d={type === "EVENT_REMINDER_24H" ? "M12 7v5l3 2" : "M12 7v5l-3 2"} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (type === "EVENT_SUBMITTED") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M5 4h14v16H5z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M8 8h8M8 12h5M8 16h4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   }

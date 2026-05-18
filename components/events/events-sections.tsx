@@ -40,18 +40,12 @@ export function EventsSections({ sections }: Props) {
     <div className="mt-10 space-y-16">
       {populated.map((section) => (
         <section key={section.slug} id={section.slug} className="scroll-mt-36">
-          <div className="mb-6 flex items-end justify-between gap-4">
+          <div className="mb-6">
             <div className="pb-4 sm:pl-16">
               <h2 className="font-goldman text-2xl font-bold text-white sm:text-3xl">
                 {section.label}
               </h2>
             </div>
-            <Link
-              href={`/events#${section.slug}`}
-              className="shrink-0 text-xs font-semibold text-white/35 transition hover:text-white sm:text-sm"
-            >
-              View all →
-            </Link>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

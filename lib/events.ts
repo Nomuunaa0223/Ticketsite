@@ -6,6 +6,7 @@ import {
 } from "@prisma/client";
 import { recordAuditLog } from "@/lib/audit";
 import { calculateFromPrismaAmounts } from "@/lib/fees";
+import { notifyAdminsOfEventSubmitted } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slugs";
 import { eventInputSchema, type EventInput } from "@/lib/validations/event";
@@ -279,6 +280,12 @@ export async function createEventWithTicketTypes(input: EventInput, actor: User)
     entityId: event.id,
     description: `Created event ${event.title}`,
     metadata: { status: event.status, slug: event.slug }
+  });
+
+  await notifyAdminsOfEventSubmitted({
+    eventId: event.id,
+    eventTitle: event.title,
+    organizerName: actor.fullName
   });
 
   return event;

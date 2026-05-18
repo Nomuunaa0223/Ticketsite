@@ -77,6 +77,34 @@ export async function markAllNotificationsRead(userId: number) {
   });
 }
 
+export async function notifyAdminsOfEventSubmitted(input: {
+  eventId: number;
+  eventTitle: string;
+  organizerName: string;
+}) {
+  const admins = await prisma.user.findMany({
+    where: {
+      role: "ADMIN",
+      status: "ACTIVE"
+    },
+    select: { id: true }
+  });
+
+  await Promise.all(
+    admins.map((admin) =>
+      createUserNotification({
+        userId: admin.id,
+        type: NotificationType.EVENT_SUBMITTED,
+        title: "New event submitted",
+        message: `${input.organizerName} created ${input.eventTitle}. Review it before publishing.`,
+        actionUrl: `/dashboard/admin/events/${input.eventId}`,
+        eventId: input.eventId,
+        dedupeKey: `event:${input.eventId}:submitted:admin:${admin.id}`
+      })
+    )
+  );
+}
+
 export async function ensureReminderNotifications(userId: number) {
   const now = new Date();
   const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
