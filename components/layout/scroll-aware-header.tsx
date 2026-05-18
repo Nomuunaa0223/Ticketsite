@@ -34,6 +34,7 @@ export function ScrollAwareHeader({ children }: { children: ReactNode }) {
 
   return (
     <div
+      data-visible={isVisible ? "true" : "false"}
       className={`site-header-shell sticky top-0 z-50 transition-transform duration-300 ease-out ${
         isVisible ? "translate-y-0" : "-translate-y-full"
       }`}
