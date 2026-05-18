@@ -9,43 +9,26 @@ export function ScrollAwareHeader({ children }: { children: ReactNode }) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    let ticking = false;
     let lastScrollY = window.scrollY;
 
-    const updateVisibility = () => {
-      ticking = false;
-
+    const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      const delta = currentScrollY - lastScrollY;
 
-      if (currentScrollY <= 8) {
+      if (currentScrollY <= 10) {
         setIsVisible(true);
-      } else if (delta > 6) {
+      } else if (currentScrollY > lastScrollY) {
         setIsVisible(false);
-      } else if (delta < -6) {
+      } else {
         setIsVisible(true);
       }
 
       lastScrollY = currentScrollY;
     };
 
-    const handleScroll = () => {
-      if (ticking) return;
-
-      ticking = true;
-      window.requestAnimationFrame(updateVisibility);
-    };
-
-    setIsVisible(true);
-    lastScrollY = window.scrollY;
-    updateVisibility();
-
     window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", updateVisibility);
 
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", updateVisibility);
     };
   }, [pathname]);
 
