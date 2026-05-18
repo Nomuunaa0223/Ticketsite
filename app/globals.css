@@ -4000,13 +4000,43 @@ html[lang="mn"] [class*="tracking-"] {
 }
 
 html[lang="mn"] .home-hero-title-text {
-  font-size: 2rem;
+  font-size: 1.55rem;
   line-height: 1.14;
 }
 
 html[lang="mn"] .home-hero-subtitle-text {
-  font-size: 1.18rem;
-  line-height: 1.2;
+  font-size: 0.95rem;
+  line-height: 1.24;
+}
+
+@media (max-width: 639px) {
+  .home-hero-title-text {
+    font-size: 1.6rem;
+    line-height: 1.12;
+  }
+
+  .home-hero-subtitle-text {
+    margin-top: 0.55rem;
+    font-size: 0.98rem;
+    line-height: 1.24;
+  }
+
+  .home-enter .hero-pill {
+    padding: 0.28rem 0.54rem;
+    font-size: 0.58rem;
+    gap: 0.22rem;
+  }
+
+  .home-enter .hero-pill svg {
+    height: 0.78rem;
+    width: 0.78rem;
+  }
+
+  .home-enter .hero-primary-btn,
+  .home-enter .hero-secondary-btn {
+    min-height: 2.1rem;
+    border-radius: 0.72rem;
+  }
 }
 
 @media (min-width: 640px) {

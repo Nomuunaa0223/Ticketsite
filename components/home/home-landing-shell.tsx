@@ -69,7 +69,7 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
             </span>
           </h1>
 
-          <div className="home-enter__item mt-6 flex flex-wrap items-center justify-center gap-2 sm:mt-7 sm:gap-3 [--enter-delay:160ms]">
+          <div className="home-enter__item mt-4 flex flex-wrap items-center justify-center gap-1.5 sm:mt-7 sm:gap-3 [--enter-delay:160ms]">
             {featureBadges.map((badge) => (
               <div key={badge.icon} className="hero-pill">
                 <span className="text-[#ff7c34]">{renderFeatureIcon(badge.icon)}</span>
@@ -78,12 +78,12 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
             ))}
           </div>
 
-          <div className="home-enter__item mt-8 flex flex-row gap-2.5 sm:mt-10 sm:gap-3 [--enter-delay:360ms]">
-            <Link href="/events" className="hero-primary-btn font-goldman px-5 py-2.5 text-sm sm:px-8 sm:py-4 sm:text-base">
+          <div className="home-enter__item mt-5 flex flex-row gap-2 sm:mt-10 sm:gap-3 [--enter-delay:360ms]">
+            <Link href="/events" className="hero-primary-btn font-goldman px-4 py-2 text-xs sm:px-8 sm:py-4 sm:text-base">
               {t("heroBtnTickets")}
             </Link>
-            <Link href="#trending" className="hero-secondary-btn px-5 py-2.5 text-center sm:px-8 sm:py-4">
-              <span className="font-goldman text-sm sm:text-base">{t("heroBtnTrending")}</span>
+            <Link href="#trending" className="hero-secondary-btn px-4 py-2 text-center sm:px-8 sm:py-4">
+              <span className="font-goldman text-xs sm:text-base">{t("heroBtnTrending")}</span>
             </Link>
           </div>
 
@@ -105,7 +105,7 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
           <CategoryMagicBento items={categoryTiles} />
 
           <div className="mt-14 flex flex-col gap-4 px-4 sm:flex-row sm:items-end sm:justify-between sm:px-20">
-            <p className="font-goldman text-3xl font-bold text-white">{t("trendingEvents")}</p>
+            <p className="font-goldman text-xl font-bold text-white sm:text-3xl">{t("trendingEvents")}</p>
           </div>
 
           <TrendingParallaxGallery items={trendingGalleryItems} />
