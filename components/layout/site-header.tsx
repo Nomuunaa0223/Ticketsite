@@ -14,7 +14,7 @@ export async function SiteHeader() {
       <div className="flex items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-8 sm:py-4 lg:px-12">
         <div className="flex min-w-0 items-center gap-4 sm:gap-6">
           <Link href="/" className="flex items-center text-[#ff7224]">
-            <span className="text-lg font-bold uppercase tracking-[0.08em] sm:text-[1.55rem]">TIXORA</span>
+            <span className="login-card__brand">TIXORA</span>
           </Link>
           {user && (
             <Link
