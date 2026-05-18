@@ -11,6 +11,10 @@
     font-style: normal;
   }
 
+  .site-header__logo.login-card__brand {
+    font-size: 1.75rem;
+  }
+
   .header-join-btn {
     @apply rounded-full px-5 py-2.5 font-semibold text-white transition;
     position: relative;
@@ -3450,10 +3454,16 @@
 }
 
 @media (max-width: 639px) {
+  .site-header__logo.login-card__brand {
+    font-size: 1.08rem;
+    line-height: 1;
+  }
+
   .header-join-btn {
     min-width: auto;
-    padding: 0.55rem 0.85rem;
-    font-size: 0.82rem;
+    padding: 0.42rem 0.68rem;
+    font-size: 0.72rem;
+    line-height: 1;
   }
 
   .events-trending-showcase {

@@ -65,16 +65,16 @@ export function NavSearch() {
         className={`flex items-center overflow-hidden rounded-full transition-all duration-300 ${
           open
             ? "w-[calc(100vw-10rem)] max-w-52 bg-white/[0.07] ring-1 ring-white/15 sm:w-64 sm:max-w-none"
-            : "w-9"
+            : "w-8 sm:w-9"
         }`}
       >
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Search events"
-          className="flex h-9 w-9 shrink-0 items-center justify-center text-white/70 transition hover:text-white"
+          className="flex h-8 w-8 shrink-0 items-center justify-center text-white/70 transition hover:text-white sm:h-9 sm:w-9"
         >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg viewBox="0 0 24 24" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>

@@ -73,7 +73,7 @@ export function UserNavDropdown({ initial, fullName }: Props) {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={`${fullName} menu`}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-[#ff7224] text-sm font-bold text-white transition hover:bg-[#e5641a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff7224]/60"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ff7224] text-xs font-bold text-white transition hover:bg-[#e5641a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff7224]/60 sm:h-9 sm:w-9 sm:text-sm"
       >
         {initial}
       </button>

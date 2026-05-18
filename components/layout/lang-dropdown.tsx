@@ -25,9 +25,9 @@ export function LangDropdown() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Change language"
-        className="flex h-9 w-9 items-center justify-center rounded-full text-white/70 transition hover:bg-[#ff7224]/10 hover:text-[#ff7224] focus-visible:outline-none"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition hover:bg-[#ff7224]/10 hover:text-[#ff7224] focus-visible:outline-none sm:h-9 sm:w-9"
       >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg viewBox="0 0 24 24" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="10" />
           <path d="M2 12h20" />
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />

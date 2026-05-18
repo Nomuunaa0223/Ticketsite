@@ -10,11 +10,11 @@ export async function SiteHeader() {
   const initial = user?.fullName?.charAt(0).toUpperCase() ?? "";
 
   return (
-    <header className="z-40 bg-black">
-      <div className="flex items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-8 sm:py-4 lg:px-12">
-        <div className="flex min-w-0 items-center gap-4 sm:gap-6">
+    <header className="site-header z-40 bg-black">
+      <div className="flex items-center justify-between gap-1.5 px-2 py-2 sm:gap-4 sm:px-8 sm:py-4 lg:px-12">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-6">
           <Link href="/" className="flex items-center text-[#ff7224]">
-            <span className="login-card__brand">TIXORA</span>
+            <span className="site-header__logo login-card__brand">TIXORA</span>
           </Link>
           {user && (
             <Link
@@ -26,7 +26,7 @@ export async function SiteHeader() {
           )}
         </div>
 
-        <nav className="flex min-w-0 items-center gap-2 text-sm text-white/82 sm:gap-4">
+        <nav className="flex min-w-0 items-center gap-1.5 text-sm text-white/82 sm:gap-4">
           {user ? <NavSearch /> : null}
           <LangDropdown />
           {user ? (
