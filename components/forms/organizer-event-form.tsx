@@ -60,40 +60,34 @@ function ImageUploadSlot({
   aspect?: string;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const ref = useRef<HTMLInputElement>(null);
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setError(null);
     setUploading(true);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
+    try {
+      const form = new FormData();
+      form.set("file", file);
 
-    reader.onloadend = async () => {
-      try {
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            image: reader.result,
-          }),
-        });
+      const res = await fetch("/api/uploads", { method: "POST", body: form });
+      const data = (await res.json()) as { url?: string; error?: string };
 
-        const data = (await res.json()) as { url?: string };
-
-        if (data.url) onChange(data.url);
-      } finally {
-        setUploading(false);
+      if (!res.ok || !data.url) {
+        setError(data.error ?? "Upload амжилтгүй боллоо.");
+      } else {
+        onChange(data.url);
       }
-    };
-
-    reader.onerror = () => {
+    } catch {
+      setError("Сүлжээний алдаа. Дахин оролдоно уу.");
+    } finally {
       setUploading(false);
-    };
+      if (ref.current) ref.current.value = "";
+    }
   }
 
   return (
@@ -103,29 +97,41 @@ function ImageUploadSlot({
       <button
         type="button"
         onClick={() => ref.current?.click()}
-        className="relative w-full overflow-hidden rounded-xl"
+        disabled={uploading}
+        className="relative w-full overflow-hidden rounded-xl disabled:cursor-not-allowed"
         style={{ aspectRatio: aspect }}
       >
         {value ? (
           <Image src={value} alt={label} fill className="object-cover" sizes="100vw" />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white/[0.04] text-white/30 transition hover:bg-white/[0.07]">
-            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round" />
-              <polyline points="17 8 12 3 7 8" strokeLinecap="round" strokeLinejoin="round" />
-              <line x1="12" y1="3" x2="12" y2="15" strokeLinecap="round" />
-            </svg>
+            {uploading ? (
+              <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round" />
+                <polyline points="17 8 12 3 7 8" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="12" y1="3" x2="12" y2="15" strokeLinecap="round" />
+              </svg>
+            )}
             <span className="text-[0.7rem] font-semibold">
-              {uploading ? "Uploading..." : "Upload image"}
+              {uploading ? "Байршуулж байна..." : "Зураг оруулах"}
             </span>
           </div>
         )}
         {value && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition hover:opacity-100">
-            <span className="text-xs font-semibold text-white">{uploading ? "Uploading..." : "Change"}</span>
+            <span className="text-xs font-semibold text-white">
+              {uploading ? "Байршуулж байна..." : "Солих"}
+            </span>
           </div>
         )}
       </button>
+      {error && (
+        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">{error}</p>
+      )}
     </div>
   );
 }
