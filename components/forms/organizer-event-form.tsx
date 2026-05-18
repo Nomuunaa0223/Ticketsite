@@ -5,7 +5,14 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LocationPicker } from "@/components/forms/location-picker";
 
-type TicketType = { name: string; price: string; quantityTotal: string };
+type TicketType = {
+  name: string;
+  price: string;
+  quantityTotal: string;
+  hasSeatMap: boolean;
+  seatRows: string;
+  seatsPerRow: string;
+};
 
 type OrganizerEventFormProps = {
   categories: Array<{ id: string | number; name: string }>;
@@ -147,7 +154,7 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
   const [extraImages, setExtraImages] = useState<[string | null, string | null]>([null, null]);
 
   const [tickets, setTickets] = useState<TicketType[]>([
-    { name: "General Admission", price: "", quantityTotal: "" },
+    { name: "General Admission", price: "", quantityTotal: "", hasSeatMap: false, seatRows: "", seatsPerRow: "" },
   ]);
 
   function setExtraImage(i: 0 | 1, url: string) {
@@ -159,7 +166,10 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
   }
 
   function addTicket() {
-    setTickets((prev) => [...prev, { name: "", price: "", quantityTotal: "" }]);
+    setTickets((prev) => [
+      ...prev,
+      { name: "", price: "", quantityTotal: "", hasSeatMap: false, seatRows: "", seatsPerRow: "" },
+    ]);
   }
 
   function removeTicket(i: number) {
@@ -167,7 +177,13 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
   }
 
   function updateTicket(i: number, field: keyof TicketType, value: string) {
-    setTickets((prev) => prev.map((t, idx) => (idx === i ? { ...t, [field]: value } : t)));
+    setTickets((prev) =>
+      prev.map((t, idx) => {
+        if (idx !== i) return t;
+        if (field === "hasSeatMap") return { ...t, hasSeatMap: value === "true" };
+        return { ...t, [field]: value };
+      })
+    );
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -195,13 +211,22 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
       currency: "MNT",
       platformFeeBps: 900,
       serviceFeeBps: 350,
-      ticketTypes: tickets.map((t) => ({
-        name: t.name,
-        price: Number(t.price),
-        quantityTotal: Number(t.quantityTotal),
-        maxPerOrder: 8,
-        resaleAllowed: true,
-      })),
+      ticketTypes: tickets.map((t) => {
+        const rows = t.hasSeatMap
+          ? t.seatRows.split(",").map((r) => r.trim()).filter(Boolean)
+          : [];
+        const perRow = t.hasSeatMap ? Number(t.seatsPerRow) || 0 : 0;
+        const autoQty = t.hasSeatMap && rows.length > 0 && perRow > 0 ? rows.length * perRow : null;
+        return {
+          name: t.name,
+          price: Number(t.price),
+          quantityTotal: autoQty ?? Number(t.quantityTotal),
+          maxPerOrder: 8,
+          resaleAllowed: true,
+          hasSeatMap: t.hasSeatMap,
+          ...(t.hasSeatMap ? { seatRows: t.seatRows, seatsPerRow: perRow } : {}),
+        };
+      }),
       customVenue: {
         name: String(form.get("venueName")),
         city: String(form.get("venueCity")),
@@ -229,7 +254,7 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
     }
 
     event.currentTarget.reset();
-    setTickets([{ name: "General Admission", price: "", quantityTotal: "" }]);
+    setTickets([{ name: "General Admission", price: "", quantityTotal: "", hasSeatMap: false, seatRows: "", seatsPerRow: "" }]);
     setCoverImage(null);
     setExtraImages([null, null]);
     setMessage({ text: "Event request sent to admin review.", ok: true });
@@ -345,50 +370,103 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
         <SectionLabel>Ticket types</SectionLabel>
         <div className="grid gap-3">
           {tickets.map((ticket, i) => (
-            <div key={i} className="grid gap-3 rounded-xl bg-white/[0.03] p-4 ring-1 ring-white/[0.06] sm:grid-cols-[1fr_1fr_1fr_auto]">
-              <Field label="Ticket name">
-                <input
-                  value={ticket.name}
-                  onChange={(e) => updateTicket(i, "name", e.target.value)}
-                  required
-                  placeholder="General Admission"
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Price (₮)">
-                <input
-                  value={ticket.price}
-                  onChange={(e) => updateTicket(i, "price", e.target.value)}
-                  type="number"
-                  min="0"
-                  step="1"
-                  required
-                  placeholder="50000"
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Quantity">
-                <input
-                  value={ticket.quantityTotal}
-                  onChange={(e) => updateTicket(i, "quantityTotal", e.target.value)}
-                  type="number"
-                  min="1"
-                  required
-                  placeholder="100"
-                  className={inputCls}
-                />
-              </Field>
-              {tickets.length > 1 && (
-                <div className="flex items-end pb-0.5">
-                  <button
-                    type="button"
-                    onClick={() => removeTicket(i)}
-                    className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-white/[0.04] text-white/30 transition hover:bg-red-500/20 hover:text-red-400"
-                  >
-                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
+            <div key={i} className="rounded-xl bg-white/[0.03] p-4 ring-1 ring-white/[0.06]">
+              <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                <Field label="Ticket name">
+                  <input
+                    value={ticket.name}
+                    onChange={(e) => updateTicket(i, "name", e.target.value)}
+                    required
+                    placeholder="General Admission"
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Үнэ (₮)">
+                  <input
+                    value={ticket.price}
+                    onChange={(e) => updateTicket(i, "price", e.target.value)}
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    placeholder="50000"
+                    className={inputCls}
+                  />
+                </Field>
+                {!ticket.hasSeatMap && (
+                  <Field label="Тоо хэмжээ">
+                    <input
+                      value={ticket.quantityTotal}
+                      onChange={(e) => updateTicket(i, "quantityTotal", e.target.value)}
+                      type="number"
+                      min="1"
+                      required={!ticket.hasSeatMap}
+                      placeholder="100"
+                      className={inputCls}
+                    />
+                  </Field>
+                )}
+                {tickets.length > 1 && (
+                  <div className="flex items-end pb-0.5">
+                    <button
+                      type="button"
+                      onClick={() => removeTicket(i)}
+                      className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-white/[0.04] text-white/30 transition hover:bg-red-500/20 hover:text-red-400"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Суудлын зураглал тохиргоо */}
+              <div className="mt-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateTicket(i, "hasSeatMap", String(!ticket.hasSeatMap))}
+                  className={`flex h-5 w-9 shrink-0 items-center rounded-full transition ${ticket.hasSeatMap ? "bg-[#ff7224]" : "bg-white/[0.1]"}`}
+                >
+                  <span className={`ml-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${ticket.hasSeatMap ? "translate-x-4" : "translate-x-0"}`} />
+                </button>
+                <span className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-white/40">
+                  Суудлын зураглалтай
+                </span>
+              </div>
+
+              {ticket.hasSeatMap && (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <Field label="Эгнээ (жш: A,B,C,D,E)">
+                    <input
+                      value={ticket.seatRows}
+                      onChange={(e) => updateTicket(i, "seatRows", e.target.value)}
+                      placeholder="A,B,C,D,E"
+                      required={ticket.hasSeatMap}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Суудал / эгнээ">
+                    <input
+                      value={ticket.seatsPerRow}
+                      onChange={(e) => updateTicket(i, "seatsPerRow", e.target.value)}
+                      type="number"
+                      min="1"
+                      max="50"
+                      placeholder="10"
+                      required={ticket.hasSeatMap}
+                      className={inputCls}
+                    />
+                  </Field>
+                  {ticket.seatRows && ticket.seatsPerRow && (
+                    <p className="text-[0.65rem] text-white/30 sm:col-span-2">
+                      Нийт:{" "}
+                      <span className="font-semibold text-[#ff7224]">
+                        {ticket.seatRows.split(",").filter((r) => r.trim()).length * (Number(ticket.seatsPerRow) || 0)}
+                      </span>{" "}
+                      суудал үүснэ
+                    </p>
+                  )}
                 </div>
               )}
             </div>

@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { SeatMap, type SeatData } from "@/components/tickets/seat-map";
 
 type TicketType = {
   id: number;
@@ -12,6 +13,7 @@ type TicketType = {
   quantityTotal: number;
   quantitySold: number;
   maxPerOrder: number;
+  hasSeatMap?: boolean;
 };
 
 type Props = {
@@ -34,19 +36,15 @@ function useCountdown(target: Date) {
 
   useEffect(() => {
     setDiff(Math.max(0, targetTime - Date.now()));
-    const id = setInterval(() => {
-      setDiff(Math.max(0, targetTime - Date.now()));
-    }, 1000);
+    const id = setInterval(() => setDiff(Math.max(0, targetTime - Date.now())), 1000);
     return () => clearInterval(id);
   }, [targetTime]);
 
   if (diff === null) return { days: 0, hours: 0, minutes: 0, seconds: 0, ended: false, ready: false };
-
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
   return { days, hours, minutes, seconds, ended: diff === 0, ready: true };
 }
 
@@ -54,6 +52,10 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [quantities, setQuantities] = useState<Record<number, number>>({});
+  const [selectedSeats, setSelectedSeats] = useState<Record<number, number[]>>({});
+  const [seatData, setSeatData] = useState<Record<number, SeatData[]>>({});
+  const [seatLoading, setSeatLoading] = useState<Record<number, boolean>>({});
+  const [expandedSeatMap, setExpandedSeatMap] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const saleEnd = new Date(salesEndsAt);
@@ -64,8 +66,45 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
     setQuantities((prev) => ({ ...prev, [id]: value }));
   }
 
+  function toggleSeat(ticketTypeId: number, seatId: number) {
+    setSelectedSeats((prev) => {
+      const current = prev[ticketTypeId] ?? [];
+      if (current.includes(seatId)) {
+        return { ...prev, [ticketTypeId]: current.filter((s) => s !== seatId) };
+      }
+      return { ...prev, [ticketTypeId]: [...current, seatId] };
+    });
+  }
+
+  async function fetchSeats(ticketTypeId: number) {
+    if (seatData[ticketTypeId]) return;
+    setSeatLoading((prev) => ({ ...prev, [ticketTypeId]: true }));
+    try {
+      const res = await fetch(`/api/seats?ticketTypeId=${ticketTypeId}`);
+      const data = (await res.json()) as { seats: SeatData[] };
+      setSeatData((prev) => ({ ...prev, [ticketTypeId]: data.seats ?? [] }));
+    } finally {
+      setSeatLoading((prev) => ({ ...prev, [ticketTypeId]: false }));
+    }
+  }
+
+  function handleToggleSeatMap(ticketTypeId: number) {
+    if (expandedSeatMap === ticketTypeId) {
+      setExpandedSeatMap(null);
+    } else {
+      setExpandedSeatMap(ticketTypeId);
+      void fetchSeats(ticketTypeId);
+    }
+  }
+
   const orderItems = ticketTypes
-    .map((tt) => ({ ticketTypeId: tt.id, quantity: quantities[tt.id] ?? 0 }))
+    .map((tt) => {
+      if (tt.hasSeatMap) {
+        const seats = selectedSeats[tt.id] ?? [];
+        return { ticketTypeId: tt.id, seatIds: seats, quantity: seats.length };
+      }
+      return { ticketTypeId: tt.id, quantity: quantities[tt.id] ?? 0, seatIds: undefined };
+    })
     .filter((item) => item.quantity > 0);
 
   function handleOrder(e: React.FormEvent) {
@@ -88,6 +127,7 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
         } else {
           setFeedback({ message: "Тасалбар амжилттай авлаа! Шилжүүлж байна...", type: "success" });
           setQuantities({});
+          setSelectedSeats({});
           setTimeout(() => router.push("/profile"), 1200);
         }
       } catch {
@@ -99,7 +139,7 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
   return (
     <div className={`rounded-2xl bg-[#0d1017] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.4)] sm:p-7 ${className ?? ""}`}>
 
-      {/* Countdown */}
+      {/* Тоолуур */}
       {!isSaleEnded && (
         <div className="mb-6 rounded-xl bg-white/[0.04] px-5 py-4">
           <p className="text-sm text-white/40">Тасалбар зарагдаж дуусахад:</p>
@@ -142,6 +182,8 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
             const isSoldOut = remaining <= 0;
             const qty = quantities[tt.id] ?? 0;
             const maxQty = Math.min(tt.maxPerOrder, remaining);
+            const seats = selectedSeats[tt.id] ?? [];
+            const isExpanded = expandedSeatMap === tt.id;
 
             return (
               <div key={tt.id} className={`rounded-xl p-4 transition-colors sm:p-5 ${isSoldOut ? "opacity-40" : "bg-white/[0.03]"}`}>
@@ -153,6 +195,20 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
 
                   {isSoldOut ? (
                     <p className="text-sm text-white/30">Дууссан</p>
+                  ) : tt.hasSeatMap ? (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSeatMap(tt.id)}
+                      className="flex items-center gap-2 rounded-xl bg-white/[0.07] px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/[0.12]"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1" />
+                        <rect x="14" y="3" width="7" height="7" rx="1" />
+                        <rect x="3" y="14" width="7" height="7" rx="1" />
+                        <rect x="14" y="14" width="7" height="7" rx="1" />
+                      </svg>
+                      {isExpanded ? "Хаах" : seats.length > 0 ? `${seats.length} суудал сонгосон` : "Суудал сонгох"}
+                    </button>
                   ) : (
                     <div className="flex items-center gap-4">
                       <button type="button" onClick={() => setQty(tt.id, Math.max(0, qty - 1))}
@@ -167,6 +223,27 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
                     </div>
                   )}
                 </div>
+
+                {/* Суудлын зураглал */}
+                {tt.hasSeatMap && isExpanded && (
+                  <div className="mt-4 rounded-xl bg-white/[0.02] p-4">
+                    {seatLoading[tt.id] ? (
+                      <div className="flex items-center justify-center py-8 text-xs text-white/30">
+                        <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round" />
+                        </svg>
+                        Суудлын мэдээлэл ачааллаж байна...
+                      </div>
+                    ) : (
+                      <SeatMap
+                        seats={seatData[tt.id] ?? []}
+                        selected={seats}
+                        onToggle={(seatId) => toggleSeat(tt.id, seatId)}
+                        maxSelect={tt.maxPerOrder}
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

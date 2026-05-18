@@ -263,8 +263,9 @@ export async function createEventWithTicketTypes(input: EventInput, actor: User)
           resalePriceCap: ticketType.resalePriceCap
             ? new Prisma.Decimal(ticketType.resalePriceCap)
             : null,
+          hasSeatMap: ticketType.hasSeatMap,
           startsAt: ticketType.startsAt,
-          endsAt: ticketType.endsAt
+          endsAt: ticketType.endsAt,
         }))
       }
     },
@@ -272,6 +273,25 @@ export async function createEventWithTicketTypes(input: EventInput, actor: User)
       ticketTypes: true
     }
   });
+
+  // Суудлын зураглал үүсгэх
+  for (const [i, ticketTypeInput] of validated.ticketTypes.entries()) {
+    if (ticketTypeInput.hasSeatMap && ticketTypeInput.seatRows && ticketTypeInput.seatsPerRow) {
+      const createdType = event.ticketTypes[i];
+      const rows = ticketTypeInput.seatRows.split(",").map((r) => r.trim()).filter(Boolean);
+      const seatsData = rows.flatMap((row) =>
+        Array.from({ length: ticketTypeInput.seatsPerRow! }, (_, idx) => ({
+          ticketTypeId: createdType.id,
+          row,
+          number: idx + 1,
+          label: `${row}${idx + 1}`,
+        }))
+      );
+      if (seatsData.length > 0) {
+        await prisma.seat.createMany({ data: seatsData });
+      }
+    }
+  }
 
   await recordAuditLog({
     actorUserId: actor.id,

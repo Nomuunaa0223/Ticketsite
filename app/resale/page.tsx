@@ -157,7 +157,7 @@ function ListingCard({ listing, isMine }: { listing: Listing; isMine: boolean })
             </span>
           ) : (
             <Link
-              href={`/resale/${listing.id}`}
+              href={`/resale/${listing.id}` as never}
               className="rounded-xl bg-[#ff7224] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ff8c42]"
             >
               Авах

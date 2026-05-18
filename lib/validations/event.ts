@@ -9,7 +9,10 @@ export const ticketTypeInputSchema = z.object({
   resaleAllowed: z.coerce.boolean().default(true),
   resalePriceCap: z.coerce.number().positive().optional(),
   startsAt: z.coerce.date().optional(),
-  endsAt: z.coerce.date().optional()
+  endsAt: z.coerce.date().optional(),
+  hasSeatMap: z.boolean().default(false),
+  seatRows: z.string().max(200).optional(),
+  seatsPerRow: z.coerce.number().int().positive().max(200).optional(),
 });
 
 export const relatedImageInputSchema = z.object({

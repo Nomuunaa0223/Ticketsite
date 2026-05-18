@@ -55,7 +55,8 @@ export default async function EventDetailPage({ params }: Props) {
     price: toNumber(ticketType.price),
     quantityTotal: ticketType.quantityTotal,
     quantitySold: ticketType.quantitySold,
-    maxPerOrder: ticketType.maxPerOrder
+    maxPerOrder: ticketType.maxPerOrder,
+    hasSeatMap: ticketType.hasSeatMap,
   }));
 
   const categorySlug = event.category.slug ?? "";

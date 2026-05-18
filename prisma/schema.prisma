@@ -80,6 +80,12 @@ enum AuditActorType {
   SYSTEM
 }
 
+enum SeatStatus {
+  AVAILABLE
+  RESERVED
+  SOLD
+}
+
 enum NotificationType {
   ORDER_CREATED
   QR_CHECKED_IN
@@ -303,11 +309,13 @@ model TicketType {
   maxPerOrder    Int             @default(8)
   resaleAllowed  Boolean         @default(true)
   resalePriceCap Decimal?        @db.Decimal(10, 2)
+  hasSeatMap     Boolean         @default(false)
   startsAt       DateTime?
   endsAt         DateTime?
   event          Event           @relation(fields: [eventId], references: [id])
   orderItems     OrderItem[]
   tickets        Ticket[]
+  seats          Seat[]
   resaleListings ResaleListing[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -385,11 +393,13 @@ model Ticket {
   resaleAllowed      Boolean                  @default(true)
   originalPrice      Decimal                  @db.Decimal(10, 2)
   currentListedPrice Decimal?                 @db.Decimal(10, 2)
+  seatId             Int?                     @unique
   checkedInAt        DateTime?
   event              Event                    @relation(fields: [eventId], references: [id])
   ticketType         TicketType               @relation(fields: [ticketTypeId], references: [id])
   order              Order?                   @relation(fields: [orderId], references: [id])
   currentOwner       User                     @relation("TicketCurrentOwner", fields: [currentOwnerId], references: [id])
+  seat               Seat?                    @relation(fields: [seatId], references: [id])
   checkIn            CheckIn?
   resaleListings     ResaleListing[]
   ownershipHistory   TicketOwnershipHistory[]
@@ -456,6 +466,22 @@ model TicketOwnershipHistory {
 
   @@index([ticketId, createdAt])
   @@index([toUserId, createdAt])
+}
+
+model Seat {
+  id           Int        @id @default(autoincrement())
+  ticketTypeId Int
+  row          String
+  number       Int
+  label        String
+  status       SeatStatus @default(AVAILABLE)
+  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
+  ticket       Ticket?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([ticketTypeId, row, number])
+  @@index([ticketTypeId, status])
 }
 
 model AuditLog {
