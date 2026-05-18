@@ -61,7 +61,7 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
         {/* bottom fade into page */}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-[linear-gradient(0deg,rgba(6,7,13,1)_0%,rgba(6,7,13,0)_100%)]" />
 
-        <div className="relative flex min-h-[100svh] flex-col items-center justify-center px-5 pb-16 pt-24 text-center sm:min-h-[calc(100vh-5.5rem)] sm:px-8 sm:pb-12 sm:pt-10 lg:px-12 lg:pt-16">
+        <div className="relative flex min-h-[100svh] flex-col items-center justify-center px-5 pb-28 pt-14 text-center sm:min-h-[calc(100vh-5.5rem)] sm:px-8 sm:pb-12 sm:pt-10 lg:px-12 lg:pt-16">
           <h1 className="home-enter__item max-w-4xl text-balance font-goldman font-bold leading-[1.14] tracking-[-0.03em] text-white">
             <span className="home-hero-title-text block text-[2.1rem] sm:text-4xl lg:text-[4rem]">{t("heroTitle")}</span>
             <span className="home-hero-subtitle-text mt-3 block font-goldman text-[1.35rem] font-semibold tracking-[-0.01em] text-white/85 sm:mt-6 sm:text-[2.25rem]">
