@@ -15,7 +15,12 @@ import { SiteHeader } from "@/components/layout/site-header";
 
 export const metadata: Metadata = {
   title: "Tixora",
-  description: "Fair tickets with visible pricing, verified ownership, and calmer event operations."
+  description: "Fair tickets with visible pricing, verified ownership, and calmer event operations.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default async function RootLayout({
