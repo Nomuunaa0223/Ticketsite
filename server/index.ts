@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import next from "next";
 import { Server as SocketIOServer } from "socket.io";
-import { realtimeHub } from "../lib/realtime-events";
+import { realtimeHub, startRealtimeBridge } from "../lib/realtime-events";
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME ?? "localhost";
@@ -18,6 +18,8 @@ void app.prepare().then(() => {
       credentials: true
     }
   });
+
+  startRealtimeBridge();
 
   io.on("connection", (socket) => {
     socket.on("join-event", (eventId: number) => {
