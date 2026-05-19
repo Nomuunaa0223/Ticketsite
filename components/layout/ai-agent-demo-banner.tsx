@@ -72,10 +72,10 @@ export function AiAgentDemoBanner() {
 
   function wantsEventDraft(prompt: string) {
     const normalized = prompt.toLowerCase();
-    const hasEventWord = ["event", "arga hemjee", "concert", "festival", "workshop", "meeting"].some((word) =>
+    const hasEventWord = ["event", "арга хэмжээ", "arga hemjee", "concert", "festival", "workshop", "meeting"].some((word) =>
       normalized.includes(word)
     );
-    const hasCreateWord = ["uusge", "create", "generate", "hiigeed", "hii", "draft"].some((word) =>
+    const hasCreateWord = ["uusge", "uusgii", "үүсгэ", "үүсгий", "create", "generate", "hiigeed", "hii", "хий", "draft"].some((word) =>
       normalized.includes(word)
     );
 
