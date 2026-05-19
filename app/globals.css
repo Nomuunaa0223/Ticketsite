@@ -629,6 +629,11 @@
     color: rgb(255, 255, 255);
   }
 
+  .events-category-nav .category-nav-line-break {
+    flex-basis: 100%;
+    height: 0;
+  }
+
   .events-category-nav a {
     display: inline-flex;
     min-height: 2.45rem;
@@ -3496,18 +3501,13 @@
   }
 
   .events-category-nav {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 0.25rem;
-    scrollbar-width: none;
-  }
-
-  .events-category-nav::-webkit-scrollbar {
-    display: none;
+    flex-wrap: wrap;
+    overflow: visible;
+    padding-bottom: 0;
   }
 
   .events-category-nav a {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
   }
 
   #trending {
@@ -3658,7 +3658,12 @@
   }
 
   .week-events-header__cta {
+    flex: 0 0 auto;
     width: fit-content;
+    gap: 0.2rem;
+    font-size: 0.6rem;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   .highlight-event-card {
@@ -4011,8 +4016,8 @@ html[lang="mn"] .home-hero-subtitle-text {
 
 @media (max-width: 639px) {
   .home-hero-title-text {
-    font-size: 1.78rem;
-    line-height: 1.12;
+    font-size: 2.35rem;
+    line-height: 1.08;
   }
 
   .home-hero-subtitle-text {

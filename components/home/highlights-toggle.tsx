@@ -70,7 +70,7 @@ export function HighlightsToggle({ events }: { events: HighlightEvent[] }) {
         </div>
       </Link>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         {cards.map((event, i) => {
           const overrideTitle =
             i === 0 ? "Тамгагүй Төр жүжгийн олон улсын West End хувилбар болох \"Монгол Хаан\" жүжиг" :

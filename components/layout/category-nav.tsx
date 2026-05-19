@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 const CATEGORIES = [
   { label: "Sports", slug: "sports" },
@@ -50,17 +50,19 @@ export function CategoryNav({ className, activeSlug }: Props) {
         All
       </Link>
       {CATEGORIES.map((cat) => (
-        <Link
-          key={cat.slug}
-          href={`/events#${cat.slug}`}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:py-2 sm:text-sm ${
-            currentSlug === cat.slug
-              ? "bg-[#ff7224] text-white"
-              : "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white"
-          }`}
-        >
-          {cat.label}
-        </Link>
+        <Fragment key={cat.slug}>
+          {cat.slug === "comedy" ? <span className="category-nav-line-break" aria-hidden="true" /> : null}
+          <Link
+            href={`/events#${cat.slug}`}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:py-2 sm:text-sm ${
+              currentSlug === cat.slug
+                ? "bg-[#ff7224] text-white"
+                : "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white"
+            }`}
+          >
+            {cat.label}
+          </Link>
+        </Fragment>
       ))}
     </nav>
   );
