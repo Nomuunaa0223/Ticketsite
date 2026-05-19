@@ -43,6 +43,7 @@ export function AiAgentDemoBanner() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [isAskingAgent, setIsAskingAgent] = useState(false);
   const [isGeneratingEvent, setIsGeneratingEvent] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [eventDraftDetails, setEventDraftDetails] = useState<EventDraftDetails | null>(null);
@@ -80,36 +81,6 @@ export function AiAgentDemoBanner() {
 
   if (shouldHide) {
     return null;
-  }
-
-  function buildReply(prompt: string) {
-    const normalized = prompt.toLowerCase();
-
-    if (normalized.includes("fee")) {
-      return "Tixora deer fee nuugdmal bish. Ticket une, service fee, resale buyer fee gej yalgaj haruulna.";
-    }
-
-    if (normalized.includes("ticket") || normalized.includes("avah")) {
-      return "Ticket avahdaa event songood ticket type, quantity esvel seat-aa songono. Daraa ni tulburuu batalgaajuulahad ticket profile deer orno.";
-    }
-
-    if (normalized.includes("notif")) {
-      return "Notification system ni zahialga amjilttai bolhod, QR scan hiigdhed, event ehlehees 1 udriin umnu, duusahas 30 minutiin umnu medegdeh zorilgotoi.";
-    }
-
-    if (normalized.includes("organizer") || normalized.includes("dashboard")) {
-      return "Organizer dashboard deer event uusgeh, ticket type udirdah, resale rule tavih, audit visibility harah bolomjtoi.";
-    }
-
-    if (normalized.includes("resale") || normalized.includes("sell")) {
-      return "Resale ni platform-controlled. Ticket bur neg current owner-toi, ownership history hadgalagddag, organizer rule daguu zaragddana.";
-    }
-
-    if (normalized.includes("qr") || normalized.includes("check")) {
-      return "QR access ni ownership-based. Check-in hiih ued current owner shalgagdaj, scan hiigdsen bol notification ochino.";
-    }
-
-    return `${pageHint} Event uusgeh bol "event uusge" gej bich. Bi dutuu medeelel buriig asuugaad draft beldene.`;
   }
 
   function wantsEventDraft(prompt: string) {
@@ -266,6 +237,66 @@ export function AiAgentDemoBanner() {
     };
   }
 
+  async function askSupportAgent(prompt: string): Promise<Message> {
+    const response = await fetch("/api/ai/agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: prompt })
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      answer?: string;
+      error?: string;
+      events?: Array<{
+        title: string;
+        slug: string;
+        startsAt?: string;
+        venue?: string;
+        city?: string;
+        lowestPrice?: number | null;
+        available?: number;
+      }>;
+      tickets?: Array<{
+        code: string;
+        event: string;
+        eventSlug: string;
+        startsAt?: string;
+        ticketType: string;
+        seat?: string | null;
+      }>;
+    };
+
+    if (!response.ok) {
+      return {
+        role: "assistant",
+        text: data.error ?? "Tixy Ai одоогоор хариулж чадсангүй. Дахин оролдоно уу."
+      };
+    }
+
+    const eventLines = (data.events ?? []).slice(0, 3).map((event, index) => {
+      const date = event.startsAt ? new Date(event.startsAt).toLocaleString("mn-MN", { dateStyle: "medium", timeStyle: "short" }) : "date TBD";
+      const price = typeof event.lowestPrice === "number" ? `, ${event.lowestPrice.toLocaleString("mn-MN")} MNT` : "";
+      const available = typeof event.available === "number" ? `, ${event.available} үлдсэн` : "";
+      return `${index + 1}. ${event.title} - ${date}${event.venue ? `, ${event.venue}` : ""}${event.city ? `, ${event.city}` : ""}${price}${available}`;
+    });
+    const ticketLines = (data.tickets ?? []).slice(0, 3).map((ticket, index) => {
+      const date = ticket.startsAt ? new Date(ticket.startsAt).toLocaleString("mn-MN", { dateStyle: "medium", timeStyle: "short" }) : "date TBD";
+      return `${index + 1}. ${ticket.event} - ${ticket.ticketType}${ticket.seat ? `, суудал ${ticket.seat}` : ""}, ${date}, code: ${ticket.code}`;
+    });
+    const firstEvent = data.events?.[0];
+    const firstTicket = data.tickets?.[0];
+
+    return {
+      role: "assistant",
+      text: [
+        data.answer ?? "Хариулт олдлоо.",
+        eventLines.length ? `\nEvent санал:\n${eventLines.join("\n")}` : "",
+        ticketLines.length ? `\nTicket:\n${ticketLines.join("\n")}` : ""
+      ].filter(Boolean).join("\n"),
+      actionUrl: firstEvent ? `/events/${firstEvent.slug}` : firstTicket ? `/tickets/${firstTicket.code}` : undefined,
+      actionLabel: firstEvent ? "Event харах" : firstTicket ? "Ticket харах" : undefined
+    };
+  }
+
   async function handleDraftReview(answer: string) {
     if (!eventDraftDetails) return;
 
@@ -331,11 +362,16 @@ export function AiAgentDemoBanner() {
       return;
     }
 
+    setIsAskingAgent(true);
     setMessages((current) => [
       ...current,
       { role: "user", text: value },
-      { role: "assistant", text: buildReply(value) }
+      { role: "assistant", text: "Tixy Ai хайж байна..." }
     ]);
+
+    const reply = await askSupportAgent(value);
+    setMessages((current) => [...current.slice(0, -1), reply]);
+    setIsAskingAgent(false);
   }
 
   async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -522,10 +558,10 @@ export function AiAgentDemoBanner() {
                 <div className="flex items-center justify-end">
                   <button
                     type="submit"
-                    disabled={isGeneratingEvent || isUploadingImage}
+                    disabled={isGeneratingEvent || isUploadingImage || isAskingAgent}
                     className="rounded-full bg-[#f6df8f] px-5 py-3 text-sm font-semibold text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {isGeneratingEvent ? "Creating" : "Send"}
+                    {isGeneratingEvent ? "Creating" : isAskingAgent ? "Asking" : "Send"}
                   </button>
                 </div>
               </form>
