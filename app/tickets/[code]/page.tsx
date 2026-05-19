@@ -43,7 +43,7 @@ export default async function TicketPage({ params }: Props) {
   const qrSvg = await generateQRSvg(ticket.code);
 
   return (
-    <section className="min-h-screen bg-[#07080d] px-4 py-12 sm:px-6">
+    <section className="min-h-screen bg-[#07080d] px-4 py-4 sm:px-6">
       <div className="mx-auto max-w-lg">
 
         {/* Back */}
@@ -95,11 +95,10 @@ export default async function TicketPage({ params }: Props) {
             )}
 
             {/* Status badge */}
-            <span className={`mt-4 rounded-full px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.16em] ${
-              isActive ? "bg-emerald-400/14 text-emerald-300" :
-              isCheckedIn ? "bg-blue-400/14 text-blue-300" :
-              "bg-white/10 text-white/40"
-            }`}>
+            <span className={`mt-4 rounded-full px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.16em] ${isActive ? "bg-emerald-400/14 text-emerald-300" :
+                isCheckedIn ? "bg-blue-400/14 text-blue-300" :
+                  "bg-white/10 text-white/40"
+              }`}>
               {isActive ? "Идэвхтэй" : isCheckedIn ? "Ашигласан" : ticket.status}
             </span>
 
