@@ -112,7 +112,8 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
   }, []);
 
   useEffect(() => {
-    const socket: Socket = io({ path: "/socket.io", transports: ["websocket", "polling"] });
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    const socket: Socket = io(socketUrl || undefined, { path: "/socket.io", transports: ["websocket", "polling"] });
     socket.emit("join-event", eventId);
     socket.on("seat-updated", (payload: { ticketTypeId: number; seatId: number; status: SeatData["status"] }) => {
       setSeatData((prev) => {
