@@ -39,6 +39,34 @@ type Message = {
   imageUrl?: string;
 };
 
+const chatStorageKey = "tixora-ai-chat-v1";
+const chatRetentionMs = 24 * 60 * 60 * 1000;
+const initialChatMessages: Message[] = [
+  {
+    role: "assistant",
+    text: "Sain baina uu, bi Tixy Ai. Event, ticket, fee, resale, QR scan talaar asuuhad belen baina."
+  }
+];
+
+function getStoredChatMessages() {
+  if (typeof window === "undefined") return initialChatMessages;
+
+  try {
+    const stored = window.localStorage.getItem(chatStorageKey);
+    if (!stored) return initialChatMessages;
+
+    const parsed = JSON.parse(stored) as { savedAt?: number; messages?: Message[] };
+    if (!parsed.savedAt || Date.now() - parsed.savedAt > chatRetentionMs) {
+      window.localStorage.removeItem(chatStorageKey);
+      return initialChatMessages;
+    }
+
+    return Array.isArray(parsed.messages) && parsed.messages.length ? parsed.messages : initialChatMessages;
+  } catch {
+    return initialChatMessages;
+  }
+}
+
 export function AiAgentDemoBanner() {
   const pathname = usePathname();
   const messageListRef = useRef<HTMLDivElement | null>(null);
@@ -51,12 +79,7 @@ export function AiAgentDemoBanner() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number | null>(null);
   const [isReviewingDraft, setIsReviewingDraft] = useState(false);
   const [attachedImageUrl, setAttachedImageUrl] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      text: "Sain baina uu, bi Tixy Ai. Event, ticket, fee, resale, QR scan talaar asuuhad belen baina."
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>(getStoredChatMessages);
 
   const shouldHide = pathname === "/" || pathname === "/login";
 
@@ -65,6 +88,16 @@ export function AiAgentDemoBanner() {
     if (!messageList) return;
     messageList.scrollTo({ top: messageList.scrollHeight, behavior: "smooth" });
   }, [messages, isOpen]);
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      chatStorageKey,
+      JSON.stringify({
+        savedAt: Date.now(),
+        messages
+      })
+    );
+  }, [messages]);
 
   if (shouldHide) {
     return null;
