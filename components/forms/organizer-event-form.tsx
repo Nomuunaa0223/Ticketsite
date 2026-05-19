@@ -245,15 +245,7 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
       return;
     }
 
-    event.currentTarget.reset();
-    setDays([{ id: 1, startsAt: "", endsAt: "" }]);
-    setTicketName("General Admission");
-    setTicketPrice("");
-    setTicketQty("");
-    setCoverImage(null);
-    setExtraImages([null, null]);
-    setMessage({ text: "Event request sent to admin review.", ok: true });
-    router.refresh();
+    router.push("/dashboard/organizer/my-events");
   }
 
   const totalTickets = days.length * (Number(ticketQty) || 0);

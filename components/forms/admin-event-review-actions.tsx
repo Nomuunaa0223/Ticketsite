@@ -22,7 +22,7 @@ export function AdminEventReviewActions({ eventId }: AdminEventReviewActionsProp
       })
     });
     setIsBusy(false);
-    router.refresh();
+    router.push("/dashboard/admin/events");
   }
 
   return (

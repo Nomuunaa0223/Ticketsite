@@ -258,11 +258,7 @@ export function OrganizerEventEditForm({ event, categories }: Props) {
             type: "error",
           });
         } else {
-          setFeedback({
-            message: "Changes saved and sent to admin review.",
-            type: "success",
-          });
-          router.refresh();
+          router.push("/dashboard/organizer/my-events");
         }
       } catch {
         setFeedback({
