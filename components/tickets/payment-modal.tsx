@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 type PaymentMethod = "QPay" | "SocialPay" | "Alipay" | "LendMN";
 
@@ -69,7 +69,7 @@ const FP = [
 
 function FakeQRCode({ seed }: { seed: string }) {
   const N = 21;
-  const C = 9;
+  const C = 7;
 
   let sh = 5381;
   for (let i = 0; i < seed.length; i++) {
@@ -127,6 +127,11 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
   const [step, setStep] = useState<"select" | "qr" | "verifying" | "success" | "error">("select");
   const [method, setMethod] = useState<(typeof METHODS)[number] | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
 
   const handleSelect = (m: (typeof METHODS)[number]) => {
     setMethod(m);
@@ -199,7 +204,7 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
                 <button
                   key={m.id}
                   onClick={() => handleSelect(m)}
-                  className="flex flex-col items-center justify-center gap-2.5 rounded-2xl px-4 py-6 text-white transition hover:opacity-90 active:scale-[0.97]"
+                  className="flex flex-col items-center justify-center gap-2 rounded-2xl px-4 py-5 text-white transition hover:opacity-90 active:scale-[0.97]"
                   style={{ backgroundColor: m.color }}
                 >
                   {m.icon}
@@ -212,7 +217,7 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
 
           {/* QR code */}
           {step === "qr" && method && (
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center gap-3">
               <div
                 className="rounded-full px-4 py-1.5 text-xs font-bold text-white"
                 style={{ backgroundColor: method.color }}
@@ -223,7 +228,7 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
                 <p className="text-2xl font-bold text-white">{totalPrice}</p>
                 <p className="mt-0.5 text-xs text-white/40">{totalQty} тасалбар</p>
               </div>
-              <div className="rounded-xl bg-white p-3 shadow-lg">
+              <div className="rounded-xl bg-white p-2 shadow-lg">
                 <FakeQRCode seed={`${method.id}-${totalPrice}`} />
               </div>
               <p className="text-xs text-white/35 text-center">
