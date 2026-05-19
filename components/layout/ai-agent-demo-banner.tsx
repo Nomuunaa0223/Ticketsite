@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 type EventDraftDetails = {
@@ -65,26 +65,6 @@ export function AiAgentDemoBanner() {
     if (!messageList) return;
     messageList.scrollTo({ top: messageList.scrollHeight, behavior: "smooth" });
   }, [messages, isOpen]);
-
-  const pageHint = useMemo(() => {
-    if (pathname.startsWith("/events")) {
-      return "Ta events hesegt baina. Bi category, ticket, fee, resale availability tailbarlaj chadna.";
-    }
-
-    if (pathname.startsWith("/sell")) {
-      return "Ta sell hesegt baina. Resale rule, ownership, cap pricing talaar asuuj bolno.";
-    }
-
-    if (pathname.startsWith("/notifications")) {
-      return "Ta notifications hesegt baina. Zahialga, QR scan, 24 tsag, 30 minutyn sanuulga yaar irdegiig tailbarlaj ogno.";
-    }
-
-    if (pathname.startsWith("/dashboard")) {
-      return "Ta dashboard hesegt baina. Organizer, moderator, admin workflow talaar tusalj chadna.";
-    }
-
-    return "Ta Tixora deer baina. Ticket, organizer, resale, notification talaar Tixy Ai-aas asuuj bolno.";
-  }, [pathname]);
 
   if (shouldHide) {
     return null;
@@ -453,19 +433,17 @@ export function AiAgentDemoBanner() {
     void sendUserPrompt(input);
   }
 
-  const progressLabel = currentQuestionIndex !== null
-    ? `${currentQuestionIndex + 1}/${eventDraftQuestions.length} medeelel tsugluulj baina`
-    : isReviewingDraft
-      ? "Draft review hiij baina"
-      : attachedImageUrl
-        ? "Zurag attached"
-        : "Tixy Ai asuultand belen";
+  function handleInputKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+    void sendUserPrompt(input);
+  }
 
   return (
     <>
       {isOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-sm sm:px-6">
-          <div className="flex h-[min(760px,calc(100vh-2rem))] w-full max-w-[620px] flex-col overflow-hidden rounded-[1.2rem] border border-white/15 bg-[#050505]/95 shadow-[0_24px_90px_rgba(0,0,0,0.68)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-sm sm:px-6 lg:items-end lg:justify-end lg:bg-transparent lg:pb-28 lg:pr-8 lg:backdrop-blur-0">
+          <div className="flex h-[min(680px,calc(100vh-2rem))] w-full max-w-[560px] flex-col overflow-hidden rounded-[1.2rem] border border-white/15 bg-[#050505]/95 shadow-[0_24px_90px_rgba(0,0,0,0.68)] lg:h-[min(620px,calc(100vh-8rem))] lg:max-w-[430px]">
             <div className="shrink-0 border-b border-white/10 bg-[#0b0b0b] px-4 py-4 shadow-[inset_0_-1px_0_rgba(250,232,154,0.08)] sm:px-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex min-w-0 items-start gap-3">
@@ -474,7 +452,6 @@ export function AiAgentDemoBanner() {
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-white">Tixy Ai</p>
-                    <p className="mt-1 text-xs leading-6 text-white/70">{pageHint}</p>
                   </div>
                 </div>
                 <button
@@ -535,6 +512,7 @@ export function AiAgentDemoBanner() {
                 <textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={handleInputKeyDown}
                   placeholder={isReviewingDraft ? "Uurchluh zuilee bich esvel 'uusge'..." : currentQuestionIndex !== null ? "Hariultaa bich..." : "Asuultaa bich..."}
                   rows={2}
                   className="max-h-28 w-full resize-none rounded-[1rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#f6df8f]/45"
@@ -559,7 +537,6 @@ export function AiAgentDemoBanner() {
                   >
                     Location
                   </button>
-                  <p className="ml-auto max-w-[12rem] truncate text-xs text-white/45">{progressLabel}</p>
                 </div>
 
                 <div className="flex items-center justify-end">
