@@ -180,8 +180,8 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
   };
 
   const modal = (
-    <div className="fixed inset-0 z-[1000] grid h-dvh w-screen place-items-center overflow-hidden bg-black/70 p-4 backdrop-blur-sm">
-      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl bg-[#0d1017] shadow-2xl">
+    <div className="fixed inset-0 z-[1000] grid h-dvh w-screen place-items-center overflow-hidden bg-black/70 p-3 backdrop-blur-sm sm:p-4">
+      <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-sm overflow-y-auto rounded-2xl bg-[#0d1017] shadow-2xl sm:max-h-[calc(100dvh-2rem)]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">

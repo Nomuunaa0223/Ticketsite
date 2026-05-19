@@ -11,9 +11,9 @@ export async function SiteHeader() {
 
   return (
     <header className="site-header z-40 bg-black">
-      <div className="flex items-center justify-between gap-1.5 px-2 py-2 sm:gap-4 sm:px-8 sm:py-4 lg:px-12">
+      <div className="flex min-w-0 items-center justify-between gap-1.5 px-2 py-2 sm:gap-4 sm:px-8 sm:py-4 lg:px-12">
         <div className="flex min-w-0 items-center gap-3 sm:gap-6">
-          <Link href="/" className="flex items-center text-[#ff7224]">
+          <Link href="/" className="flex shrink-0 items-center text-[#ff7224]">
             <span className="site-header__logo login-card__brand">TIXORA</span>
           </Link>
           {user && (
@@ -34,7 +34,7 @@ export async function SiteHeader() {
           )}
         </div>
 
-        <nav className="flex min-w-0 items-center gap-1.5 text-sm text-white/82 sm:gap-4">
+        <nav className="flex min-w-0 shrink items-center justify-end gap-1.5 text-sm text-white/82 sm:gap-4">
           {user ? <NavSearch /> : null}
           <LangDropdown />
           {user ? (

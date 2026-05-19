@@ -80,10 +80,10 @@ export default async function SpecialPage() {
                       <span>{event.venue.name}</span>
                     </div>
 
-                    <div className="mt-auto flex items-end justify-between gap-2">
+                    <div className="mt-auto flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
                       <div>
                         <p className="text-[0.6rem] text-white/30">үнэ</p>
-                        <p className="text-lg font-bold text-white">
+                        <p className="break-words text-lg font-bold text-white">
                           {startingPrice > 0
                             ? formatCurrency(startingPrice, event.currency)
                             : "Үнэгүй"}
@@ -91,7 +91,7 @@ export default async function SpecialPage() {
                       </div>
                       <Link
                         href={`/events/${event.slug}` as never}
-                        className="rounded-xl bg-[#ff7224] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ff8c42]"
+                        className="w-full rounded-xl bg-[#ff7224] px-4 py-2 text-center text-xs font-bold text-white transition hover:bg-[#ff8c42] sm:w-auto"
                       >
                         Авах
                       </Link>

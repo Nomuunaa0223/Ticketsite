@@ -30,7 +30,7 @@ export default async function OrderPage({ params }: Props) {
   const qrSvg = await generateQRSvg(`ORDER-${order.id}`);
 
   return (
-    <section className="min-h-screen bg-[#07080d] px-4 py-12 sm:px-6">
+    <section className="min-h-screen bg-[#07080d] px-3 py-6 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-lg">
 
         {/* Back */}
@@ -48,7 +48,7 @@ export default async function OrderPage({ params }: Props) {
         <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-[#0d1017] shadow-[0_32px_80px_rgba(0,0,0,0.6)]">
 
           {/* Header stripe */}
-          <div className="bg-[#ff7224] px-6 py-4">
+          <div className="bg-[#ff7224] px-4 py-4 sm:px-6">
             <p className="text-[0.6rem] font-bold uppercase tracking-[0.22em] text-black/60">
               Захиалга #{order.id} · {order.event.venue.city}
             </p>
@@ -58,9 +58,9 @@ export default async function OrderPage({ params }: Props) {
           </div>
 
           {/* QR section */}
-          <div className="flex flex-col items-center px-8 py-8">
+          <div className="flex flex-col items-center px-4 py-6 sm:px-8 sm:py-8">
             <div
-              className="h-52 w-52 rounded-2xl bg-white p-3 [&_svg]:h-full [&_svg]:w-full"
+              className="h-44 w-44 rounded-2xl bg-white p-3 sm:h-52 sm:w-52 [&_svg]:h-full [&_svg]:w-full"
               dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
             <span className="mt-4 rounded-full bg-emerald-400/14 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-emerald-300">
@@ -75,7 +75,7 @@ export default async function OrderPage({ params }: Props) {
           <div className="mx-6 border-t border-dashed border-white/[0.08]" />
 
           {/* Info grid */}
-          <div className="mx-6 my-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/[0.04] p-px">
+          <div className="mx-4 my-5 grid grid-cols-1 gap-px overflow-hidden rounded-2xl bg-white/[0.04] p-px sm:mx-6 sm:my-6 sm:grid-cols-2">
             <div className="bg-[#0d1017] p-4">
               <p className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/30">Огноо</p>
               <p className="mt-1 text-sm font-semibold text-white">{formatDateTime(order.event.startsAt)}</p>
@@ -86,34 +86,34 @@ export default async function OrderPage({ params }: Props) {
                 {formatCurrency(toNumber(order.total), order.currency)}
               </p>
             </div>
-            <div className="col-span-2 bg-[#0d1017] p-4">
+            <div className="bg-[#0d1017] p-4 sm:col-span-2">
               <p className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/30">Тасалбар</p>
               <p className="mt-1 text-sm font-semibold text-white">{order.tickets.length} ширхэг</p>
             </div>
           </div>
 
           {/* Ticket list */}
-          <div className="mx-6 mb-6 space-y-2">
+          <div className="mx-4 mb-5 space-y-2 sm:mx-6 sm:mb-6">
             {order.tickets.map((ticket) => (
               <div
                 key={ticket.id}
-                className="flex items-center justify-between rounded-xl bg-black/20 px-4 py-3"
+                className="flex flex-col gap-2 rounded-xl bg-black/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs font-semibold text-white">{ticket.ticketType.name}</p>
                   {ticket.seat && (
                     <p className="mt-0.5 text-[0.65rem] text-white/40">Суудал: {ticket.seat.label}</p>
                   )}
                 </div>
-                <span className="font-mono text-[0.65rem] text-white/30">{ticket.code}</span>
+                <span className="break-all font-mono text-[0.65rem] text-white/30 sm:text-right">{ticket.code}</span>
               </div>
             ))}
           </div>
 
           {/* Order reference */}
-          <div className="mx-6 mb-6 rounded-xl bg-black/30 px-4 py-3 text-center">
+          <div className="mx-4 mb-5 rounded-xl bg-black/30 px-4 py-3 text-center sm:mx-6 sm:mb-6">
             <p className="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-white/25">Order reference</p>
-            <p className="mt-1 font-mono text-base font-bold tracking-widest text-white/80">
+            <p className="mt-1 break-all font-mono text-sm font-bold tracking-widest text-white/80 sm:text-base">
               ORDER-{order.id}
             </p>
           </div>

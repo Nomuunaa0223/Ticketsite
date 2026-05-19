@@ -59,9 +59,9 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
   return (
     <section className="min-h-screen bg-[#07080d] px-4 py-12 sm:px-6 lg:px-8">
 <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between gap-4">
+        <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <h1 className="mt-1 font-goldman text-2xl font-bold text-white sm:ml-16 sm:text-3xl">{labels.title}</h1>
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">
             {unreadCount > 0 ? (
               <span className="rounded-full bg-[#ff7224]/15 px-3 py-1 text-xs font-bold text-[#ff7224]">
                 {unreadCount} {labels.new}

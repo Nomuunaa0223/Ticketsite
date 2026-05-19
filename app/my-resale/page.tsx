@@ -90,15 +90,15 @@ export default async function MyResalePage() {
                     {listing.status === "ACTIVE" ? labels.onResale : labels.sold}
                   </span>
                   <div className="mt-3 rounded-xl border border-white/[0.08] bg-black/20 p-3 text-xs text-white/48">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                       <span>{labels.listedPrice}</span>
                       <span className="font-bold text-white">{formatCurrency(listing.askPrice, listing.event.currency)}</span>
                     </div>
-                    <div className="mt-1 flex items-center justify-between gap-3">
+                    <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
                       <span>{labels.fee}</span>
                       <span>{formatCurrency(sellerFee, listing.event.currency)}</span>
                     </div>
-                    <div className="mt-1 flex items-center justify-between gap-3 text-white/72">
+                    <div className="mt-1 flex flex-wrap items-center justify-between gap-3 text-white/72">
                       <span>{labels.payout}</span>
                       <span className="font-bold">{formatCurrency(payout, listing.event.currency)}</span>
                     </div>

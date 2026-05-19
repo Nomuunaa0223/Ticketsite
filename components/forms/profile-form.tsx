@@ -76,7 +76,7 @@ export function ProfileForm({ profile }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label htmlFor="fullName" className="block text-[0.65rem] font-bold uppercase tracking-[0.14em] text-white/30">
             {t("profileName")}
@@ -111,7 +111,7 @@ export function ProfileForm({ profile }: Props) {
         <p className="text-xs text-red-400">{feedback.message}</p>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="submit"
           disabled={isPending}

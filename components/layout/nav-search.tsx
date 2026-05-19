@@ -64,7 +64,7 @@ export function NavSearch() {
       <div
         className={`flex items-center overflow-hidden rounded-full transition-all duration-300 ${
           open
-            ? "w-[calc(100vw-10rem)] max-w-52 bg-white/[0.07] ring-1 ring-white/15 sm:w-64 sm:max-w-none"
+            ? "w-[calc(100vw-13rem)] max-w-44 bg-white/[0.07] ring-1 ring-white/15 sm:w-64 sm:max-w-none"
             : "w-8 sm:w-9"
         }`}
       >

@@ -72,21 +72,21 @@ export default async function ProfilePage() {
     .join("");
 
   return (
-    <section className="min-h-screen bg-[#07080d] px-4 py-12 sm:px-6 lg:px-8">
+    <section className="min-h-screen bg-[#07080d] px-4 py-6 sm:px-6 sm:py-12 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
 
           {/* Left: avatar + info + edit */}
-          <div className="flex shrink-0 flex-col gap-4 rounded-2xl border border-white/[0.07] bg-[#0d1017] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.4)] lg:w-72 lg:sticky lg:top-24 lg:self-start">
+          <div className="flex w-full shrink-0 flex-col gap-4 rounded-2xl border border-white/[0.07] bg-[#0d1017] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.4)] sm:p-6 lg:sticky lg:top-24 lg:w-72 lg:self-start">
             <div className="flex flex-col items-center">
               <ProfileAvatar avatarUrl={profile.avatarUrl} initials={initials} />
             </div>
             <div className="space-y-3">
-              <h1 className="text-center font-goldman text-2xl font-bold text-white">{profile.fullName}</h1>
+              <h1 className="break-words text-center font-goldman text-xl font-bold text-white sm:text-2xl">{profile.fullName}</h1>
               <div className="space-y-3 pt-1">
                 <div>
                   <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-white/30">{labels.email}</p>
-                  <p className="mt-1 text-sm text-white/70">{profile.email}</p>
+                  <p className="mt-1 break-all text-sm text-white/70">{profile.email}</p>
                 </div>
                 <div>
                   <p className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-white/30">{labels.phone}</p>
@@ -108,7 +108,7 @@ export default async function ProfilePage() {
           {/* Right: tickets */}
           <div className="min-w-0 flex-1">
             <div>
-              <h2 className="font-goldman text-4xl font-bold text-white">{labels.ownedTickets}</h2>
+              <h2 className="font-goldman text-2xl font-bold text-white sm:text-4xl">{labels.ownedTickets}</h2>
 
               <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                 {tickets.length === 0 ? (

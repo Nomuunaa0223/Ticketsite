@@ -5325,6 +5325,53 @@ body>* {
   }
 }
 
+@media (max-width: 640px) {
+  .login-page {
+    align-items: start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .login-card {
+    border-radius: 1rem;
+    padding: 1rem;
+  }
+
+  .login-card__tabs {
+    gap: 0.35rem;
+  }
+
+  .login-card__tab {
+    min-width: 0;
+    padding-inline: 0.35rem;
+    font-size: 0.7rem;
+  }
+
+  .login-card__field-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.28rem;
+  }
+
+  .login-card__input-shell input {
+    padding-right: 0.85rem;
+  }
+
+  .event-market-card {
+    min-height: auto;
+  }
+
+  .event-market-card__visual {
+    min-height: 13.5rem;
+  }
+
+  .event-market-card__body {
+    padding: 0.9rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   .home-enter,

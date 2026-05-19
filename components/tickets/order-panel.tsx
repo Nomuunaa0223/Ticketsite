@@ -380,7 +380,7 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
                 )}
                 {tt.description && <p className="mt-1 text-xs text-white/40">{tt.description}</p>}
 
-                <div className="mt-3 flex items-center justify-between gap-3">
+                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-base font-bold text-white sm:text-lg">{formatPrice(tt.price, currency)}</p>
 
                   {isSoldOut ? (
@@ -389,7 +389,7 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
                     <button
                       type="button"
                       onClick={() => handleToggleSeatMap(tt.id)}
-                      className="flex items-center gap-2 rounded-xl bg-white/[0.07] px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/[0.12]"
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/[0.07] px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/[0.12] sm:w-auto"
                     >
                       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -400,7 +400,7 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
                       {isExpanded ? "Хаах" : seats.length > 0 ? `${seats.length} суудал сонгосон` : "Суудал сонгох"}
                     </button>
                   ) : (
-                    <div className="flex items-center gap-3">
+                    <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-start">
                       <button type="button" onClick={() => setQty(tt.id, Math.max(0, qty - 1))}
                         className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.08] text-white transition hover:bg-white/[0.14] sm:h-10 sm:w-10">
                         <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14" strokeLinecap="round" /></svg>
@@ -415,7 +415,7 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
                 </div>
 
                 {tt.hasSeatMap && isExpanded && (
-                  <div className="mt-4 overflow-hidden rounded-xl bg-white/[0.02] p-4">
+                  <div className="mt-4 overflow-hidden rounded-xl bg-white/[0.02] p-2 sm:p-4">
                     {seatLoading[tt.id] ? (
                       <div className="flex items-center justify-center py-8 text-xs text-white/30">
                         <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -445,7 +445,7 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
               return s + (tt ? tt.price * item.quantity : 0);
             }, 0);
             return (
-              <div className="flex items-center justify-between rounded-xl bg-white/[0.05] px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/[0.05] px-4 py-3">
                 <div>
                   <p className="text-[0.65rem] text-white/40">Нийт дүн</p>
                   <p className="text-xl font-bold text-white">{formatPrice(totalAmount, currency)}</p>

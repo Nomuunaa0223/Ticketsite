@@ -38,7 +38,7 @@ export default async function ResaleCheckoutPage({ params }: Props) {
   const currency = listing.event.currency;
 
   return (
-    <section className="min-h-screen bg-[#07080d] px-4 py-12 sm:px-6">
+    <section className="min-h-screen bg-[#07080d] px-3 py-6 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-lg">
 
         {/* Back */}
@@ -67,65 +67,65 @@ export default async function ResaleCheckoutPage({ params }: Props) {
           </div>
 
           {/* Event info */}
-          <div className="px-6 pt-5 pb-4">
+          <div className="px-4 pb-4 pt-5 sm:px-6">
             <p className="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-white/30">
               {listing.event.category.name}
             </p>
             <h1 className="mt-1 font-goldman text-xl font-bold text-white leading-tight">
               {listing.event.title}
             </h1>
-            <div className="mt-3 flex flex-wrap gap-3 text-xs text-white/40">
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/40 sm:gap-3">
               <span>{formatDateTime(listing.event.startsAt)}</span>
               <span>·</span>
-              <span>{listing.event.venue.name}, {listing.event.venue.city}</span>
+              <span className="min-w-0 break-words">{listing.event.venue.name}, {listing.event.venue.city}</span>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="mx-6 border-t border-dashed border-white/[0.07]" />
+          <div className="mx-4 border-t border-dashed border-white/[0.07] sm:mx-6" />
 
           {/* Ticket info */}
-          <div className="px-6 py-4 space-y-2">
-            <div className="flex justify-between text-sm">
+          <div className="space-y-3 px-4 py-4 sm:px-6">
+            <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
               <span className="text-white/50">Тасалбарын төрөл</span>
-              <span className="font-semibold text-white">{listing.ticketType.name}</span>
+              <span className="break-words font-semibold text-white sm:text-right">{listing.ticketType.name}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex flex-col gap-1 text-sm sm:flex-row sm:justify-between sm:gap-4">
               <span className="text-white/50">Зарагч</span>
-              <span className="font-semibold text-white">{listing.seller.fullName}</span>
+              <span className="break-words font-semibold text-white sm:text-right">{listing.seller.fullName}</span>
             </div>
           </div>
 
           {/* Divider */}
-          <div className="mx-6 border-t border-dashed border-white/[0.07]" />
+          <div className="mx-4 border-t border-dashed border-white/[0.07] sm:mx-6" />
 
           {/* Price breakdown */}
-          <div className="px-6 py-4 space-y-2">
-            <div className="flex justify-between text-sm">
+          <div className="space-y-2 px-4 py-4 sm:px-6">
+            <div className="flex items-start justify-between gap-4 text-sm">
               <span className="text-white/50">Тасалбарын үнэ</span>
-              <span className="text-white">{formatCurrency(askPrice, currency)}</span>
+              <span className="text-right text-white">{formatCurrency(askPrice, currency)}</span>
             </div>
             {buyerFee > 0 && (
-              <div className="flex justify-between text-sm">
+              <div className="flex items-start justify-between gap-4 text-sm">
                 <span className="text-white/50">Үйлчилгээний хураамж</span>
-                <span className="text-white">{formatCurrency(buyerFee, currency)}</span>
+                <span className="text-right text-white">{formatCurrency(buyerFee, currency)}</span>
               </div>
             )}
-            <div className="flex justify-between pt-2 border-t border-white/[0.06]">
+            <div className="flex items-start justify-between gap-4 border-t border-white/[0.06] pt-2">
               <span className="font-bold text-white">Нийт дүн</span>
-              <span className="font-bold text-lg text-[#ff7224]">{formatCurrency(total, currency)}</span>
+              <span className="text-right text-lg font-bold text-[#ff7224]">{formatCurrency(total, currency)}</span>
             </div>
           </div>
 
           {/* QR info */}
-          <div className="mx-6 mb-5 rounded-xl bg-white/[0.04] px-4 py-3">
+          <div className="mx-4 mb-5 rounded-xl bg-white/[0.04] px-4 py-3 sm:mx-6">
             <p className="text-xs text-white/40 leading-relaxed">
               Худалдаж авсны дараа <span className="text-white/70 font-semibold">шинэ QR код</span> автоматаар үүсч таны профайл дээр харагдана. Хуучин эзэмшигчийн QR хүчингүй болно.
             </p>
           </div>
 
           {/* Purchase button */}
-          <div className="px-6 pb-6">
+          <div className="px-4 pb-5 sm:px-6 sm:pb-6">
             <ResalePurchaseButton listingId={listing.id} total={formatCurrency(total, currency)} />
           </div>
 

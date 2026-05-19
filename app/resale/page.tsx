@@ -144,21 +144,21 @@ function ListingCard({ listing, isMine }: { listing: Listing; isMine: boolean })
           <span>{listing.event.venue.name}</span>
         </div>
 
-        <div className="mt-auto flex items-end justify-between gap-2">
+        <div className="mt-auto flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[0.6rem] text-white/30">үнэ</p>
-            <p className="text-lg font-bold text-white">
+            <p className="break-words text-lg font-bold text-white">
               {formatCurrency(totalPrice, listing.event.currency)}
             </p>
           </div>
           {isMine ? (
-            <span className="rounded-xl bg-white/[0.06] px-4 py-2 text-xs font-bold text-white/40">
+            <span className="w-full rounded-xl bg-white/[0.06] px-4 py-2 text-center text-xs font-bold text-white/40 sm:w-auto">
               Зарагдаж байна
             </span>
           ) : (
             <Link
               href={`/resale/${listing.id}` as never}
-              className="rounded-xl bg-[#ff7224] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ff8c42]"
+              className="w-full rounded-xl bg-[#ff7224] px-4 py-2 text-center text-xs font-bold text-white transition hover:bg-[#ff8c42] sm:w-auto"
             >
               Авах
             </Link>
