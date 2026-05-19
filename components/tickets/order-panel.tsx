@@ -117,23 +117,24 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
     setPaymentOpen(true);
   }
 
-  async function submitOrder(): Promise<void> {
+  async function submitOrder(): Promise<number> {
     const res = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ items: orderItems }),
     });
-    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    const data = (await res.json().catch(() => ({}))) as { error?: string; order?: { id: number } };
     if (!res.ok) {
       throw new Error(data.error ?? "Алдаа гарлаа. Дахин оролдоно уу.");
     }
     setQuantities({});
     setSelectedSeats({});
+    return data.order!.id;
   }
 
-  function handlePaymentSuccess() {
+  function handlePaymentSuccess(orderId: number) {
     setPaymentOpen(false);
-    router.push("/profile");
+    router.push(`/orders/${orderId}` as never);
   }
 
   return (

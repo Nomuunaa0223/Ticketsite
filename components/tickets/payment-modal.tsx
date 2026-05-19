@@ -120,8 +120,8 @@ type Props = {
   totalPrice: string;
   totalQty: number;
   onClose: () => void;
-  onConfirm: () => Promise<void>;
-  onSuccess: () => void;
+  onConfirm: () => Promise<number>;
+  onSuccess: (orderId: number) => void;
 };
 
 export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSuccess }: Props) {
@@ -170,9 +170,9 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
   const handleCheck = async () => {
     setStep("verifying");
     try {
-      await onConfirm();
+      const orderId = await onConfirm();
       setStep("success");
-      setTimeout(onSuccess, 1800);
+      setTimeout(() => onSuccess(orderId), 1800);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Алдаа гарлаа. Дахин оролдоно уу.");
       setStep("error");
