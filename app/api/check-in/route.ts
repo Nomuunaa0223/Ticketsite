@@ -4,6 +4,7 @@ import { canManageAllEvents } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { recordAuditLog } from "@/lib/audit";
 import { createUserNotification } from "@/lib/notifications";
+import { emitRealtime } from "@/lib/realtime-events";
 import { checkInSchema } from "@/lib/validations/resale";
 
 export async function POST(request: Request) {
@@ -43,6 +44,13 @@ export async function POST(request: Request) {
     }
 
     if (ticket.checkedInAt) {
+      emitRealtime("qr-scan", {
+        eventId: ticket.eventId,
+        ticketId: ticket.id,
+        ticketCode: ticket.code,
+        status: "ALREADY_USED",
+        scannedAt: ticket.checkedInAt.toISOString()
+      });
       return NextResponse.json({ error: "Ticket has already been checked in." }, { status: 409 });
     }
 
@@ -83,6 +91,14 @@ export async function POST(request: Request) {
       eventId: ticket.eventId,
       ticketId: ticket.id,
       dedupeKey: `ticket:${ticket.id}:checked-in`
+    });
+
+    emitRealtime("qr-scan", {
+      eventId: ticket.eventId,
+      ticketId: ticket.id,
+      ticketCode: ticket.code,
+      status: "VALID",
+      scannedAt: result.checkedInAt?.toISOString() ?? new Date().toISOString()
     });
 
     return NextResponse.json({ ok: true, ticket: result });

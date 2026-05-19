@@ -4,6 +4,8 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { recordAuditLog } from "@/lib/audit";
 import { createUserNotification } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { emitRealtime } from "@/lib/realtime-events";
+import { assertSeatsUsableForOrder, releaseSoldSeatLocks } from "@/lib/seat-locks";
 
 type OrderItemInput = {
   ticketTypeId?: number;
@@ -23,6 +25,7 @@ export async function POST(request: Request) {
       ticketTypeId?: number;
       quantity?: number;
       items?: OrderItemInput[];
+      seatSessionId?: string;
     };
     const sessionUserId = Number(session.sub);
 
@@ -57,12 +60,19 @@ export async function POST(request: Request) {
     }
 
     const seatItemsToValidate = requestedItems.filter((item) => item.seatIds && item.seatIds.length > 0);
+    let selectedSeats: Array<{ id: number; ticketTypeId: number; status: string; label: string }> = [];
     if (seatItemsToValidate.length > 0) {
       const allSeatIds = seatItemsToValidate.flatMap((item) => item.seatIds!);
+      const uniqueSeatIds = new Set(allSeatIds);
+      if (uniqueSeatIds.size !== allSeatIds.length) {
+        return NextResponse.json({ error: "Seat was selected more than once." }, { status: 400 });
+      }
+
       const seats = await prisma.seat.findMany({
         where: { id: { in: allSeatIds } },
         select: { id: true, ticketTypeId: true, status: true, label: true },
       });
+      selectedSeats = seats;
 
       for (const item of seatItemsToValidate) {
         for (const seatId of item.seatIds!) {
@@ -70,10 +80,18 @@ export async function POST(request: Request) {
           if (!seat) return NextResponse.json({ error: `Суудал (${seatId}) олдсонгүй.` }, { status: 404 });
           if (seat.ticketTypeId !== item.ticketTypeId)
             return NextResponse.json({ error: `Суудал ${seat.label} энэ тасалбарт хамаарахгүй.` }, { status: 400 });
-          if (seat.status !== "AVAILABLE")
+          if (seat.status === "SOLD")
             return NextResponse.json({ error: `${seat.label} суудал аль хэдийн захиалагдсан байна.` }, { status: 409 });
         }
       }
+    }
+
+    if (selectedSeats.length > 0) {
+      await assertSeatsUsableForOrder({
+        seats: selectedSeats,
+        userId: sessionUserId,
+        sessionId: body.seatSessionId
+      });
     }
 
     let subtotal = 0;
@@ -198,6 +216,29 @@ export async function POST(request: Request) {
     }, {
       isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     });
+
+    const soldSeatIds = selectedSeats.map((seat) => seat.id);
+    await releaseSoldSeatLocks(soldSeatIds);
+
+    for (const seat of selectedSeats) {
+      const ticketType = ticketTypes.find((item) => item.id === seat.ticketTypeId);
+      const item = requestedItems.find((requestedItem) => requestedItem.ticketTypeId === seat.ticketTypeId);
+      if (!ticketType || !item) continue;
+
+      emitRealtime("seat-updated", {
+        eventId: firstEventId,
+        ticketTypeId: seat.ticketTypeId,
+        seatId: seat.id,
+        label: seat.label,
+        status: "SOLD"
+      });
+      emitRealtime("sale-updated", {
+        eventId: firstEventId,
+        ticketTypeId: seat.ticketTypeId,
+        quantitySold: ticketType.quantitySold + item.quantity,
+        orderId: order.id
+      });
+    }
 
     await recordAuditLog({
       actorUserId: sessionUserId,

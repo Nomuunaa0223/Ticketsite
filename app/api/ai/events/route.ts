@@ -2,6 +2,7 @@ import { AiAgentType, AiArtifactType, AiDraftStatus, AiHumanReviewStatus, EventS
 import { NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import { getSessionFromRequest } from "@/lib/auth";
+import { upsertEventEmbedding } from "@/lib/ai/pinecone";
 import { recordAuditLog } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slugs";
@@ -305,6 +306,16 @@ export async function POST(request: Request) {
         prompt
       }
     });
+
+    upsertEventEmbedding({
+      id: result.event.id,
+      title: result.event.title,
+      slug: result.event.slug,
+      summary: result.event.summary,
+      description: result.event.description,
+      category: result.event.category.name,
+      city: result.event.venue.city
+    }).catch((indexError) => console.error("[ai:index-event]", indexError));
 
     return NextResponse.json(
       {

@@ -24,7 +24,7 @@ export function SeatMap({ seats, selected, onToggle, maxSelect }: Props) {
 
   function renderSeat(seat: SeatData) {
     const isSelected = selected.includes(seat.id);
-    const isTaken = seat.status !== "AVAILABLE";
+    const isTaken = seat.status !== "AVAILABLE" && !isSelected;
     const limitReached = selected.length >= maxSelect && !isSelected;
 
     return (

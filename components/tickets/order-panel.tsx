@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { io, type Socket } from "socket.io-client";
 import { SeatMap, type SeatData } from "@/components/tickets/seat-map";
 import { PaymentModal } from "@/components/tickets/payment-modal";
 
@@ -19,6 +20,7 @@ type TicketType = {
 };
 
 type Props = {
+  eventId: number;
   currency: string;
   salesEndsAt: string;
   ticketTypes: TicketType[];
@@ -63,7 +65,22 @@ function useCountdown(target: Date) {
   return { days, hours, minutes, seconds, ended: diff === 0, ready: true };
 }
 
-export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Props) {
+function getSeatSessionId() {
+  if (typeof window === "undefined") return "";
+
+  const key = "tixora-seat-session-id";
+  const existing = window.localStorage.getItem(key);
+  if (existing) return existing;
+
+  const created =
+    typeof window.crypto?.randomUUID === "function"
+      ? window.crypto.randomUUID()
+      : `seat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  window.localStorage.setItem(key, created);
+  return created;
+}
+
+export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, className }: Props) {
   const router = useRouter();
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -73,6 +90,7 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
   const [expandedSeatMap, setExpandedSeatMap] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [seatSessionId, setSeatSessionId] = useState("");
 
   const saleEnd = new Date(salesEndsAt);
   const { days, hours, minutes, seconds, ended: isSaleEnded, ready } = useCountdown(saleEnd);
@@ -89,18 +107,81 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
     }
   }, [isMultiDay, ticketTypes, selectedDay]);
 
+  useEffect(() => {
+    setSeatSessionId(getSeatSessionId());
+  }, []);
+
+  useEffect(() => {
+    const socket: Socket = io({ path: "/socket.io", transports: ["websocket", "polling"] });
+    socket.emit("join-event", eventId);
+    socket.on("seat-updated", (payload: { ticketTypeId: number; seatId: number; status: SeatData["status"] }) => {
+      setSeatData((prev) => {
+        const seats = prev[payload.ticketTypeId];
+        if (!seats) return prev;
+        return {
+          ...prev,
+          [payload.ticketTypeId]: seats.map((seat) =>
+            seat.id === payload.seatId ? { ...seat, status: payload.status } : seat
+          )
+        };
+      });
+
+      if (payload.status !== "RESERVED") {
+        setSelectedSeats((prev) => ({
+          ...prev,
+          [payload.ticketTypeId]: (prev[payload.ticketTypeId] ?? []).filter((seatId) => seatId !== payload.seatId)
+        }));
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [eventId]);
+
   function setQty(id: number, value: number) {
     setQuantities((prev) => ({ ...prev, [id]: value }));
   }
 
-  function toggleSeat(ticketTypeId: number, seatId: number) {
-    setSelectedSeats((prev) => {
-      const current = prev[ticketTypeId] ?? [];
-      if (current.includes(seatId)) {
-        return { ...prev, [ticketTypeId]: current.filter((s) => s !== seatId) };
-      }
-      return { ...prev, [ticketTypeId]: [...current, seatId] };
+  async function toggleSeat(ticketTypeId: number, seatId: number) {
+    const current = selectedSeats[ticketTypeId] ?? [];
+    const isSelected = current.includes(seatId);
+
+    setError(null);
+    if (!seatSessionId) {
+      setError("Seat session is still loading. Try again.");
+      return;
+    }
+
+    const res = await fetch("/api/seats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: isSelected ? "unlock" : "lock",
+        seatId,
+        sessionId: seatSessionId
+      })
     });
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setError(data.error ?? "Seat update failed.");
+      return;
+    }
+
+    setSelectedSeats((prev) => {
+      const latest = prev[ticketTypeId] ?? [];
+      if (isSelected) {
+        return { ...prev, [ticketTypeId]: latest.filter((s) => s !== seatId) };
+      }
+      return { ...prev, [ticketTypeId]: [...latest, seatId] };
+    });
+
+    setSeatData((prev) => ({
+      ...prev,
+      [ticketTypeId]: (prev[ticketTypeId] ?? []).map((seat) =>
+        seat.id === seatId ? { ...seat, status: isSelected ? "AVAILABLE" : "RESERVED" } : seat
+      )
+    }));
   }
 
   async function fetchSeats(ticketTypeId: number) {
@@ -152,7 +233,7 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
     const res = await fetch("/api/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: orderItems }),
+      body: JSON.stringify({ items: orderItems, seatSessionId }),
     });
     const data = (await res.json().catch(() => ({}))) as { error?: string; order?: { id: number } };
     if (!res.ok) {

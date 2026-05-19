@@ -160,6 +160,7 @@ export default async function EventDetailPage({ params }: Props) {
 
             <div className="lg:sticky lg:top-24 lg:self-start">
               <OrderPanel
+                eventId={event.id}
                 currency={event.currency}
                 salesEndsAt={event.saleEndsAt.toISOString()}
                 ticketTypes={orderTicketTypes}
