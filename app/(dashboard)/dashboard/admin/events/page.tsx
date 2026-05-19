@@ -19,21 +19,21 @@ export default async function AdminEventsPage({ searchParams }: Props) {
 
   const [pendingEvents, totalPending, restEvents, totalRest] = await Promise.all([
     prisma.event.findMany({
-      where: { status: "PENDING_REVIEW" },
+      where: { status: "PENDING_REVIEW", aiGenerated: false },
       orderBy: { createdAt: "desc" },
       skip: (pendingPage - 1) * PENDING_PAGE_SIZE,
       take: PENDING_PAGE_SIZE,
       include: { category: true, venue: true, organizer: { include: { user: true } } }
     }),
-    prisma.event.count({ where: { status: "PENDING_REVIEW" } }),
+    prisma.event.count({ where: { status: "PENDING_REVIEW", aiGenerated: false } }),
     prisma.event.findMany({
-      where: { status: { not: "PENDING_REVIEW" } },
+      where: { status: { not: "PENDING_REVIEW" }, aiGenerated: false },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: { category: true, venue: true, organizer: { include: { user: true } } }
     }),
-    prisma.event.count({ where: { status: { not: "PENDING_REVIEW" } } }),
+    prisma.event.count({ where: { status: { not: "PENDING_REVIEW" }, aiGenerated: false } }),
   ]);
 
   const totalPendingPages = Math.max(1, Math.ceil(totalPending / PENDING_PAGE_SIZE));
