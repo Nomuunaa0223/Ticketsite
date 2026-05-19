@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminEventReviewActions } from "@/components/forms/admin-event-review-actions";
+import { AdminEventDeleteButton } from "@/components/admin/admin-event-delete-button";
 import { VenueMapPreview } from "@/components/events/venue-map-preview";
 import { formatCurrency, formatDateTime, toNumber } from "@/lib/utils";
 
@@ -278,6 +279,10 @@ export default async function AdminEventDetailPage({ params }: Props) {
               <AdminEventReviewActions eventId={event.id} />
             </div>
           ) : null}
+
+          <div className="flex justify-end border-t border-white/[0.06] pt-4">
+            <AdminEventDeleteButton eventId={event.id} />
+          </div>
         </div>
       </div>
     </AdminShell>

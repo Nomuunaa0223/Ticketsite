@@ -90,3 +90,37 @@ export async function PATCH(request: Request, context: Context) {
     return NextResponse.json({ error: "Unable to review event." }, { status: 400 });
   }
 }
+
+export async function DELETE(request: Request, context: Context) {
+  try {
+    const session = await getSessionFromRequest(request);
+    if (!session) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+
+    const admin = await prisma.user.findUnique({ where: { id: Number(session.sub) } });
+    if (!admin || admin.role !== "ADMIN") {
+      return NextResponse.json({ error: "Admin access required." }, { status: 403 });
+    }
+
+    const { eventId } = await context.params;
+    const id = Number(eventId);
+
+    const event = await prisma.event.findUnique({ where: { id } });
+    if (!event) return NextResponse.json({ error: "Event not found." }, { status: 404 });
+
+    await prisma.event.delete({ where: { id } });
+
+    await recordAuditLog({
+      actorUserId: admin.id,
+      action: "EVENT_DELETED",
+      entityType: "Event",
+      entityId: id,
+      description: `Admin deleted event: ${event.title}`,
+      metadata: { status: event.status }
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Unable to delete event." }, { status: 400 });
+  }
+}

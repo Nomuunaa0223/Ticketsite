@@ -35,6 +35,7 @@ export async function getPublicEventsByCategory(categorySlug: string, take = 12)
     return await prisma.event.findMany({
       where: {
         status: EventStatus.PUBLISHED,
+        aiGenerated: false,
         category: { slug: categorySlug }
       },
       select: {
