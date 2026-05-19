@@ -74,7 +74,7 @@ export function OrganizerShell({ user, children }: Props) {
     .join("");
 
   const sidebar = (
-    <aside className={`fixed inset-y-0 left-0 z-30 flex w-60 flex-col border-r border-white/[0.06] bg-[#0a0f1a] transition-transform duration-200 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
+    <aside className={`fixed inset-y-0 left-0 z-30 flex h-dvh w-60 flex-col overflow-hidden border-r border-white/[0.06] bg-[#0a0f1a] transition-transform duration-200 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}>
       <div className="flex h-16 items-center justify-between border-b border-white/[0.06] px-5">
         <Link href="/dashboard/organizer" className="text-lg font-bold uppercase tracking-[0.08em] text-[#ff7224]">
           TIXORA
@@ -92,7 +92,7 @@ export function OrganizerShell({ user, children }: Props) {
         </div>
       )}
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
+      <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.href}
@@ -106,22 +106,27 @@ export function OrganizerShell({ user, children }: Props) {
         ))}
       </nav>
 
-      <div className="border-t border-white/[0.06] p-4">
+      <div className="shrink-0 border-t border-white/[0.06] p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ff7224]/20 text-[0.7rem] font-bold text-[#ff7224]">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7224]/20 text-[0.7rem] font-bold text-[#ff7224]">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-white">{user.fullName}</p>
             <p className="truncate text-[0.65rem] text-white/40">{user.email}</p>
           </div>
+          <a
+            href="/api/auth/logout"
+            title="Гарах"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white/30 transition hover:bg-red-500/15 hover:text-red-400"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" strokeLinecap="round" />
+              <polyline points="16 17 21 12 16 7" strokeLinecap="round" strokeLinejoin="round" />
+              <line x1="21" y1="12" x2="9" y2="12" strokeLinecap="round" />
+            </svg>
+          </a>
         </div>
-        <a
-          href="/api/auth/logout"
-          className="mt-3 block rounded-xl bg-white/[0.04] px-3 py-2 text-center text-xs font-semibold text-white/40 transition hover:bg-white/[0.08] hover:text-red-400"
-        >
-          Logout
-        </a>
       </div>
     </aside>
   );
