@@ -107,6 +107,25 @@ export async function DELETE(request: Request, context: Context) {
     const event = await prisma.event.findUnique({ where: { id } });
     if (!event) return NextResponse.json({ error: "Event not found." }, { status: 404 });
 
+    // Тасалбар эзэмшигч хэрэглэгчдэд мэдэгдэл явуулна
+    const ticketHolders = await prisma.ticket.findMany({
+      where: { eventId: id },
+      select: { currentOwnerId: true },
+      distinct: ["currentOwnerId"],
+    });
+
+    await Promise.all(
+      ticketHolders.map((t) =>
+        createUserNotification({
+          userId: t.currentOwnerId,
+          type: "EVENT_REJECTED",
+          title: "Арга хэмжээ цуцлагдлаа",
+          message: `"${event.title}" арга хэмжээ администратороор цуцлагдсан тул таны тасалбар хүчингүй болсон байна.`,
+          actionUrl: "/events",
+        })
+      )
+    );
+
     await prisma.$transaction(async (tx) => {
       const ticketTypeIds = (await tx.ticketType.findMany({
         where: { eventId: id },
