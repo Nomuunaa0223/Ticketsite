@@ -1,10 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function AdminEventDeleteButton({ eventId }: { eventId: number }) {
-  const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -13,7 +11,7 @@ export function AdminEventDeleteButton({ eventId }: { eventId: number }) {
     const res = await fetch(`/api/admin/events/${eventId}`, { method: "DELETE" });
     setBusy(false);
     if (res.ok) {
-      router.push("/dashboard/admin/events");
+      window.location.href = "/dashboard/admin/events";
     }
   }
 
