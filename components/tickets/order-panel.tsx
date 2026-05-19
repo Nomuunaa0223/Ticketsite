@@ -368,7 +368,12 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
             return (
               <div key={tt.id} className={`rounded-xl p-4 transition-colors sm:p-5 ${isSoldOut ? "opacity-40" : "bg-white/[0.03]"}`}>
                 {!isMultiDay && (
-                  <p className="text-base font-semibold text-white">{tt.name}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-base font-semibold text-white">{tt.name}</p>
+                    {!isSoldOut && (
+                      <span className="shrink-0 text-xs text-white/35">{remaining} үлдсэн</span>
+                    )}
+                  </div>
                 )}
                 {isMultiDay && tt.startsAt && (
                   <p className="text-sm font-semibold text-white">
