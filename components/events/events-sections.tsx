@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import type { Lang } from "@/lib/i18n";
 
 type EventItem = {
   id: number;
@@ -23,15 +24,22 @@ type Section = {
 
 type Props = {
   sections: Section[];
+  lang: Lang;
+  labels: {
+    empty: string;
+    free: string;
+    getTickets: string;
+  };
+  categoryLabels: Record<string, string>;
 };
 
-export function EventsSections({ sections }: Props) {
+export function EventsSections({ sections, lang, labels, categoryLabels }: Props) {
   const populated = sections.filter((s) => s.events.length > 0);
 
   if (populated.length === 0) {
     return (
       <div className="mt-12 rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-white/40">
-        No events found.
+        {labels.empty}
       </div>
     );
   }
@@ -50,7 +58,7 @@ export function EventsSections({ sections }: Props) {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {section.events.map((event) => (
-              <EventCard key={event.id} event={event} />
+              <EventCard key={event.id} event={event} lang={lang} labels={labels} categoryLabels={categoryLabels} />
             ))}
           </div>
         </section>
@@ -59,7 +67,17 @@ export function EventsSections({ sections }: Props) {
   );
 }
 
-function EventCard({ event }: { event: EventItem }) {
+function EventCard({
+  event,
+  lang,
+  labels,
+  categoryLabels,
+}: {
+  event: EventItem;
+  lang: Lang;
+  labels: Props["labels"];
+  categoryLabels: Record<string, string>;
+}) {
   const imageSrc =
     event.cardImageUrl ?? event.imageUrl ?? "/uploads/1.jpg";
   const startingPrice = event.ticketTypes.length
@@ -78,8 +96,9 @@ function EventCard({ event }: { event: EventItem }) {
       }).format(startingPrice);
 
   const d = new Date(event.startsAt);
-  const datePrimary = new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit" }).format(d).toUpperCase();
-  const dateSecondary = new Intl.DateTimeFormat("en-US", { weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
+  const dateLocale = lang === "mn" ? "mn-MN" : "en-US";
+  const datePrimary = new Intl.DateTimeFormat(dateLocale, { month: "short", day: "2-digit" }).format(d).toUpperCase();
+  const dateSecondary = new Intl.DateTimeFormat(dateLocale, { weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
 
   return (
     <Link
@@ -97,7 +116,7 @@ function EventCard({ event }: { event: EventItem }) {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0d1017] via-[#0d1017]/15 to-transparent" />
         <span className="absolute left-3 top-3 rounded-full border border-white/10 bg-black/50 px-3 py-1 text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/90 backdrop-blur-md">
-          {event.category.name}
+          {categoryLabels[event.category.slug] ?? event.category.name}
         </span>
       </div>
 
@@ -121,10 +140,10 @@ function EventCard({ event }: { event: EventItem }) {
 
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] pt-3">
           <p className="font-goldman text-lg font-bold text-white">
-            {startingPrice > 0 ? formattedPrice : "Free"}
+            {startingPrice > 0 ? formattedPrice : labels.free}
           </p>
           <span className="rounded-xl bg-[#ff7224] px-4 py-2.5 text-xs font-bold text-white shadow-[0_6px_18px_rgba(255,114,36,0.28)] transition-all duration-200 group-hover:bg-[#ff8442] group-hover:shadow-[0_10px_26px_rgba(255,114,36,0.42)]">
-            Get tickets
+            {labels.getTickets}
           </span>
         </div>
       </div>

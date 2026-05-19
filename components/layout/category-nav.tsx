@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment, useEffect, useState } from "react";
+import { useLang } from "@/components/layout/lang-context";
 
 const CATEGORIES = [
-  { label: "Sports", slug: "sports" },
-  { label: "Music", slug: "music" },
-  { label: "Theater & Arts", slug: "theater-arts" },
-  { label: "Comedy", slug: "comedy" },
-  { label: "Festival", slug: "festival" },
-  { label: "Conference", slug: "conference" },
-];
+  { labelKey: "catSports", slug: "sports" },
+  { labelKey: "catMusic", slug: "music" },
+  { labelKey: "catTheater", slug: "theater-arts" },
+  { labelKey: "catComedy", slug: "comedy" },
+  { labelKey: "catFestival", slug: "festival" },
+  { labelKey: "catConference", slug: "conference" },
+] as const;
 
 type Props = {
   className?: string;
@@ -20,6 +21,7 @@ type Props = {
 
 export function CategoryNav({ className, activeSlug }: Props) {
   const pathname = usePathname();
+  const { t } = useLang();
   const [activeHash, setActiveHash] = useState("");
   const currentSlug = activeHash || activeSlug;
 
@@ -47,7 +49,7 @@ export function CategoryNav({ className, activeSlug }: Props) {
             : "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white"
         }`}
       >
-        All
+        {t("eventsAll")}
       </Link>
       {CATEGORIES.map((cat) => (
         <Fragment key={cat.slug}>
@@ -60,7 +62,7 @@ export function CategoryNav({ className, activeSlug }: Props) {
                 : "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white"
             }`}
           >
-            {cat.label}
+            {t(cat.labelKey)}
           </Link>
         </Fragment>
       ))}

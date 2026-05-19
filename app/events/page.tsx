@@ -6,18 +6,20 @@ import { SearchResults } from "@/components/events/search-results";
 import { TrendingEventsMarquee } from "@/components/events/trending-events-showcase";
 import { CategoryNav } from "@/components/layout/category-nav";
 import { getCurrentUser } from "@/lib/auth";
-import { formatCurrency, formatDateTime, toNumber } from "@/lib/utils";
+import { getCurrentLang } from "@/lib/i18n-server";
+import { dict, type DictKey, type Lang } from "@/lib/i18n";
+import { formatCurrency, toNumber } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
-const categories = [
-  { label: "Sports", slug: "sports" },
-  { label: "Music", slug: "music" },
-  { label: "Theater & Arts", slug: "theater-arts" },
-  { label: "Comedy", slug: "comedy" },
-  { label: "Festival", slug: "festival" },
-  { label: "Conference", slug: "conference" },
-];
+const categoryMeta = [
+  { labelKey: "catSports", slug: "sports" },
+  { labelKey: "catMusic", slug: "music" },
+  { labelKey: "catTheater", slug: "theater-arts" },
+  { labelKey: "catComedy", slug: "comedy" },
+  { labelKey: "catFestival", slug: "festival" },
+  { labelKey: "catConference", slug: "conference" },
+] as const;
 
 type Props = {
   searchParams: Promise<{ search?: string; category?: string }>;
@@ -25,6 +27,26 @@ type Props = {
 
 export default async function EventsPage({ searchParams }: Props) {
   const { search, category } = await searchParams;
+  const lang = await getCurrentLang();
+  const t = (key: DictKey) => dict[lang][key] ?? dict.en[key] ?? key;
+  const categories = categoryMeta.map((cat) => ({
+    label: t(cat.labelKey),
+    slug: cat.slug,
+  }));
+  const categoryLabels = Object.fromEntries(categories.map((cat) => [cat.slug, cat.label]));
+  const cardLabels = {
+    empty: t("eventsNoEventsFound"),
+    free: t("eventsFree"),
+    getTickets: t("eventsGetTickets"),
+  };
+  const searchLabels = {
+    searchResults: t("eventsSearchResults"),
+    noResults: t("eventsSearchNoResults"),
+    tryDifferent: t("eventsSearchTryDifferent"),
+    browseAll: t("eventsBrowseAll"),
+    free: t("eventsFree"),
+    getTickets: t("eventsGetTickets"),
+  };
   const legacyCategory = categories.find((cat) => cat.slug === category);
 
   if (legacyCategory && !search) {
@@ -110,9 +132,9 @@ export default async function EventsPage({ searchParams }: Props) {
           </div>
         ) : null}
         {search ? (
-          <SearchResults query={search} events={searchResults} />
+          <SearchResults query={search} events={searchResults} lang={lang} labels={searchLabels} categoryLabels={categoryLabels} />
         ) : (
-          <EventsSections sections={sections} />
+          <EventsSections sections={sections} lang={lang} labels={cardLabels} categoryLabels={categoryLabels} />
         )}
 
         {!search && aiEvents.length > 0 && (
@@ -120,10 +142,10 @@ export default async function EventsPage({ searchParams }: Props) {
             <div className="flex items-end justify-between">
               <div>
                 <p className="text-[0.62rem] font-bold uppercase tracking-[0.22em] text-[#ff7224]">Tixy AI</p>
-                <h2 className="mt-1 font-goldman text-xl font-bold text-white">Special Events</h2>
+                <h2 className="mt-1 font-goldman text-xl font-bold text-white">{t("eventsSpecialTitle")}</h2>
               </div>
               <Link href={"/special" as never} className="text-sm font-semibold text-white/40 transition hover:text-white">
-                Бүгдийг харах →
+                {t("viewAll")} →
               </Link>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -148,32 +170,32 @@ export default async function EventsPage({ searchParams }: Props) {
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0e1424]/80 to-transparent" />
                       <span className="absolute left-3 top-3 rounded-full bg-violet-500/20 px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.12em] text-violet-300">
-                        AI Special
+                        {t("eventsAiSpecial")}
                       </span>
                     </div>
                     <div className="flex flex-1 flex-col gap-3 p-4">
                       <div>
-                        <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/30">{event.category.name}</p>
+                        <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/30">{categoryLabels[event.category.slug] ?? event.category.name}</p>
                         <p className="mt-1 line-clamp-2 text-base font-bold text-white">{event.title}</p>
-                        <p className="mt-0.5 text-xs text-white/40">{event.ticketTypes[0]?.name ?? "General Admission"}</p>
+                        <p className="mt-0.5 text-xs text-white/40">{event.ticketTypes[0]?.name ?? t("eventsGeneralAdmission")}</p>
                       </div>
                       <div className="flex flex-wrap gap-2 text-[0.7rem] text-white/40">
-                        <span>{formatDateTime(event.startsAt)}</span>
+                        <span>{formatEventDateTime(event.startsAt, lang)}</span>
                         <span>·</span>
                         <span>{event.venue.name}</span>
                       </div>
                       <div className="mt-auto flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
-                          <p className="text-[0.6rem] text-white/30">үнэ</p>
+                          <p className="text-[0.6rem] text-white/30">{t("eventsPrice")}</p>
                           <p className="break-words text-lg font-bold text-white">
-                            {startingPrice > 0 ? formatCurrency(startingPrice, event.currency) : "Үнэгүй"}
+                            {startingPrice > 0 ? formatCurrency(startingPrice, event.currency) : t("eventsFree")}
                           </p>
                         </div>
                         <Link
                           href={`/events/${event.slug}` as never}
                           className="w-full rounded-xl bg-[#ff7224] px-4 py-2 text-center text-xs font-bold text-white transition hover:bg-[#ff8c42] sm:w-auto"
                         >
-                          Авах
+                          {t("eventsBuy")}
                         </Link>
                       </div>
                     </div>
@@ -186,4 +208,13 @@ export default async function EventsPage({ searchParams }: Props) {
       </div>
     </section>
   );
+}
+
+function formatEventDateTime(value: Date | string, lang: Lang) {
+  const date = value instanceof Date ? value : new Date(value);
+
+  return new Intl.DateTimeFormat(lang === "mn" ? "mn-MN" : "en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
