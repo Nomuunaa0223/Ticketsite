@@ -474,135 +474,137 @@ export function AiAgentDemoBanner() {
 
   return (
     <>
-      {isOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-sm sm:px-6 lg:items-end lg:justify-end lg:bg-transparent lg:pb-28 lg:pr-8 lg:backdrop-blur-0">
-          <div className="flex h-[min(680px,calc(100vh-2rem))] w-full max-w-[560px] flex-col overflow-hidden rounded-[1.2rem] border border-white/15 bg-[#050505]/95 shadow-[0_24px_90px_rgba(0,0,0,0.68)] lg:h-[min(620px,calc(100vh-8rem))] lg:max-w-[430px]">
-            <div className="shrink-0 border-b border-white/10 bg-[#0b0b0b] px-4 py-4 shadow-[inset_0_-1px_0_rgba(250,232,154,0.08)] sm:px-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex min-w-0 items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f6df8f]/30 bg-white p-1.5 shadow-[0_0_24px_rgba(246,223,143,0.18)]">
+      {isOpen && (
+        <div className="fixed inset-x-2 bottom-[4.5rem] z-50 sm:inset-auto sm:bottom-20 sm:right-6 lg:bottom-24 lg:right-8">
+          <div className="flex h-[min(440px,calc(100svh-6rem))] w-full flex-col overflow-hidden rounded-2xl border border-white/15 bg-[#050505]/95 shadow-[0_-8px_40px_rgba(0,0,0,0.6)] sm:h-[min(540px,calc(100vh-8rem))] sm:w-[360px] sm:shadow-[0_24px_90px_rgba(0,0,0,0.68)] lg:h-[min(560px,calc(100vh-8rem))] lg:w-[390px]">
+
+            {/* Header */}
+            <div className="shrink-0 border-b border-white/10 bg-[#0b0b0b] px-3 py-3 sm:px-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#f6df8f]/30 bg-white p-1 shadow-[0_0_18px_rgba(246,223,143,0.18)]">
                     <img src="/ai.png" alt="" className="h-full w-full object-contain" />
                   </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white">Tixy Ai</p>
-                  </div>
+                  <p className="text-sm font-semibold text-white">Tixy Ai</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="rounded-full border border-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/75 transition hover:border-[#f6df8f]/45 hover:bg-[#f6df8f]/10 hover:text-white"
+                  className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 text-white/60 transition hover:border-white/30 hover:text-white"
                 >
-                  Close
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+                  </svg>
                 </button>
               </div>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
-              <div ref={messageListRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+            {/* Messages */}
+            <div className="flex min-h-0 flex-1 flex-col p-2.5 sm:p-3.5">
+              <div ref={messageListRef} className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
                 {messages.map((message, index) => (
                   <div
                     key={`${message.role}-${index}`}
-                    className={`max-w-[92%] whitespace-pre-line break-words rounded-[1.1rem] px-4 py-3 text-sm leading-7 sm:max-w-[86%] ${
+                    className={`max-w-[90%] whitespace-pre-line break-words rounded-2xl px-3 py-2.5 text-[0.8rem] leading-6 sm:max-w-[85%] ${
                       message.role === "assistant"
                         ? "border border-white/10 bg-white/[0.06] text-white"
                         : "ml-auto bg-white text-black"
                     }`}
                   >
-                    {message.imageUrl ? (
-                      <img src={message.imageUrl} alt="" className="mb-3 aspect-video w-full rounded-xl object-cover" />
-                    ) : null}
+                    {message.imageUrl && (
+                      <img src={message.imageUrl} alt="" className="mb-2 aspect-video w-full rounded-xl object-cover" />
+                    )}
                     {message.text}
-                    {message.actionUrl ? (
+                    {message.actionUrl && (
                       <a
                         href={message.actionUrl}
-                        className="mt-3 inline-flex rounded-full bg-[#f6df8f] px-3 py-1.5 text-xs font-bold text-black transition hover:bg-white"
+                        className="mt-2 inline-flex rounded-full bg-[#f6df8f] px-3 py-1 text-xs font-bold text-black transition hover:bg-white"
                       >
                         {message.actionLabel ?? "Open"}
                       </a>
-                    ) : null}
+                    )}
                   </div>
                 ))}
               </div>
 
-              <form onSubmit={handleSubmit} className="mt-4 shrink-0 space-y-3 border-t border-white/10 pt-4">
-                {attachedImageUrl ? (
-                  <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-2">
-                    <img src={attachedImageUrl} alt="" className="h-12 w-16 rounded-xl object-cover" />
-                    <p className="min-w-0 flex-1 truncate text-xs text-white/65">Attached event image</p>
+              {/* Input */}
+              <form onSubmit={handleSubmit} className="mt-2.5 shrink-0 space-y-2 border-t border-white/10 pt-2.5">
+                {attachedImageUrl && (
+                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-1.5">
+                    <img src={attachedImageUrl} alt="" className="h-9 w-12 rounded-lg object-cover" />
+                    <p className="min-w-0 flex-1 truncate text-xs text-white/60">Attached image</p>
                     <button
                       type="button"
                       onClick={() => {
                         setAttachedImageUrl(null);
                         setEventDraftDetails((current) => current ? { ...current, imageUrl: undefined } : current);
                       }}
-                      className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/70 hover:border-[#f6df8f]/45 hover:text-white"
+                      className="rounded-full border border-white/15 px-2 py-0.5 text-[0.65rem] text-white/60 hover:text-white"
                     >
-                      Remove
+                      ✕
                     </button>
                   </div>
-                ) : null}
+                )}
 
                 <textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
                   onKeyDown={handleInputKeyDown}
-                  placeholder={isReviewingDraft ? "Uurchluh zuilee bich esvel 'uusge'..." : currentQuestionIndex !== null ? "Hariultaa bich..." : "Asuultaa bich..."}
+                  placeholder={isReviewingDraft ? "Өөрчлөх зүйл бич эсвэл 'үүсгэ'..." : currentQuestionIndex !== null ? "Хариултаа бич..." : "Асуултаа бич..."}
                   rows={2}
-                  className="max-h-28 w-full resize-none rounded-[1rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#f6df8f]/45"
+                  className="max-h-24 w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[0.8rem] text-white outline-none transition placeholder:text-white/30 focus:border-[#f6df8f]/45"
                 />
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="cursor-pointer rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-white/75 transition hover:border-[#f6df8f]/45 hover:bg-[#f6df8f]/10 hover:text-white">
-                    {isUploadingImage ? "Uploading" : "Gallery"}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(event) => void handleImageUpload(event)}
-                      disabled={isUploadingImage || isGeneratingEvent}
-                      className="sr-only"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={useCurrentLocation}
-                    disabled={isGeneratingEvent}
-                    className="rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-white/75 transition hover:border-[#f6df8f]/45 hover:bg-[#f6df8f]/10 hover:text-white disabled:opacity-60"
-                  >
-                    Location
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-end">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex gap-1.5">
+                    <label className="cursor-pointer rounded-full border border-white/15 px-2.5 py-1.5 text-[0.65rem] font-semibold text-white/65 transition hover:border-[#f6df8f]/45 hover:bg-[#f6df8f]/10 hover:text-white">
+                      {isUploadingImage ? "..." : "Gallery"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => void handleImageUpload(event)}
+                        disabled={isUploadingImage || isGeneratingEvent}
+                        className="sr-only"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={useCurrentLocation}
+                      disabled={isGeneratingEvent}
+                      className="rounded-full border border-white/15 px-2.5 py-1.5 text-[0.65rem] font-semibold text-white/65 transition hover:border-[#f6df8f]/45 hover:bg-[#f6df8f]/10 hover:text-white disabled:opacity-50"
+                    >
+                      Location
+                    </button>
+                  </div>
                   <button
                     type="submit"
                     disabled={isGeneratingEvent || isUploadingImage || isAskingAgent}
-                    className="rounded-full bg-[#f6df8f] px-5 py-3 text-sm font-semibold text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full bg-[#f6df8f] px-4 py-2 text-xs font-bold text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {isGeneratingEvent ? "Creating" : isAskingAgent ? "Asking" : "Send"}
+                    {isGeneratingEvent ? "Creating…" : isAskingAgent ? "…" : "Send"}
                   </button>
                 </div>
               </form>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
-      <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex items-end justify-end sm:bottom-8 sm:right-8">
-        <div className="pointer-events-auto flex flex-col items-end gap-4">
+      {/* Floating button */}
+      <div className="fixed bottom-3 right-3 z-50 sm:bottom-6 sm:right-6 lg:bottom-8 lg:right-8">
         <button
           type="button"
           onClick={() => setIsOpen((current) => !current)}
           aria-label="Open Tixy Ai chat"
-          className="group relative flex h-16 w-16 items-center justify-center rounded-full bg-black shadow-[0_16px_40px_rgba(0,0,0,0.45)] transition hover:scale-105"
+          className="group relative flex h-12 w-12 items-center justify-center rounded-full bg-black shadow-[0_12px_32px_rgba(0,0,0,0.5)] transition hover:scale-105 sm:h-14 sm:w-14 lg:h-16 lg:w-16"
         >
           <span className="absolute inset-0 rounded-full bg-[linear-gradient(135deg,#ffffff_0%,#f6df8f_54%,#ffffff_100%)] p-[2px]">
             <span className="block h-full w-full rounded-full bg-black" />
           </span>
-          <span className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white p-2 shadow-[0_0_26px_rgba(246,223,143,0.22)]">
+          <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white p-1.5 shadow-[0_0_20px_rgba(246,223,143,0.22)] sm:h-9 sm:w-9 lg:h-11 lg:w-11">
             <img src="/ai.png" alt="" className="h-full w-full object-contain" />
           </span>
         </button>
-      </div>
       </div>
     </>
   );
