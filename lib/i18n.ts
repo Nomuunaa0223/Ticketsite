@@ -225,7 +225,7 @@ export const dict = {
     profileCancel: "Цуцлах",
     profileSaved: "Амжилттай хадгаллаа.",
     profileSaveError: "Хадгалахад алдаа гарлаа.",
-    profileNetworkError: "Сүлжээний алдаа. Дахин оролдоно уу.",
+    profileNetworkError: "Сvлжээний алдаа. Дахин оролдоно уу.",
     profileName: "Нэр",
     profilePhone: "Утас",
   },

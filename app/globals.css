@@ -630,7 +630,7 @@
   }
 
   .events-category-nav .category-nav-line-break {
-    flex-basis: 100%;
+    display: none;
     height: 0;
   }
 
@@ -3504,6 +3504,11 @@
     flex-wrap: wrap;
     overflow: visible;
     padding-bottom: 0;
+  }
+
+  .events-category-nav .category-nav-line-break {
+    display: block;
+    flex-basis: 100%;
   }
 
   .events-category-nav a {
