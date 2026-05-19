@@ -73,18 +73,23 @@ export async function queryEventEmbeddings(query: string, topK = 6) {
   const embedding = await createEmbedding(query);
   if (!embedding) return null;
 
-  const result = await index.query({
-    vector: embedding,
-    topK,
-    includeMetadata: true
-  });
+  try {
+    const result = await index.query({
+      vector: embedding,
+      topK,
+      includeMetadata: true
+    });
 
-  return result.matches
-    ?.map((match) => ({
-      eventId: Number(match.metadata?.eventId ?? match.id),
-      score: match.score ?? 0
-    }))
-    .filter((match) => Number.isFinite(match.eventId)) ?? [];
+    return result.matches
+      ?.map((match) => ({
+        eventId: Number(match.metadata?.eventId ?? match.id),
+        score: match.score ?? 0
+      }))
+      .filter((match) => Number.isFinite(match.eventId)) ?? [];
+  } catch (error) {
+    console.warn("[pinecone:query] falling back to PostgreSQL search", error);
+    return null;
+  }
 }
 
 export function getPineconeStatus() {

@@ -57,6 +57,26 @@ const openAiTools = [
   }
 ];
 
+async function createFallbackResponse(message: string) {
+  const recommendations = await recommendEvents(message, 5);
+
+  return {
+    answer:
+      "Free mode is active. I searched events with the PostgreSQL fallback instead of paid OpenAI semantic AI.",
+    events: recommendations.map(serializeRecommendedEvent),
+    provider: "free-fallback"
+  };
+}
+
+async function finishRun(runId: number | undefined, output: object) {
+  if (!runId) return;
+
+  await prisma.aiAgentRun.update({
+    where: { id: runId },
+    data: { status: "COMPLETED", output, completedAt: new Date() }
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const session = await getSessionFromRequest(request);
@@ -95,20 +115,8 @@ export async function POST(request: Request) {
 
     const client = getOpenAIClient();
     if (!client) {
-      const recommendations = await recommendEvents(message, 5);
-      const output = {
-        answer: "OpenAI key тохируулаагүй байна. Одоогоор PostgreSQL/Pinecone fallback search ашиглаад ойролцоо event-үүдийг буцаалаа.",
-        events: recommendations.map(serializeRecommendedEvent),
-        provider: "fallback"
-      };
-
-      if (run) {
-        await prisma.aiAgentRun.update({
-          where: { id: run.id },
-          data: { status: "COMPLETED", output, completedAt: new Date() }
-        });
-      }
-
+      const output = await createFallbackResponse(message);
+      await finishRun(run?.id, output);
       return NextResponse.json(output);
     }
 
@@ -123,12 +131,23 @@ export async function POST(request: Request) {
       { role: "user", content: message }
     ];
 
-    const first = await client.chat.completions.create({
-      model: env.OPENAI_CHAT_MODEL,
-      messages: messages as never,
-      tools: openAiTools,
-      tool_choice: "auto"
-    });
+    const first = await client.chat.completions
+      .create({
+        model: env.OPENAI_CHAT_MODEL,
+        messages: messages as never,
+        tools: openAiTools,
+        tool_choice: "auto"
+      })
+      .catch(async (error) => {
+        console.warn("[openai:chat] falling back to free mode", error);
+        return null;
+      });
+
+    if (!first) {
+      const output = await createFallbackResponse(message);
+      await finishRun(run?.id, output);
+      return NextResponse.json(output);
+    }
 
     const assistantMessage = first.choices[0]?.message;
     messages.push(assistantMessage as never);
@@ -143,7 +162,9 @@ export async function POST(request: Request) {
       const name = functionCall.function.name;
       const tool = toolByName.get(name);
       const args = JSON.parse(functionCall.function.arguments || "{}");
-      const output = tool ? await (tool.invoke as (input: unknown) => Promise<unknown>)(args) : JSON.stringify({ error: `Unknown tool: ${name}` });
+      const output = tool
+        ? await (tool.invoke as (input: unknown) => Promise<unknown>)(args)
+        : JSON.stringify({ error: `Unknown tool: ${name}` });
 
       messages.push({
         role: "tool",
@@ -165,11 +186,22 @@ export async function POST(request: Request) {
     }
 
     const final = toolCalls.length
-      ? await client.chat.completions.create({
-          model: env.OPENAI_CHAT_MODEL,
-          messages: messages as never
-        })
+      ? await client.chat.completions
+          .create({
+            model: env.OPENAI_CHAT_MODEL,
+            messages: messages as never
+          })
+          .catch(async (error) => {
+            console.warn("[openai:chat-final] falling back to free mode", error);
+            return null;
+          })
       : first;
+
+    if (!final) {
+      const output = await createFallbackResponse(message);
+      await finishRun(run?.id, output);
+      return NextResponse.json(output);
+    }
 
     const answer = final.choices[0]?.message?.content ?? "I could not generate a response.";
     const output = {

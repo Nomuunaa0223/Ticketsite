@@ -21,12 +21,17 @@ export async function createEmbedding(input: string) {
   const client = getOpenAIClient();
   if (!client) return null;
 
-  const response = await client.embeddings.create({
-    model: env.OPENAI_EMBEDDING_MODEL,
-    input
-  });
+  try {
+    const response = await client.embeddings.create({
+      model: env.OPENAI_EMBEDDING_MODEL,
+      input
+    });
 
-  return response.data[0]?.embedding ?? null;
+    return response.data[0]?.embedding ?? null;
+  } catch (error) {
+    console.warn("[openai:embedding] falling back to PostgreSQL search", error);
+    return null;
+  }
 }
 
 export function getOpenAIStatus() {
