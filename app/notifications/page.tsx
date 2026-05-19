@@ -471,7 +471,6 @@ function renderIcon(type: string) {
     );
   }
 
-  if (type === "TICKET_SOLD") return "bg-emerald-500/10 text-emerald-400";
   if (type === "TICKET_SOLD") {
     return (
       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">

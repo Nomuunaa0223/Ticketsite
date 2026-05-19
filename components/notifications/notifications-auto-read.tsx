@@ -11,8 +11,8 @@ export function NotificationsAutoRead({ unreadCount }: Props) {
     if (unreadCount === 0) return;
 
     const timer = setTimeout(() => {
-      fetch("/api/notifications/mark-read", { method: "POST" })
-        .then(() => { window.location.reload(); })
+      fetch("/api/notifications/read", { method: "POST" })
+        .then((res) => { if (res.ok) window.location.reload(); })
         .catch(() => {});
     }, 3000);
 
