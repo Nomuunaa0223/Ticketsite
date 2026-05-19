@@ -15,6 +15,13 @@ type EventDay = {
   endsAt: string;
 };
 
+type TicketTypeEntry = {
+  id: number;
+  name: string;
+  price: string;
+  qty: string;
+};
+
 function toIso(value: string) {
   return new Date(value).toISOString();
 }
@@ -155,9 +162,9 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
   const [extraImages, setExtraImages] = useState<[string | null, string | null]>([null, null]);
 
   const [days, setDays] = useState<EventDay[]>([{ id: 1, startsAt: "", endsAt: "" }]);
-  const [ticketName, setTicketName] = useState("General Admission");
-  const [ticketPrice, setTicketPrice] = useState("");
-  const [ticketQty, setTicketQty] = useState("");
+  const [ticketTypes, setTicketTypes] = useState<TicketTypeEntry[]>([
+    { id: 1, name: "General Admission", price: "", qty: "" },
+  ]);
 
   function setExtraImage(i: 0 | 1, url: string) {
     setExtraImages((prev) => {
@@ -178,6 +185,19 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
 
   function updateDay(id: number, field: "startsAt" | "endsAt", value: string) {
     setDays((prev) => prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)));
+  }
+
+  function addTicketType() {
+    setTicketTypes((prev) => [...prev, { id: Date.now(), name: "", price: "", qty: "" }]);
+  }
+
+  function removeTicketType(id: number) {
+    if (ticketTypes.length <= 1) return;
+    setTicketTypes((prev) => prev.filter((t) => t.id !== id));
+  }
+
+  function updateTicketType(id: number, field: keyof Omit<TicketTypeEntry, "id">, value: string) {
+    setTicketTypes((prev) => prev.map((t) => (t.id === id ? { ...t, [field]: value } : t)));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -209,16 +229,18 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
       currency: "MNT",
       platformFeeBps: 900,
       serviceFeeBps: 350,
-      ticketTypes: sortedDays.map((day, i) => ({
-        name: ordinal(i + 1),
-        price: Number(ticketPrice),
-        quantityTotal: Number(ticketQty),
-        maxPerOrder: 8,
-        resaleAllowed: true,
-        hasSeatMap: false,
-        startsAt: toIso(day.startsAt),
-        endsAt: toIso(day.endsAt),
-      })),
+      ticketTypes: sortedDays.flatMap((day, i) =>
+        ticketTypes.map((tt) => ({
+          name: sortedDays.length > 1 ? `${tt.name} – ${ordinal(i + 1)}` : tt.name,
+          price: Number(tt.price),
+          quantityTotal: Number(tt.qty),
+          maxPerOrder: 8,
+          resaleAllowed: true,
+          hasSeatMap: false,
+          startsAt: toIso(day.startsAt),
+          endsAt: toIso(day.endsAt),
+        }))
+      ),
       customVenue: {
         name: String(form.get("venueName")),
         city: String(form.get("venueCity")),
@@ -248,7 +270,7 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
     router.push("/dashboard/organizer/my-events");
   }
 
-  const totalTickets = days.length * (Number(ticketQty) || 0);
+  const totalTickets = days.length * ticketTypes.reduce((sum, tt) => sum + (Number(tt.qty) || 0), 0);
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
@@ -405,49 +427,81 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
         </div>
       </Card>
 
-      {/* Ticket template */}
+      {/* Ticket types */}
       <Card>
-        <SectionLabel>Ticket</SectionLabel>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Ticket name">
-            <input
-              value={ticketName}
-              onChange={(e) => setTicketName(e.target.value)}
-              required
-              minLength={2}
-              placeholder="General Admission"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Үнэ (₮)">
-            <input
-              value={ticketPrice}
-              onChange={(e) => setTicketPrice(e.target.value)}
-              type="number"
-              min="0"
-              step="1"
-              required
-              placeholder="50000"
-              className={inputCls}
-            />
-          </Field>
-          <Field label="Тоо / өдөр">
-            <input
-              value={ticketQty}
-              onChange={(e) => setTicketQty(e.target.value)}
-              type="number"
-              min="1"
-              required
-              placeholder="100"
-              className={inputCls}
-            />
-          </Field>
+        <SectionLabel>Ticket types</SectionLabel>
+        <div className="grid gap-3">
+          {ticketTypes.map((tt, i) => (
+            <div key={tt.id} className="rounded-xl bg-white/[0.03] p-4 ring-1 ring-white/[0.06]">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[0.7rem] font-bold uppercase tracking-[0.2em] text-[#ff8b46]">
+                  Төрөл {i + 1}
+                </span>
+                {ticketTypes.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeTicketType(tt.id)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.04] text-white/30 transition hover:bg-red-500/20 hover:text-red-400"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Field label="Нэр">
+                  <input
+                    value={tt.name}
+                    onChange={(e) => updateTicketType(tt.id, "name", e.target.value)}
+                    required
+                    minLength={2}
+                    placeholder="General Admission"
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Үнэ (₮)">
+                  <input
+                    value={tt.price}
+                    onChange={(e) => updateTicketType(tt.id, "price", e.target.value)}
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    placeholder="50000"
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Тоо / өдөр">
+                  <input
+                    value={tt.qty}
+                    onChange={(e) => updateTicketType(tt.id, "qty", e.target.value)}
+                    type="number"
+                    min="1"
+                    required
+                    placeholder="100"
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addTicketType}
+            className="flex items-center gap-2 rounded-xl border border-dashed border-white/10 px-4 py-3 text-sm text-white/40 transition hover:border-white/20 hover:text-white/60"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+            Ticket төрөл нэмэх
+          </button>
         </div>
-        {ticketQty && (
+        {totalTickets > 0 && (
           <p className="mt-3 text-[0.65rem] text-white/30">
             Нийт:{" "}
             <span className="font-semibold text-[#ff7224]">{totalTickets.toLocaleString()}</span>
-            {" "}тасалбар ({days.length} өдөр × {Number(ticketQty).toLocaleString()})
+            {" "}тасалбар ({days.length} өдөр × {ticketTypes.length} төрөл)
           </p>
         )}
       </Card>
