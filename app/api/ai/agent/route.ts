@@ -57,7 +57,81 @@ const openAiTools = [
   }
 ];
 
-async function createFallbackResponse(message: string) {
+type FallbackEvent = Awaited<ReturnType<typeof getFallbackEvents>>[number];
+
+async function createFallbackResponse(message: string, userId?: number) {
+  const intent = detectFallbackIntent(message);
+
+  if (intent === "latest-ticket") {
+    if (!userId) {
+      return {
+        answer: "Сүүлд авсан ticket-ээ харахын тулд эхлээд login хийнэ үү.",
+        events: [],
+        provider: "free-fallback"
+      };
+    }
+
+    const ticket = await prisma.ticket.findFirst({
+      where: { currentOwnerId: userId },
+      include: {
+        event: { select: { id: true, title: true, slug: true, startsAt: true, venue: { select: { name: true, city: true } } } },
+        ticketType: { select: { name: true, price: true } },
+        seat: { select: { label: true } }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+
+    if (!ticket) {
+      return {
+        answer: "Одоогоор таны account дээр ticket олдсонгүй.",
+        events: [],
+        provider: "free-fallback"
+      };
+    }
+
+    const seatLabel = ticket.seat?.label ? `, суудал: ${ticket.seat.label}` : "";
+    return {
+      answer: `Таны хамгийн сүүлд авсан ticket: ${ticket.event.title} (${ticket.ticketType.name}${seatLabel}). Event эхлэх: ${formatDate(ticket.event.startsAt)}. Ticket code: ${ticket.code}.`,
+      tickets: [
+        {
+          code: ticket.code,
+          status: ticket.status,
+          event: ticket.event.title,
+          eventSlug: ticket.event.slug,
+          startsAt: ticket.event.startsAt,
+          ticketType: ticket.ticketType.name,
+          seat: ticket.seat?.label ?? null
+        }
+      ],
+      provider: "free-fallback"
+    };
+  }
+
+  if (intent === "nearest-event") {
+    const events = await getFallbackEvents({ nearestOnly: true });
+    const first = events[0];
+
+    return {
+      answer: first
+        ? `Хамгийн ойрын event: ${first.title}. ${formatDate(first.startsAt)}-д ${first.venue.name}, ${first.venue.city}-д болно.`
+        : "Ойрын published event одоогоор олдсонгүй.",
+      events: events.map(serializeFallbackEvent),
+      provider: "free-fallback"
+    };
+  }
+
+  if (intent === "show-ticket") {
+    const events = await getFallbackEvents({ showOnly: true });
+
+    return {
+      answer: events.length
+        ? "Тоглолт/show төрлийн ticket авах боломжтой ойрын event-үүдийг оллоо."
+        : "Одоогоор тоглолт/show төрлийн published event олдсонгүй.",
+      events: events.map(serializeFallbackEvent),
+      provider: "free-fallback"
+    };
+  }
+
   const recommendations = await recommendEvents(message, 5);
 
   return {
@@ -66,6 +140,121 @@ async function createFallbackResponse(message: string) {
     events: recommendations.map(serializeRecommendedEvent),
     provider: "free-fallback"
   };
+}
+
+function detectFallbackIntent(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (
+    includesAny(normalized, [
+      "suuld",
+      "сүүлд",
+      "last ticket",
+      "my ticket",
+      "ymr ticket avsan",
+      "ямар ticket авсан",
+      "ямар тасалбар авсан",
+      "ticket avsan"
+    ])
+  ) {
+    return "latest-ticket";
+  }
+
+  if (
+    includesAny(normalized, [
+      "hamgiin oirhon",
+      "хамгийн ойрхон",
+      "хамгийн ойрын",
+      "nearest",
+      "upcoming",
+      "oirhon boloh",
+      "ойрхон болох"
+    ])
+  ) {
+    return "nearest-event";
+  }
+
+  if (
+    includesAny(normalized, [
+      "togloltiin",
+      "тоглолт",
+      "concert",
+      "show",
+      "duulalt",
+      "дуу",
+      "music",
+      "ticket avmaar",
+      "тасалбар авмаар"
+    ])
+  ) {
+    return "show-ticket";
+  }
+
+  return "search";
+}
+
+function includesAny(value: string, keywords: string[]) {
+  return keywords.some((keyword) => value.includes(keyword));
+}
+
+async function getFallbackEvents(options: { nearestOnly?: boolean; showOnly?: boolean } = {}) {
+  return prisma.event.findMany({
+    where: {
+      status: "PUBLISHED",
+      visibility: "PUBLIC",
+      startsAt: { gte: new Date() },
+      ...(options.showOnly
+        ? {
+            OR: [
+              { category: { slug: { in: ["music", "theater-arts", "comedy", "festival"] } } },
+              { title: { contains: "concert", mode: "insensitive" } },
+              { title: { contains: "show", mode: "insensitive" } },
+              { title: { contains: "festival", mode: "insensitive" } },
+              { summary: { contains: "music", mode: "insensitive" } },
+              { summary: { contains: "live", mode: "insensitive" } }
+            ]
+          }
+        : {})
+    },
+    include: {
+      category: true,
+      venue: true,
+      ticketTypes: {
+        orderBy: { price: "asc" },
+        take: 3
+      }
+    },
+    orderBy: { startsAt: "asc" },
+    take: options.nearestOnly ? 3 : 5
+  });
+}
+
+function serializeFallbackEvent(event: FallbackEvent) {
+  const availableTicket = event.ticketTypes.find((ticketType) => ticketType.quantityTotal > ticketType.quantitySold);
+  const lowestTicket = availableTicket ?? event.ticketTypes[0];
+
+  return {
+    id: event.id,
+    title: event.title,
+    slug: event.slug,
+    summary: event.summary,
+    startsAt: event.startsAt,
+    imageUrl: event.cardImageUrl ?? event.imageUrl,
+    category: event.category.name,
+    venue: event.venue.name,
+    city: event.venue.city,
+    lowestPrice: lowestTicket ? Number(lowestTicket.price) : null,
+    available: lowestTicket ? Math.max(0, lowestTicket.quantityTotal - lowestTicket.quantitySold) : 0,
+    source: "postgres"
+  };
+}
+
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("mn-MN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Ulaanbaatar"
+  }).format(date);
 }
 
 async function finishRun(runId: number | undefined, output: object) {
@@ -115,7 +304,7 @@ export async function POST(request: Request) {
 
     const client = getOpenAIClient();
     if (!client) {
-      const output = await createFallbackResponse(message);
+      const output = await createFallbackResponse(message, userId);
       await finishRun(run?.id, output);
       return NextResponse.json(output);
     }
@@ -144,7 +333,7 @@ export async function POST(request: Request) {
       });
 
     if (!first) {
-      const output = await createFallbackResponse(message);
+      const output = await createFallbackResponse(message, userId);
       await finishRun(run?.id, output);
       return NextResponse.json(output);
     }
@@ -198,7 +387,7 @@ export async function POST(request: Request) {
       : first;
 
     if (!final) {
-      const output = await createFallbackResponse(message);
+      const output = await createFallbackResponse(message, userId);
       await finishRun(run?.id, output);
       return NextResponse.json(output);
     }
