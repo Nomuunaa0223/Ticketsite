@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { SeatMap, type SeatData } from "@/components/tickets/seat-map";
+import { PaymentModal } from "@/components/tickets/payment-modal";
 
 type TicketType = {
   id: number;
@@ -50,13 +50,13 @@ function useCountdown(target: Date) {
 
 export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Props) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const [selectedSeats, setSelectedSeats] = useState<Record<number, number[]>>({});
   const [seatData, setSeatData] = useState<Record<number, SeatData[]>>({});
   const [seatLoading, setSeatLoading] = useState<Record<number, boolean>>({});
   const [expandedSeatMap, setExpandedSeatMap] = useState<number | null>(null);
-  const [feedback, setFeedback] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
 
   const saleEnd = new Date(salesEndsAt);
   const { days, hours, minutes, seconds, ended: isSaleEnded, ready } = useCountdown(saleEnd);
@@ -109,31 +109,31 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
 
   function handleOrder(e: React.FormEvent) {
     e.preventDefault();
-    setFeedback(null);
+    setError(null);
     if (orderItems.length === 0) {
-      setFeedback({ message: "Тасалбар сонгоно уу.", type: "error" });
+      setError("Тасалбар сонгоно уу.");
       return;
     }
-    startTransition(async () => {
-      try {
-        const res = await fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: orderItems }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          setFeedback({ message: data.error ?? "Алдаа гарлаа. Дахин оролдоно уу.", type: "error" });
-        } else {
-          setFeedback({ message: "Тасалбар амжилттай авлаа! Шилжүүлж байна...", type: "success" });
-          setQuantities({});
-          setSelectedSeats({});
-          setTimeout(() => router.push("/profile"), 1200);
-        }
-      } catch {
-        setFeedback({ message: "Сүлжээний алдаа. Дахин оролдоно уу.", type: "error" });
-      }
+    setPaymentOpen(true);
+  }
+
+  async function submitOrder(): Promise<void> {
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: orderItems }),
     });
+    const data = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error ?? "Алдаа гарлаа. Дахин оролдоно уу.");
+    }
+    setQuantities({});
+    setSelectedSeats({});
+  }
+
+  function handlePaymentSuccess() {
+    setPaymentOpen(false);
+    router.push("/profile");
   }
 
   return (
@@ -251,7 +251,7 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
           {/* Нийт дүн */}
           {orderItems.length > 0 && (() => {
             const totalQty = orderItems.reduce((s, item) => s + item.quantity, 0);
-            const totalPrice = orderItems.reduce((s, item) => {
+            const totalAmount = orderItems.reduce((s, item) => {
               const tt = ticketTypes.find((t) => t.id === item.ticketTypeId);
               return s + (tt ? tt.price * item.quantity : 0);
             }, 0);
@@ -259,30 +259,40 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
               <div className="flex items-center justify-between rounded-xl bg-white/[0.05] px-4 py-3">
                 <div>
                   <p className="text-[0.65rem] text-white/40">Нийт дүн</p>
-                  <p className="text-xl font-bold text-white">{formatPrice(totalPrice, currency)}</p>
+                  <p className="text-xl font-bold text-white">{formatPrice(totalAmount, currency)}</p>
                 </div>
                 <p className="text-xs text-white/35">{totalQty} тасалбар</p>
               </div>
             );
           })()}
 
-          <button type="submit" disabled={isPending || orderItems.length === 0}
+          <button type="submit" disabled={orderItems.length === 0}
             className="w-full rounded-full bg-[#ff7224] py-4 text-base font-bold text-white transition hover:bg-[#e5641a] disabled:opacity-50">
-            {isPending ? "Боловсруулж байна..." : "Худалдан авах"}
+            Худалдан авах
           </button>
 
-          {feedback && (
-            <div className={`text-sm text-right ${feedback.type === "error" ? "text-red-400" : "text-white"}`}>
-              {feedback.message}
-              {feedback.type === "success" && (
-                <Link href="/profile" className="mt-1 block text-xs font-semibold text-white/60 hover:text-white">
-                  Profile →
-                </Link>
-              )}
-            </div>
+          {error && (
+            <div className="text-sm text-right text-red-400">{error}</div>
           )}
         </form>
       )}
+
+      {paymentOpen && (() => {
+        const totalQty = orderItems.reduce((s, item) => s + item.quantity, 0);
+        const totalAmount = orderItems.reduce((s, item) => {
+          const tt = ticketTypes.find((t) => t.id === item.ticketTypeId);
+          return s + (tt ? tt.price * item.quantity : 0);
+        }, 0);
+        return (
+          <PaymentModal
+            totalPrice={formatPrice(totalAmount, currency)}
+            totalQty={totalQty}
+            onClose={() => setPaymentOpen(false)}
+            onConfirm={submitOrder}
+            onSuccess={handlePaymentSuccess}
+          />
+        );
+      })()}
     </div>
   );
 }
