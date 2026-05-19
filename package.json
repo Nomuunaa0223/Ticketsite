@@ -2,6 +2,7 @@
   "name": "tixora",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev": "next dev -p 3000 --experimental-https",
     "dev:realtime": "tsx server/index.ts",
@@ -12,9 +13,6 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "tsx prisma/seed.ts"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@langchain/core": "^1.1.47",
