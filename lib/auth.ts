@@ -84,10 +84,14 @@ export async function getCurrentUser() {
     return null;
   }
 
-  return prisma.user.findUnique({
-    where: { id: Number(session.sub) },
-    include: { organizerProfile: true }
-  });
+  try {
+    return await prisma.user.findUnique({
+      where: { id: Number(session.sub) },
+      include: { organizerProfile: true }
+    });
+  } catch {
+    return null;
+  }
 }
 
 export async function requireUser() {
