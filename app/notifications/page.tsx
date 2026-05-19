@@ -5,7 +5,6 @@ import { getCurrentLang } from "@/lib/i18n-server";
 import { ensureReminderNotifications, markAllNotificationsRead } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/utils";
-import { NotificationsAutoRead } from "@/components/notifications/notifications-auto-read";
 
 const PAGE_SIZE = 9;
 const MAX_PAGE_LINKS = 5;
@@ -59,8 +58,7 @@ export default async function NotificationsPage({ searchParams }: NotificationsP
 
   return (
     <section className="min-h-screen bg-[#07080d] px-4 py-12 sm:px-6 lg:px-8">
-      <NotificationsAutoRead unreadCount={unreadCount} />
-      <div className="mx-auto max-w-7xl">
+<div className="mx-auto max-w-7xl">
         <div className="mb-8 flex items-center justify-between gap-4">
           <h1 className="mt-1 font-goldman text-2xl font-bold text-white sm:ml-16 sm:text-3xl">{labels.title}</h1>
           <div className="flex items-center gap-3">
