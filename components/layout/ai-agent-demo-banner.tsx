@@ -482,7 +482,7 @@ export function AiAgentDemoBanner() {
             <div className="shrink-0 border-b border-white/10 bg-[#0b0b0b] px-3 py-3 sm:px-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#f6df8f]/30 bg-white p-1 shadow-[0_0_18px_rgba(246,223,143,0.18)]">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#FF6D1F]/30 bg-white p-1 shadow-[0_0_18px_rgba(255,109,31,0.18)]">
                     <img src="/ai.png" alt="" className="h-full w-full object-contain" />
                   </span>
                   <p className="text-sm font-semibold text-white">Tixy Ai</p>
@@ -518,7 +518,7 @@ export function AiAgentDemoBanner() {
                     {message.actionUrl && (
                       <a
                         href={message.actionUrl}
-                        className="mt-2 inline-flex rounded-full bg-[#f6df8f] px-3 py-1 text-xs font-bold text-black transition hover:bg-white"
+                        className="mt-2 inline-flex rounded-full bg-[#FF6D1F] px-3 py-1 text-xs font-bold text-white transition hover:bg-white hover:text-black"
                       >
                         {message.actionLabel ?? "Open"}
                       </a>
@@ -552,12 +552,12 @@ export function AiAgentDemoBanner() {
                   onKeyDown={handleInputKeyDown}
                   placeholder={isReviewingDraft ? "Өөрчлөх зүйл бич эсвэл 'үүсгэ'..." : currentQuestionIndex !== null ? "Хариултаа бич..." : "Асуултаа бич..."}
                   rows={2}
-                  className="max-h-24 w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[0.8rem] text-white outline-none transition placeholder:text-white/30 focus:border-[#f6df8f]/45"
+                  className="max-h-24 w-full resize-none rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[0.8rem] text-white outline-none transition placeholder:text-white/30 focus:border-[#FF6D1F]/45"
                 />
 
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex gap-1.5">
-                    <label className="cursor-pointer rounded-full border border-white/15 px-2.5 py-1.5 text-[0.65rem] font-semibold text-white/65 transition hover:border-[#f6df8f]/45 hover:bg-[#f6df8f]/10 hover:text-white">
+                    <label className="cursor-pointer rounded-full border border-white/15 px-2.5 py-1.5 text-[0.65rem] font-semibold text-white/65 transition hover:border-[#FF6D1F]/45 hover:bg-[#FF6D1F]/10 hover:text-white">
                       {isUploadingImage ? "..." : "Gallery"}
                       <input
                         type="file"
@@ -571,7 +571,7 @@ export function AiAgentDemoBanner() {
                       type="button"
                       onClick={useCurrentLocation}
                       disabled={isGeneratingEvent}
-                      className="rounded-full border border-white/15 px-2.5 py-1.5 text-[0.65rem] font-semibold text-white/65 transition hover:border-[#f6df8f]/45 hover:bg-[#f6df8f]/10 hover:text-white disabled:opacity-50"
+                      className="rounded-full border border-white/15 px-2.5 py-1.5 text-[0.65rem] font-semibold text-white/65 transition hover:border-[#FF6D1F]/45 hover:bg-[#FF6D1F]/10 hover:text-white disabled:opacity-50"
                     >
                       Location
                     </button>
@@ -579,7 +579,7 @@ export function AiAgentDemoBanner() {
                   <button
                     type="submit"
                     disabled={isGeneratingEvent || isUploadingImage || isAskingAgent}
-                    className="rounded-full bg-[#f6df8f] px-4 py-2 text-xs font-bold text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full bg-[#FF6D1F] px-4 py-2 text-xs font-bold text-white transition hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isGeneratingEvent ? "Creating…" : isAskingAgent ? "…" : "Send"}
                   </button>
@@ -598,10 +598,10 @@ export function AiAgentDemoBanner() {
           aria-label="Open Tixy Ai chat"
           className="group relative flex h-12 w-12 items-center justify-center rounded-full bg-black shadow-[0_12px_32px_rgba(0,0,0,0.5)] transition hover:scale-105 sm:h-14 sm:w-14 lg:h-16 lg:w-16"
         >
-          <span className="absolute inset-0 rounded-full bg-[linear-gradient(135deg,#ffffff_0%,#f6df8f_54%,#ffffff_100%)] p-[2px]">
+          <span className="absolute inset-0 rounded-full bg-[linear-gradient(135deg,#ffffff_0%,#FF6D1F_54%,#ffffff_100%)] p-[2px]">
             <span className="block h-full w-full rounded-full bg-black" />
           </span>
-          <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white p-1.5 shadow-[0_0_20px_rgba(246,223,143,0.22)] sm:h-9 sm:w-9 lg:h-11 lg:w-11">
+          <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white p-1.5 shadow-[0_0_20px_rgba(255,109,31,0.22)] sm:h-9 sm:w-9 lg:h-11 lg:w-11">
             <img src="/ai.png" alt="" className="h-full w-full object-contain" />
           </span>
         </button>
