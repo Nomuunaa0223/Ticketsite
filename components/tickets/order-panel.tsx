@@ -334,10 +334,8 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
                         )}
                       </div>
                       <div className="flex items-center gap-3">
-                        {isSoldOut ? (
+                        {isSoldOut && (
                           <span className="text-xs text-white/30">Дууссан</span>
-                        ) : (
-                          <span className="text-xs text-white/40">{remaining} үлдсэн</span>
                         )}
                         <div className={`h-4 w-4 rounded-full border-2 transition ${
                           isSelected ? "border-[#ff7224] bg-[#ff7224]" : "border-white/20"
@@ -368,12 +366,7 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
             return (
               <div key={tt.id} className={`rounded-xl p-4 transition-colors sm:p-5 ${isSoldOut ? "opacity-40" : "bg-white/[0.03]"}`}>
                 {!isMultiDay && (
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-base font-semibold text-white">{tt.name}</p>
-                    {!isSoldOut && (
-                      <span className="shrink-0 text-xs text-white/35">{remaining} үлдсэн</span>
-                    )}
-                  </div>
+                  <p className="text-base font-semibold text-white">{tt.name}</p>
                 )}
                 {isMultiDay && tt.startsAt && (
                   <p className="text-sm font-semibold text-white">
