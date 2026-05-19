@@ -107,7 +107,28 @@ export async function DELETE(request: Request, context: Context) {
     const event = await prisma.event.findUnique({ where: { id } });
     if (!event) return NextResponse.json({ error: "Event not found." }, { status: 404 });
 
-    await prisma.event.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      const ticketTypeIds = (await tx.ticketType.findMany({
+        where: { eventId: id },
+        select: { id: true },
+      })).map((t) => t.id);
+
+      const ticketIds = (await tx.ticket.findMany({
+        where: { ticketTypeId: { in: ticketTypeIds } },
+        select: { id: true },
+      })).map((t) => t.id);
+
+      await tx.checkIn.deleteMany({ where: { ticketId: { in: ticketIds } } });
+      await tx.resaleListing.deleteMany({ where: { ticketId: { in: ticketIds } } });
+      await tx.smallEventTicketClaim.deleteMany({ where: { eventId: id } });
+      await tx.ticket.deleteMany({ where: { ticketTypeId: { in: ticketTypeIds } } });
+      await tx.order.deleteMany({ where: { eventId: id } });
+      await tx.aiAgentArtifact.deleteMany({ where: { eventId: id } });
+      await tx.aiAgentRun.updateMany({ where: { eventId: id }, data: { eventId: null } });
+      await tx.notification.deleteMany({ where: { eventId: id } });
+      await tx.ticketType.deleteMany({ where: { eventId: id } });
+      await tx.event.delete({ where: { id } });
+    });
 
     await recordAuditLog({
       actorUserId: admin.id,
