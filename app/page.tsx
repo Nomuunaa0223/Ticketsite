@@ -122,9 +122,10 @@ export default async function HomePage() {
   if (user?.role === "ORGANIZER") redirect("/organizer/dashboard");
   if (user?.role === "USER") redirect("/events");
 
-  const [featuredEvents, adminTrendingEvents] = await Promise.all([
+  const [featuredEvents, adminTrendingEvents, resaleListings] = await Promise.all([
     getFeaturedEvents(),
     getTrendingPublicEvents(5),
+    getPublicResaleListings(),
   ]);
 
   const highlightEvents = featuredEvents.slice(0, 9).map((event) => {
@@ -274,15 +275,44 @@ export default async function HomePage() {
       highlightEvents={highlightEvents}
       trendingGalleryItems={trendingGalleryItems}
       upcomingWeekEvents={upcomingWeekEvents}
+      resaleListings={resaleListings}
     />
   );
+}
+
+async function getPublicResaleListings() {
+  try {
+    return await prisma.resaleListing.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { listedAt: "desc" },
+      take: 6,
+      include: {
+        event: {
+          select: {
+            title: true,
+            slug: true,
+            startsAt: true,
+            currency: true,
+            imageUrl: true,
+            cardImageUrl: true,
+            venue: { select: { name: true, city: true } },
+            category: { select: { name: true } },
+          },
+        },
+        ticketType: { select: { name: true } },
+      },
+    });
+  } catch {
+    return [];
+  }
 }
 
 async function getFeaturedEvents() {
   const featuredEventsPromise = prisma.event
     .findMany({
       where: {
-        status: EventStatus.PUBLISHED
+        status: EventStatus.PUBLISHED,
+        aiGenerated: false,
       },
       include: {
         category: true,

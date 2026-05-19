@@ -1,20 +1,40 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useLang } from "@/components/layout/lang-context";
 import { CategoryMagicBento } from "@/components/home/category-magic-bento";
 import { HeroParallaxImage } from "@/components/home/hero-parallax-image";
 import { HighlightsToggle, type HighlightEvent } from "@/components/home/highlights-toggle";
 import { TrendingParallaxGallery, type TrendingParallaxGalleryItem } from "@/components/home/trending-parallax-gallery";
 import { WeekEventCard, type WeekEventCardItem } from "@/components/home/week-event-card";
+import { formatCurrency, formatDateTime, toNumber } from "@/lib/utils";
+
+type ResaleListing = {
+  id: number;
+  askPrice: unknown;
+  buyerFee: unknown;
+  event: {
+    title: string;
+    slug: string;
+    startsAt: Date | string;
+    currency: string;
+    imageUrl: string | null;
+    cardImageUrl: string | null;
+    venue: { name: string; city: string };
+    category: { name: string };
+  };
+  ticketType: { name: string };
+};
 
 type Props = {
   highlightEvents: HighlightEvent[];
   trendingGalleryItems: TrendingParallaxGalleryItem[];
   upcomingWeekEvents: WeekEventCardItem[];
+  resaleListings: ResaleListing[];
 };
 
-export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomingWeekEvents }: Props) {
+export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomingWeekEvents, resaleListings }: Props) {
   const { t } = useLang();
 
   const categoryTiles = [
@@ -145,6 +165,72 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
           <HighlightsToggle events={highlightEvents} />
         </div>
       </section>
+
+      {resaleListings.length > 0 && (
+        <section className="relative bg-[linear-gradient(180deg,#06080d_0%,#07091000%)] px-4 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14 lg:px-8">
+          <div className="mx-auto max-w-7xl">
+            <div className="week-events-header">
+              <div className="week-events-header__title-wrap">
+                <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#ff7224]">Хоёрдогч зах зээл</p>
+                <h2 className="week-events-header__title font-goldman">Resale Тасалбарууд</h2>
+              </div>
+              <Link href="/resale" className="week-events-header__cta font-bjcree text-[#ff7224] hover:text-[#ff9050]">
+                Бүгдийг харах →
+              </Link>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {resaleListings.map((listing) => {
+                const thumb = listing.event.cardImageUrl ?? listing.event.imageUrl;
+                const total = toNumber(listing.askPrice) + toNumber(listing.buyerFee);
+                return (
+                  <div key={listing.id} className="group flex flex-col overflow-hidden rounded-2xl bg-[#0e1424] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
+                    <div className="relative h-40 w-full overflow-hidden bg-white/[0.04]">
+                      {thumb ? (
+                        <Image
+                          src={thumb}
+                          alt={listing.event.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-white/[0.04]" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0e1424]/80 to-transparent" />
+                    </div>
+                    <div className="flex flex-1 flex-col gap-3 p-4">
+                      <div>
+                        <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/30">
+                          {listing.event.category.name}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-base font-bold text-white">{listing.event.title}</p>
+                        <p className="mt-0.5 text-xs text-white/40">{listing.ticketType.name}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-[0.7rem] text-white/40">
+                        <span>{formatDateTime(listing.event.startsAt)}</span>
+                        <span>·</span>
+                        <span>{listing.event.venue.name}</span>
+                      </div>
+                      <div className="mt-auto flex items-end justify-between gap-2">
+                        <div>
+                          <p className="text-[0.6rem] text-white/30">үнэ</p>
+                          <p className="text-lg font-bold text-white">{formatCurrency(total, listing.event.currency)}</p>
+                        </div>
+                        <Link
+                          href={`/resale/${listing.id}` as never}
+                          className="rounded-xl bg-[#ff7224] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ff8c42]"
+                        >
+                          Авах
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="relative bg-[linear-gradient(180deg,#090c12_0%,#06080d_100%)] px-4 pb-24 pt-8 sm:px-8 sm:pb-28 sm:pt-12 lg:px-8 lg:pb-32">
         <div className="mx-auto max-w-7xl">

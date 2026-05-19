@@ -16,14 +16,18 @@ export async function SiteHeader() {
           <Link href="/" className="flex items-center text-[#ff7224]">
             <span className="site-header__logo login-card__brand">TIXORA</span>
           </Link>
-          {user && (
-            <Link
-              href="/resale"
-              className="font-goldman ml-4 mt-2 hidden text-sm font-semibold text-white/60 transition hover:text-white md:block lg:ml-10"
-            >
-              RESALE
-            </Link>
-          )}
+          <Link
+            href="/resale"
+            className="font-goldman ml-4 mt-2 hidden text-sm font-semibold text-white/60 transition hover:text-white md:block lg:ml-10"
+          >
+            RESALE
+          </Link>
+          <Link
+            href={"/special" as never}
+            className="font-goldman mt-2 hidden text-sm font-semibold text-violet-400/70 transition hover:text-violet-300 md:block"
+          >
+            SPECIAL
+          </Link>
         </div>
 
         <nav className="flex min-w-0 items-center gap-1.5 text-sm text-white/82 sm:gap-4">
