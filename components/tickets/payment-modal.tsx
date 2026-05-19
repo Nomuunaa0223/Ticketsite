@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type PaymentMethod = "QPay" | "SocialPay" | "Alipay" | "LendMN";
 
@@ -127,10 +128,38 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
   const [step, setStep] = useState<"select" | "qr" | "verifying" | "success" | "error">("select");
   const [method, setMethod] = useState<(typeof METHODS)[number] | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+
+    const scrollY = window.scrollY;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalBodyPosition = document.body.style.position;
+    const originalBodyTop = document.body.style.top;
+    const originalBodyWidth = document.body.style.width;
+    const originalBodyPaddingRight = document.body.style.paddingRight;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = "100%";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      document.body.style.overflow = originalBodyOverflow;
+      document.body.style.position = originalBodyPosition;
+      document.body.style.top = originalBodyTop;
+      document.body.style.width = originalBodyWidth;
+      document.body.style.paddingRight = originalBodyPaddingRight;
+      window.scrollTo(0, scrollY);
+    };
   }, []);
 
   const handleSelect = (m: (typeof METHODS)[number]) => {
@@ -150,9 +179,9 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-2xl bg-[#0d1017] shadow-2xl">
+  const modal = (
+    <div className="fixed inset-0 z-[1000] grid h-dvh w-screen place-items-center overflow-hidden bg-black/70 p-4 backdrop-blur-sm">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl bg-[#0d1017] shadow-2xl">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
@@ -315,4 +344,8 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+
+  return createPortal(modal, document.body);
 }
