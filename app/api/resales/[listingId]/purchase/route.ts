@@ -69,6 +69,7 @@ export async function POST(request: Request, context: RouteContext) {
         },
         data: {
           status: "SOLD",
+          activeListingKey: null,
           buyerId,
           soldAt: new Date()
         }
@@ -143,7 +144,8 @@ export async function POST(request: Request, context: RouteContext) {
           status: "ACTIVE"
         },
         data: {
-          status: "CANCELLED"
+          status: "CANCELLED",
+          activeListingKey: null
         }
       });
 

@@ -49,6 +49,13 @@ export async function POST(request: Request) {
     }
 
     // Суудалтай ticket type-уудын суудлуудыг нэг дор баталгаажуулна
+    const event = ticketTypes[0].event;
+    const totalRequestedQty = requestedItems.reduce((sum, item) => sum + item.quantity, 0);
+
+    if (event.isSmallEvent && totalRequestedQty !== 1) {
+      return NextResponse.json({ error: "Small event дээр нэг хэрэглэгч зөвхөн нэг тасалбар авах боломжтой." }, { status: 400 });
+    }
+
     const seatItemsToValidate = requestedItems.filter((item) => item.seatIds && item.seatIds.length > 0);
     if (seatItemsToValidate.length > 0) {
       const allSeatIds = seatItemsToValidate.flatMap((item) => item.seatIds!);
@@ -100,72 +107,97 @@ export async function POST(request: Request) {
       };
     });
 
-    const order = await prisma.order.create({
-      data: {
-        userId: sessionUserId,
-        eventId: firstEventId,
-        status: "PAID",
-        subtotal: new Prisma.Decimal(subtotal),
-        buyerFee: new Prisma.Decimal(0),
-        sellerFee: new Prisma.Decimal(0),
-        total: new Prisma.Decimal(subtotal),
-        currency: ticketTypes[0].event.currency,
-        items: {
-          create: itemCreates.map(({ seatIds: _seatIds, ...rest }) => rest),
-        },
-        payment: {
-          create: {
-            userId: sessionUserId,
-            amount: new Prisma.Decimal(subtotal),
-            currency: ticketTypes[0].event.currency,
-            provider: "direct",
-            status: "CAPTURED",
-            paidAt: new Date(),
-          },
-        },
-      },
-      include: { items: true, payment: true },
-    });
-
-    // Тасалбар үүсгэх + суудал хаах
-    for (const item of itemCreates) {
-      const ticketType = ticketTypes.find((t) => t.id === item.ticketTypeId)!;
-      const seatIds = item.seatIds ?? [];
-
-      for (let i = 0; i < item.quantity; i++) {
-        const code = `TIX-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-        const qrToken = `QR-${Math.random().toString(36).slice(2, 12).toUpperCase()}`;
-        const seatId = seatIds[i] ?? null;
-
-        const newTicket = await prisma.ticket.create({
+    const order = await prisma.$transaction(async (tx) => {
+      const smallEventClaim = event.isSmallEvent
+        ? await tx.smallEventTicketClaim.create({
           data: {
-            code,
-            qrToken,
             eventId: firstEventId,
-            ticketTypeId: ticketType.id,
-            orderId: order.id,
-            currentOwnerId: sessionUserId,
-            status: "ACTIVE",
-            originalPrice: ticketType.price,
-            resaleAllowed: ticketType.resaleAllowed,
-            ...(seatId ? { seatId } : {}),
+            userId: sessionUserId,
           },
-        });
+        })
+        : null;
 
-        if (seatId) {
-          await prisma.seat.update({ where: { id: seatId }, data: { status: "SOLD" } });
+      const createdOrder = await tx.order.create({
+        data: {
+          userId: sessionUserId,
+          eventId: firstEventId,
+          status: "PAID",
+          subtotal: new Prisma.Decimal(subtotal),
+          buyerFee: new Prisma.Decimal(0),
+          sellerFee: new Prisma.Decimal(0),
+          total: new Prisma.Decimal(subtotal),
+          currency: event.currency,
+          items: {
+            create: itemCreates.map(({ seatIds: _seatIds, ...rest }) => rest),
+          },
+          payment: {
+            create: {
+              userId: sessionUserId,
+              amount: new Prisma.Decimal(subtotal),
+              currency: event.currency,
+              provider: "direct",
+              status: "CAPTURED",
+              paidAt: new Date(),
+            },
+          },
+        },
+        include: { items: true, payment: true },
+      });
+
+      // Тасалбар үүсгэх + суудал хаах
+      for (const item of itemCreates) {
+        const ticketType = ticketTypes.find((t) => t.id === item.ticketTypeId)!;
+        const seatIds = item.seatIds ?? [];
+
+        for (let i = 0; i < item.quantity; i++) {
+          const code = `TIX-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+          const qrToken = `QR-${Math.random().toString(36).slice(2, 12).toUpperCase()}`;
+          const seatId = seatIds[i] ?? null;
+
+          const newTicket = await tx.ticket.create({
+            data: {
+              code,
+              qrToken,
+              eventId: firstEventId,
+              ticketTypeId: ticketType.id,
+              orderId: createdOrder.id,
+              currentOwnerId: sessionUserId,
+              status: "ACTIVE",
+              originalPrice: ticketType.price,
+              resaleAllowed: ticketType.resaleAllowed,
+              ...(seatId ? { seatId } : {}),
+            },
+          });
+
+          if (smallEventClaim) {
+            await tx.smallEventTicketClaim.update({
+              where: { id: smallEventClaim.id },
+              data: {
+                orderId: createdOrder.id,
+                ticketId: newTicket.id,
+              },
+            });
+          }
+
+          if (seatId) {
+            await tx.seat.update({ where: { id: seatId }, data: { status: "SOLD" } });
+          }
+
+          await tx.ticketOwnershipHistory.create({
+            data: { ticketId: newTicket.id, fromUserId: null, toUserId: sessionUserId, acquiredVia: "PURCHASE" },
+          });
         }
 
-        await prisma.ticketOwnershipHistory.create({
-          data: { ticketId: newTicket.id, fromUserId: null, toUserId: sessionUserId, acquiredVia: "PURCHASE" },
+        await tx.ticketType.update({
+          where: { id: ticketType.id },
+          data: { quantitySold: { increment: item.quantity } },
         });
       }
 
-      await prisma.ticketType.update({
-        where: { id: ticketType.id },
-        data: { quantitySold: { increment: item.quantity } },
-      });
-    }
+      return createdOrder;
+    }, {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
 
     await recordAuditLog({
       actorUserId: sessionUserId,
@@ -211,6 +243,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, order, message: "Тасалбар амжилттай авлаа." }, { status: 201 });
   } catch (error) {
     console.error(error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json({ error: "Энэ event дээр та аль хэдийн тасалбар авсан байна." }, { status: 409 });
+    }
     const message = error instanceof Error ? error.message : "Захиалга үүсгэхэд алдаа гарлаа.";
     return NextResponse.json({ error: message }, { status: 400 });
   }

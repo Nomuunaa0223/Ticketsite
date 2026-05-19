@@ -73,6 +73,7 @@ export async function POST(request: Request) {
           eventId: ticket.eventId,
           ticketTypeId: ticket.ticketTypeId,
           status: "ACTIVE",
+          activeListingKey: `ticket:${ticket.id}`,
           askPrice: new Prisma.Decimal(payload.askPrice),
           buyerFee: new Prisma.Decimal(fees.buyerFee),
           sellerFee: new Prisma.Decimal(fees.sellerFee),
@@ -113,6 +114,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, listing }, { status: 201 });
   } catch (error) {
     console.error(error);
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json({ error: "Ticket is already listed for resale." }, { status: 409 });
+    }
     return NextResponse.json({ error: "Unable to create resale listing." }, { status: 400 });
   }
 }

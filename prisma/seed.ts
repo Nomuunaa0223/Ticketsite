@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import {
+  AiAgentType,
   EventStatus,
   OrganizerStatus,
   Prisma,
@@ -70,6 +71,87 @@ async function main() {
     update: {},
     create: { userId: organizerUser.id, companyName: "Atlas Events", slug: "atlas-events", status: OrganizerStatus.APPROVED, approvedAt: new Date(), approvedById: admin.id, description: "Independent organizer for premium live experiences" }
   });
+
+  await Promise.all([
+    prisma.aiAgent.upsert({
+      where: { slug: "event-draft-producer" },
+      update: {
+        isActive: true,
+        defaultModel: "gpt-5.2",
+        toolManifest: {
+          tools: ["event_brief", "venue_suggest", "category_match", "risk_review"]
+        }
+      },
+      create: {
+        slug: "event-draft-producer",
+        name: "Event Draft Producer",
+        type: AiAgentType.EVENT_DRAFT,
+        description: "Turns organizer prompts into structured event drafts ready for human review.",
+        defaultModel: "gpt-5.2",
+        systemPrompt: "Create accurate, reviewable Tixora event drafts. Never publish directly. Return structured suggestions, risk notes, and missing fields.",
+        toolManifest: {
+          tools: ["event_brief", "venue_suggest", "category_match", "risk_review"]
+        },
+        config: {
+          requiresHumanReview: true,
+          outputArtifacts: ["EVENT_BRIEF", "EVENT_COPY", "RISK_REVIEW"]
+        },
+        createdById: admin.id
+      }
+    }),
+    prisma.aiAgent.upsert({
+      where: { slug: "pricing-forecaster" },
+      update: {
+        isActive: true,
+        defaultModel: "gpt-5.2",
+        toolManifest: {
+          tools: ["historical_sales_lookup", "capacity_check", "fee_preview"]
+        }
+      },
+      create: {
+        slug: "pricing-forecaster",
+        name: "Pricing Forecaster",
+        type: AiAgentType.PRICING,
+        description: "Estimates demand, audience size, and safe price bands for events.",
+        defaultModel: "gpt-5.2",
+        systemPrompt: "Estimate fair ticket pricing using event category, venue capacity, local demand, fees, and resale risk. Return conservative price bands.",
+        toolManifest: {
+          tools: ["historical_sales_lookup", "capacity_check", "fee_preview"]
+        },
+        config: {
+          requiresHumanReview: true,
+          outputArtifacts: ["PRICING_PLAN", "AUDIENCE_FORECAST"]
+        },
+        createdById: admin.id
+      }
+    }),
+    prisma.aiAgent.upsert({
+      where: { slug: "marketing-copilot" },
+      update: {
+        isActive: true,
+        defaultModel: "gpt-5.2",
+        toolManifest: {
+          tools: ["caption_generate", "audience_segment", "localization"]
+        }
+      },
+      create: {
+        slug: "marketing-copilot",
+        name: "Marketing Copilot",
+        type: AiAgentType.MARKETING,
+        description: "Generates localized captions and campaign angles for published or draft events.",
+        defaultModel: "gpt-5.2",
+        systemPrompt: "Create concise, localized marketing captions for Tixora events. Avoid unsupported claims and keep all copy suitable for organizer approval.",
+        toolManifest: {
+          tools: ["caption_generate", "audience_segment", "localization"]
+        },
+        config: {
+          requiresHumanReview: true,
+          outputArtifacts: ["MARKETING_CAPTION"]
+        },
+        createdById: admin.id
+      }
+    })
+  ]);
 
   const eventsToSeed = [
     // Sports

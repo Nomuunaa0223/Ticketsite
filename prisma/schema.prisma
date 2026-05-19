@@ -98,7 +98,7 @@ enum SeatStatus {
 
 // Tier per seat or ticket type — drives pricing + UI color
 enum SeatCategoryType {
-  GA        // General Admission (no assigned seat)
+  GA // General Admission (no assigned seat)
   STANDARD
   PREMIUM
   VIP
@@ -110,6 +110,57 @@ enum AiDraftStatus {
   READY
   PUBLISHED
   DISCARDED
+}
+
+enum AiAgentType {
+  EVENT_DRAFT
+  PRICING
+  MARKETING
+  AUDIENCE
+  OPERATIONS
+  SUPPORT
+}
+
+enum AiAgentRunStatus {
+  QUEUED
+  RUNNING
+  WAITING_FOR_TOOL
+  WAITING_FOR_REVIEW
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AiAgentTaskStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum AiAgentToolCallStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum AiArtifactType {
+  EVENT_BRIEF
+  EVENT_COPY
+  MARKETING_CAPTION
+  PRICING_PLAN
+  AUDIENCE_FORECAST
+  VENUE_SUGGESTION
+  RISK_REVIEW
+}
+
+enum AiHumanReviewStatus {
+  NOT_REQUIRED
+  REQUIRED
+  APPROVED
+  REJECTED
 }
 
 enum NotificationType {
@@ -137,10 +188,13 @@ enum NotificationChannel {
 model User {
   id                            Int                      @id @default(autoincrement())
   email                         String                   @unique
+  supabaseUserId                String?                  @unique
+  username                      String?                  @unique
   passwordHash                  String?
   fullName                      String
   phone                         String?
   avatarUrl                     String?
+  bio                           String?
   role                          Role                     @default(USER)
   status                        UserStatus               @default(ACTIVE)
   organizerId                   Int?
@@ -163,13 +217,18 @@ model User {
   auditLogs                     AuditLog[]               @relation("AuditActor")
   notifications                 Notification[]
   seatReservations              SeatReservation[]
+  smallEventTicketClaims        SmallEventTicketClaim[]
   aiDrafts                      AiEventDraft[]
+  aiAgentRuns                   AiAgentRun[]
+  createdAiAgents               AiAgent[]                @relation("AiAgentCreatedBy")
   createdAt                     DateTime                 @default(now())
   updatedAt                     DateTime                 @updatedAt
 
   @@index([role, status])
   @@index([organizerId])
   @@index([email])
+  @@index([supabaseUserId])
+  @@index([username])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -266,16 +325,16 @@ model Category {
 }
 
 model Subcategory {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   categoryId  Int
   name        String
   slug        String
   description String?
-  isActive    Boolean   @default(true)
-  category    Category  @relation(fields: [categoryId], references: [id])
+  isActive    Boolean  @default(true)
+  category    Category @relation(fields: [categoryId], references: [id])
   events      Event[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([categoryId, slug])
   @@index([categoryId, isActive])
@@ -295,7 +354,7 @@ model Venue {
   capacity    Int
   latitude    Float?
   longitude   Float?
-  mapImageUrl String?        // venue floor plan / overhead image
+  mapImageUrl String? // venue floor plan / overhead image
   events      Event[]
   seatMaps    VenueSeatMap[]
   createdAt   DateTime       @default(now())
@@ -309,9 +368,9 @@ model Venue {
 model VenueSeatMap {
   id          Int            @id @default(autoincrement())
   venueId     Int
-  name        String         // "Full Capacity Layout", "Standing + VIP"
+  name        String // "Full Capacity Layout", "Standing + VIP"
   description String?
-  svgTemplate String?        // base SVG coordinate grid for UI rendering
+  svgTemplate String? // base SVG coordinate grid for UI rendering
   isDefault   Boolean        @default(false)
   venue       Venue          @relation(fields: [venueId], references: [id])
   sections    VenueSection[]
@@ -323,20 +382,20 @@ model VenueSeatMap {
 
 // Named zone within a venue map: Floor A, Upper Balcony, VIP Box, Pit, etc.
 model VenueSection {
-  id          Int            @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   seatMapId   Int
-  name        String         // "Floor", "Upper Balcony", "VIP Box"
-  shortCode   String         // "FL", "UB", "VIP" — used in seat labels
-  color       String?        // hex for UI rendering, e.g. "#FF7224"
+  name        String // "Floor", "Upper Balcony", "VIP Box"
+  shortCode   String // "FL", "UB", "VIP" — used in seat labels
+  color       String? // hex for UI rendering, e.g. "#FF7224"
   capacity    Int
   description String?
-  sortOrder   Int            @default(0)
-  svgPath     String?        // SVG path data for this section's polygon on the map
-  seatMap     VenueSeatMap   @relation(fields: [seatMapId], references: [id])
+  sortOrder   Int          @default(0)
+  svgPath     String? // SVG path data for this section's polygon on the map
+  seatMap     VenueSeatMap @relation(fields: [seatMapId], references: [id])
   rows        SeatRow[]
   seats       Seat[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@unique([seatMapId, shortCode])
   @@index([seatMapId, sortOrder])
@@ -346,7 +405,7 @@ model VenueSection {
 model SeatRow {
   id        Int          @id @default(autoincrement())
   sectionId Int
-  label     String       // "A", "B", "1", "2"
+  label     String // "A", "B", "1", "2"
   sortOrder Int          @default(0)
   section   VenueSection @relation(fields: [sectionId], references: [id])
   seats     Seat[]
@@ -362,51 +421,54 @@ model SeatRow {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Event {
-  id             Int             @id @default(autoincrement())
-  organizerId    Int
-  createdById    Int
-  reviewedById   Int?
-  categoryId     Int
-  subcategoryId  Int?
-  venueId        Int
-  title          String
-  slug           String          @unique
-  imageUrl       String?
-  cardImageUrl   String?
-  relatedImages  Json?
-  summary        String
-  description    String
-  startsAt       DateTime
-  endsAt         DateTime
-  saleStartsAt   DateTime
-  saleEndsAt     DateTime
-  status         EventStatus     @default(DRAFT)
-  visibility     EventVisibility @default(PUBLIC)
-  reviewNotes    String?
-  publishedAt    DateTime?
-  isTrending     Boolean         @default(false)
-  trendingOrder  Int?
-  isSmallEvent   Boolean         @default(false)  // enforces 1 ticket per user at app level
-  aiGenerated    Boolean         @default(false)
-  aiDraftId      Int?            @unique
-  currency       String          @default("MNT")
-  platformFeeBps Int             @default(900)
-  serviceFeeBps  Int             @default(350)
-  transparentFee Boolean         @default(true)
-  organizer      OrganizerProfile @relation(fields: [organizerId], references: [id])
-  createdBy      User             @relation("EventCreator", fields: [createdById], references: [id])
-  reviewedBy     User?            @relation("EventReviewer", fields: [reviewedById], references: [id])
-  category       Category         @relation(fields: [categoryId], references: [id])
-  subcategory    Subcategory?     @relation(fields: [subcategoryId], references: [id])
-  venue          Venue            @relation(fields: [venueId], references: [id])
-  aiDraft        AiEventDraft?    @relation(fields: [aiDraftId], references: [id])
-  ticketTypes    TicketType[]
-  orders         Order[]
-  tickets        Ticket[]
-  checkIns       CheckIn[]
-  resaleListings ResaleListing[]
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  id                     Int                     @id @default(autoincrement())
+  organizerId            Int
+  createdById            Int
+  reviewedById           Int?
+  categoryId             Int
+  subcategoryId          Int?
+  venueId                Int
+  title                  String
+  slug                   String                  @unique
+  imageUrl               String?
+  cardImageUrl           String?
+  relatedImages          Json?
+  summary                String
+  description            String
+  startsAt               DateTime
+  endsAt                 DateTime
+  saleStartsAt           DateTime
+  saleEndsAt             DateTime
+  status                 EventStatus             @default(DRAFT)
+  visibility             EventVisibility         @default(PUBLIC)
+  reviewNotes            String?
+  publishedAt            DateTime?
+  isTrending             Boolean                 @default(false)
+  trendingOrder          Int?
+  isSmallEvent           Boolean                 @default(false) // enforces 1 ticket per user at app level
+  aiGenerated            Boolean                 @default(false)
+  aiDraftId              Int?                    @unique
+  currency               String                  @default("MNT")
+  platformFeeBps         Int                     @default(900)
+  serviceFeeBps          Int                     @default(350)
+  transparentFee         Boolean                 @default(true)
+  organizer              OrganizerProfile        @relation(fields: [organizerId], references: [id])
+  createdBy              User                    @relation("EventCreator", fields: [createdById], references: [id])
+  reviewedBy             User?                   @relation("EventReviewer", fields: [reviewedById], references: [id])
+  category               Category                @relation(fields: [categoryId], references: [id])
+  subcategory            Subcategory?            @relation(fields: [subcategoryId], references: [id])
+  venue                  Venue                   @relation(fields: [venueId], references: [id])
+  aiDraft                AiEventDraft?           @relation(fields: [aiDraftId], references: [id])
+  ticketTypes            TicketType[]
+  orders                 Order[]
+  tickets                Ticket[]
+  checkIns               CheckIn[]
+  resaleListings         ResaleListing[]
+  smallEventTicketClaims SmallEventTicketClaim[]
+  aiAgentRuns            AiAgentRun[]
+  aiArtifacts            AiAgentArtifact[]
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
 
   @@index([status, startsAt])
   @@index([visibility, status, startsAt])
@@ -414,6 +476,8 @@ model Event {
   @@index([organizerId, status])
   @@index([categoryId, startsAt])
   @@index([venueId, startsAt])
+  @@index([createdById, status])
+  @@index([aiGenerated, status, createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -455,19 +519,19 @@ model TicketType {
 model Seat {
   id           Int              @id @default(autoincrement())
   ticketTypeId Int
-  sectionId    Int?             // optional link to VenueSection for rich maps
-  rowId        Int?             // optional link to SeatRow for rich maps
-  row          String           // row label: "A", "B", "1"
-  number       Int              // seat number within row
-  label        String           // display label: "A-12", "VIP-5", "Floor-3"
+  sectionId    Int? // optional link to VenueSection for rich maps
+  rowId        Int? // optional link to SeatRow for rich maps
+  row          String // row label: "A", "B", "1"
+  number       Int // seat number within row
+  label        String // display label: "A-12", "VIP-5", "Floor-3"
   // Pixel coordinates for SVG/canvas rendering (origin = top-left of map)
   xPos         Float?
   yPos         Float?
-  rotation     Float?           // seat angle in degrees for angled sections
+  rotation     Float? // seat angle in degrees for angled sections
   category     SeatCategoryType @default(STANDARD)
   isAccessible Boolean          @default(false) // wheelchair / reduced-mobility
   status       SeatStatus       @default(AVAILABLE)
-  color        String?          // per-seat color override (e.g. special seats)
+  color        String? // per-seat color override (e.g. special seats)
   ticketType   TicketType       @relation(fields: [ticketTypeId], references: [id])
   section      VenueSection?    @relation(fields: [sectionId], references: [id])
   seatRow      SeatRow?         @relation(fields: [rowId], references: [id])
@@ -489,13 +553,13 @@ model SeatReservation {
   id        Int      @id @default(autoincrement())
   seatId    Int      @unique
   userId    Int
-  sessionId String   // device/browser session token for anonymous tracking
+  sessionId String // device/browser session token for anonymous tracking
   expiresAt DateTime
   seat      Seat     @relation(fields: [seatId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
 
-  @@index([expiresAt])              // for cleanup jobs: DELETE WHERE expiresAt < NOW()
+  @@index([expiresAt]) // for cleanup jobs: DELETE WHERE expiresAt < NOW()
   @@index([userId, expiresAt])
   @@index([sessionId])
 }
@@ -505,23 +569,24 @@ model SeatReservation {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Order {
-  id         Int             @id @default(autoincrement())
-  userId     Int
-  eventId    Int
-  status     OrderStatus     @default(PENDING_PAYMENT)
-  subtotal   Decimal         @db.Decimal(10, 2)
-  buyerFee   Decimal         @db.Decimal(10, 2)
-  sellerFee  Decimal         @default(0) @db.Decimal(10, 2)
-  total      Decimal         @db.Decimal(10, 2)
-  currency   String          @default("MNT")
-  user       User            @relation(fields: [userId], references: [id])
-  event      Event           @relation(fields: [eventId], references: [id])
-  items      OrderItem[]
-  payment    Payment?
-  tickets    Ticket[]
-  resaleSale ResaleListing[] @relation("ResaleSaleOrder")
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id                     Int                     @id @default(autoincrement())
+  userId                 Int
+  eventId                Int
+  status                 OrderStatus             @default(PENDING_PAYMENT)
+  subtotal               Decimal                 @db.Decimal(10, 2)
+  buyerFee               Decimal                 @db.Decimal(10, 2)
+  sellerFee              Decimal                 @default(0) @db.Decimal(10, 2)
+  total                  Decimal                 @db.Decimal(10, 2)
+  currency               String                  @default("MNT")
+  user                   User                    @relation(fields: [userId], references: [id])
+  event                  Event                   @relation(fields: [eventId], references: [id])
+  items                  OrderItem[]
+  payment                Payment?
+  tickets                Ticket[]
+  resaleSale             ResaleListing[]         @relation("ResaleSaleOrder")
+  smallEventTicketClaims SmallEventTicketClaim[]
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
 
   @@index([userId, status])
   @@index([eventId, status])
@@ -556,7 +621,7 @@ model Payment {
   // provider: "QPay" | "SocialPay" | "Alipay" | "LendMN" | "direct"
   provider          String
   providerReference String?
-  providerMetadata  Json?         // raw response from payment gateway
+  providerMetadata  Json? // raw response from payment gateway
   status            PaymentStatus @default(PENDING)
   paidAt            DateTime?
   metadata          Json?
@@ -596,13 +661,15 @@ model Ticket {
   checkIn            CheckIn?
   resaleListings     ResaleListing[]
   ownershipHistory   TicketOwnershipHistory[]
+  smallEventClaim    SmallEventTicketClaim?
   createdAt          DateTime                 @default(now())
   updatedAt          DateTime                 @updatedAt
 
   @@index([currentOwnerId, status])
   @@index([eventId, status])
-  @@index([qrToken])   // critical path: QR scan lookup must be < 5ms
+  @@index([qrToken]) // critical path: QR scan lookup must be < 5ms
   @@index([orderId])
+  @@index([eventId, currentOwnerId, status])
 }
 
 model CheckIn {
@@ -611,7 +678,7 @@ model CheckIn {
   eventId       Int
   checkedInById Int
   scannedAt     DateTime @default(now())
-  deviceId      String?  // scanner device ID for audit trail
+  deviceId      String? // scanner device ID for audit trail
   notes         String?
   ticket        Ticket   @relation(fields: [ticketId], references: [id])
   event         Event    @relation(fields: [eventId], references: [id])
@@ -626,33 +693,52 @@ model CheckIn {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model ResaleListing {
-  id           Int          @id @default(autoincrement())
-  ticketId     Int
-  sellerId     Int
-  buyerId      Int?
-  saleOrderId  Int?
-  eventId      Int
-  ticketTypeId Int
-  status       ResaleStatus @default(DRAFT)
-  askPrice     Decimal      @db.Decimal(10, 2)
-  buyerFee     Decimal      @default(0) @db.Decimal(10, 2)
-  sellerFee    Decimal      @default(0) @db.Decimal(10, 2)
-  listedAt     DateTime     @default(now())
-  expiresAt    DateTime?
-  soldAt       DateTime?
-  ticket       Ticket       @relation(fields: [ticketId], references: [id])
-  seller       User         @relation("ResaleSeller", fields: [sellerId], references: [id])
-  buyer        User?        @relation("ResaleBuyer", fields: [buyerId], references: [id])
-  saleOrder    Order?       @relation("ResaleSaleOrder", fields: [saleOrderId], references: [id])
-  event        Event        @relation(fields: [eventId], references: [id])
-  ticketType   TicketType   @relation(fields: [ticketTypeId], references: [id])
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id               Int          @id @default(autoincrement())
+  ticketId         Int
+  sellerId         Int
+  buyerId          Int?
+  saleOrderId      Int?
+  eventId          Int
+  ticketTypeId     Int
+  status           ResaleStatus @default(DRAFT)
+  activeListingKey String?      @unique
+  askPrice         Decimal      @db.Decimal(10, 2)
+  buyerFee         Decimal      @default(0) @db.Decimal(10, 2)
+  sellerFee        Decimal      @default(0) @db.Decimal(10, 2)
+  listedAt         DateTime     @default(now())
+  expiresAt        DateTime?
+  soldAt           DateTime?
+  ticket           Ticket       @relation(fields: [ticketId], references: [id])
+  seller           User         @relation("ResaleSeller", fields: [sellerId], references: [id])
+  buyer            User?        @relation("ResaleBuyer", fields: [buyerId], references: [id])
+  saleOrder        Order?       @relation("ResaleSaleOrder", fields: [saleOrderId], references: [id])
+  event            Event        @relation(fields: [eventId], references: [id])
+  ticketType       TicketType   @relation(fields: [ticketTypeId], references: [id])
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   @@index([ticketId, status])
   @@index([eventId, status])
   @@index([sellerId, status])
   @@index([status, expiresAt]) // expiry cleanup job
+  @@index([activeListingKey])
+}
+
+model SmallEventTicketClaim {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  userId    Int
+  orderId   Int?
+  ticketId  Int?     @unique
+  claimedAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  ticket    Ticket?  @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+
+  @@unique([eventId, userId])
+  @@index([eventId, claimedAt])
+  @@index([userId, claimedAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -681,30 +767,165 @@ model TicketOwnershipHistory {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model AiEventDraft {
-  id                   Int           @id @default(autoincrement())
+  id                   Int                 @id @default(autoincrement())
   createdById          Int
   organizerId          Int?
-  prompt               String        // original user prompt
-  status               AiDraftStatus @default(GENERATING)
+  agentId              Int?
+  lastAgentRunId       Int?                @unique
+  prompt               String // original user prompt
+  promptHash           String?
+  status               AiDraftStatus       @default(GENERATING)
+  humanReviewStatus    AiHumanReviewStatus @default(NOT_REQUIRED)
   generatedTitle       String?
   generatedSummary     String?
   generatedDescription String?
-  marketingCaption     String?       // short social media caption
-  suggestedPrice       Decimal?      @db.Decimal(10, 2)
+  marketingCaption     String? // short social media caption
+  marketingCaptions    Json?
+  suggestedPrice       Decimal?            @db.Decimal(10, 2)
+  pricingEstimate      Json?
   estimatedAudience    Int?
+  audienceEstimate     Json?
   suggestedCategory    String?
   suggestedVenueName   String?
   suggestedStartDate   DateTime?
-  rawResponse          Json?         // full LLM response for debugging / re-use
-  modelUsed            String?       // e.g. "claude-sonnet-4-6"
+  suggestions          Json?
+  safetyNotes          String?
+  rawResponse          Json? // full LLM response for debugging / re-use
+  modelUsed            String? // e.g. "claude-sonnet-4-6"
   tokensUsed           Int?
-  createdBy            User          @relation(fields: [createdById], references: [id])
+  createdBy            User                @relation(fields: [createdById], references: [id])
+  agent                AiAgent?            @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  lastAgentRun         AiAgentRun?         @relation("DraftLastAgentRun", fields: [lastAgentRunId], references: [id], onDelete: SetNull)
+  agentRuns            AiAgentRun[]        @relation("DraftAgentRuns")
+  artifacts            AiAgentArtifact[]
   publishedEvent       Event?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
   @@index([createdById, status])
+  @@index([agentId, status])
+  @@index([promptHash])
   @@index([status, createdAt])
+}
+
+model AiAgent {
+  id           Int            @id @default(autoincrement())
+  slug         String         @unique
+  name         String
+  type         AiAgentType
+  description  String?
+  defaultModel String
+  systemPrompt String
+  toolManifest Json?
+  config       Json?
+  isActive     Boolean        @default(true)
+  createdById  Int?
+  createdBy    User?          @relation("AiAgentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  drafts       AiEventDraft[]
+  runs         AiAgentRun[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([type, isActive])
+  @@index([createdById])
+}
+
+model AiAgentRun {
+  id              Int               @id @default(autoincrement())
+  agentId         Int
+  userId          Int
+  eventDraftId    Int?
+  eventId         Int?
+  status          AiAgentRunStatus  @default(QUEUED)
+  traceId         String?           @unique
+  idempotencyKey  String?           @unique
+  input           Json
+  output          Json?
+  error           String?
+  modelUsed       String?
+  tokensIn        Int?
+  tokensOut       Int?
+  costUsd         Decimal?          @db.Decimal(10, 4)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  agent           AiAgent           @relation(fields: [agentId], references: [id], onDelete: Restrict)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  eventDraft      AiEventDraft?     @relation("DraftAgentRuns", fields: [eventDraftId], references: [id], onDelete: SetNull)
+  lastRunForDraft AiEventDraft?     @relation("DraftLastAgentRun")
+  event           Event?            @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  tasks           AiAgentTask[]
+  toolCalls       AiAgentToolCall[]
+  artifacts       AiAgentArtifact[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([agentId, status, createdAt])
+  @@index([userId, status, createdAt])
+  @@index([eventDraftId, createdAt])
+  @@index([eventId, createdAt])
+  @@index([status, createdAt])
+}
+
+model AiAgentTask {
+  id           Int               @id @default(autoincrement())
+  runId        Int
+  name         String
+  status       AiAgentTaskStatus @default(PENDING)
+  sortOrder    Int               @default(0)
+  instructions String?
+  input        Json?
+  output       Json?
+  error        String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  run          AiAgentRun        @relation(fields: [runId], references: [id], onDelete: Cascade)
+  toolCalls    AiAgentToolCall[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([runId, sortOrder])
+  @@index([status, createdAt])
+}
+
+model AiAgentToolCall {
+  id          Int                   @id @default(autoincrement())
+  runId       Int
+  taskId      Int?
+  toolName    String
+  status      AiAgentToolCallStatus @default(PENDING)
+  input       Json
+  output      Json?
+  error       String?
+  latencyMs   Int?
+  startedAt   DateTime?
+  completedAt DateTime?
+  run         AiAgentRun            @relation(fields: [runId], references: [id], onDelete: Cascade)
+  task        AiAgentTask?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  createdAt   DateTime              @default(now())
+
+  @@index([runId, createdAt])
+  @@index([taskId, createdAt])
+  @@index([toolName, status, createdAt])
+}
+
+model AiAgentArtifact {
+  id           Int            @id @default(autoincrement())
+  runId        Int
+  eventDraftId Int?
+  eventId      Int?
+  type         AiArtifactType
+  title        String?
+  content      Json
+  version      Int            @default(1)
+  isSelected   Boolean        @default(false)
+  run          AiAgentRun     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  eventDraft   AiEventDraft?  @relation(fields: [eventDraftId], references: [id], onDelete: SetNull)
+  event        Event?         @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  createdAt    DateTime       @default(now())
+
+  @@index([runId, type])
+  @@index([eventDraftId, type, createdAt])
+  @@index([eventId, type, createdAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
