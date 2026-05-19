@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       where: { id: Number(session.sub) },
     });
 
-    if (!user || (user.role !== "ORGANIZER" && user.role !== "ADMIN")) {
+    if (!user || (user.role !== "USER" && user.role !== "ORGANIZER" && user.role !== "ADMIN")) {
       return NextResponse.json({ error: "Upload access required." }, { status: 403 });
     }
 

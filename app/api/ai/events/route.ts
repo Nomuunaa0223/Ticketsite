@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slugs";
 
 const aiEventRequestSchema = z.object({
-  prompt: z.string().min(8).max(1200)
+  prompt: z.string().min(8).max(3000)
 });
 
 type CategoryChoice = {
@@ -29,8 +29,13 @@ type ParsedEventDetails = {
   dateTime?: string;
   seats?: number;
   price?: number;
+  priceLabel?: string;
   image?: string;
+  imageUrl?: string;
   category?: string;
+  experienceNotes?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 export async function POST(request: Request) {
@@ -100,7 +105,7 @@ export async function POST(request: Request) {
 
     const eventDetails = parseStructuredEventPrompt(prompt);
     const category = chooseCategory(eventDetails.category ?? prompt, categories);
-    const venue = chooseVenue(eventDetails.venue ?? prompt, venues, isCommunityFlow);
+    const venue = await getOrCreateVenueFromDetails(eventDetails, venues, isCommunityFlow);
     const draft = buildDraft(prompt, category, venue, isCommunityFlow, eventDetails);
 
     const result = await prisma.$transaction(async (tx) => {
@@ -371,6 +376,52 @@ function chooseVenue(prompt: string, venues: VenueChoice[], forceSmall = false) 
   return venues[0];
 }
 
+async function getOrCreateVenueFromDetails(details: ParsedEventDetails, venues: VenueChoice[], forceSmall = false) {
+  const requestedVenue = details.venue?.trim();
+  const requestedLocation = [details.latitude, details.longitude].every((value) => typeof value === "number");
+
+  if (!requestedVenue && !requestedLocation) {
+    return chooseVenue("", venues, forceSmall);
+  }
+
+  const normalizedVenue = requestedVenue?.toLowerCase();
+  const exact = normalizedVenue
+    ? venues.find((venue) => venue.name.toLowerCase() === normalizedVenue || normalizedVenue.includes(venue.name.toLowerCase()))
+    : null;
+
+  if (exact) {
+    return exact;
+  }
+
+  const isPinnedLocation = requestedLocation && (!requestedVenue || requestedVenue === "Shared current location");
+  const pinnedAddress = `Pinned location: ${details.latitude}, ${details.longitude}`;
+  const name = isPinnedLocation ? `Pinned location ${details.latitude}, ${details.longitude}` : requestedVenue || "Shared Location Community Venue";
+  const existing = await prisma.venue.findFirst({
+    where: {
+      name: { equals: name, mode: "insensitive" },
+      address: { equals: isPinnedLocation ? pinnedAddress : requestedVenue ?? pinnedAddress, mode: "insensitive" }
+    },
+    select: { id: true, name: true, city: true, capacity: true }
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  return prisma.venue.create({
+    data: {
+      name,
+      city: inferCity(requestedVenue),
+      country: "Mongolia",
+      address: isPinnedLocation ? pinnedAddress : requestedVenue || pinnedAddress,
+      capacity: Math.max(10, Math.min(80, details.seats ?? 80)),
+      latitude: details.latitude,
+      longitude: details.longitude
+    },
+    select: { id: true, name: true, city: true, capacity: true }
+  });
+}
+
 function parseStructuredEventPrompt(prompt: string): ParsedEventDetails {
   const lines = prompt.split(/\r?\n/);
   const valueFor = (label: string) => {
@@ -383,9 +434,14 @@ function parseStructuredEventPrompt(prompt: string): ParsedEventDetails {
     venue: cleanOptionalText(valueFor("Venue/location")),
     dateTime: cleanOptionalText(valueFor("Date and time")),
     seats: parsePositiveInteger(valueFor("Ticket capacity")),
-    price: parsePositiveInteger(valueFor("Ticket price MNT")),
+    price: parseTicketPrice(valueFor("Ticket price MNT")),
+    priceLabel: cleanOptionalText(valueFor("Ticket price MNT")),
     image: cleanOptionalText(valueFor("Image/art direction or URL")),
-    category: cleanOptionalText(valueFor("Category"))
+    imageUrl: cleanOptionalText(valueFor("Uploaded image URL")),
+    category: cleanOptionalText(valueFor("Category")),
+    experienceNotes: cleanExperienceNotes(valueFor("Experience notes")),
+    latitude: parseCoordinate(valueFor("Location latitude")),
+    longitude: parseCoordinate(valueFor("Location longitude"))
   };
 }
 
@@ -406,21 +462,26 @@ function buildDraft(
   const requestedQuantity = details.seats ?? fallbackQuantity;
   const quantityTotal = Math.max(10, Math.min(isSmallEvent ? 80 : 5000, requestedQuantity));
   const price = details.price ?? estimatePrice(prompt, category.slug, isSmallEvent);
-  const imageUrl = resolveEventImage(details.image, category.slug);
+  const imageUrl = resolveEventImage(details.imageUrl ?? details.image, category.slug);
   const summary = isSmallEvent
     ? `${title} is a small AI-reviewed community event at ${venue.name}.`
     : `${title} is an AI-generated ${category.name.toLowerCase()} draft at ${venue.name}, prepared for organizer review.`;
+  const description = buildExperienceDescription({
+    title,
+    category,
+    venue,
+    isSmallEvent,
+    startsAt,
+    quantityTotal,
+    price,
+    notes: details.experienceNotes,
+    imageDirection: details.image
+  });
 
   return {
     title,
     summary,
-    description: [
-      `${title} is a Tixy Ai generated event based on the prompt: "${prompt.trim()}".`,
-      `The event is planned for ${venue.name} in ${venue.city}, with a ${isSmallEvent ? "small community" : "public ticketed"} format.`,
-      isSmallEvent
-        ? "Tixy Ai marked this as a small community event. Ticket limit is one per user and resale is disabled."
-        : "Please review the date, venue, ticket inventory, description, artwork, and pricing before submitting this event for admin approval."
-    ].join("\n\n"),
+    description,
     startsAt,
     endsAt,
     saleStartsAt,
@@ -450,7 +511,7 @@ function buildDraft(
       suggestedBasePrice: price,
       minPrice: Math.round(price * 0.82),
       maxPrice: Math.round(price * 1.25),
-      rationale: "Estimated from category, event size, and venue capacity."
+      rationale: price === 0 ? "Free community event requested by the creator." : "Estimated from category, event size, and venue capacity."
     },
     suggestions: {
       reviewRequired: isSmallEvent
@@ -514,9 +575,13 @@ function chooseStartDate(prompt: string) {
 }
 
 function estimatePrice(prompt: string, categorySlug: string, isSmallEvent: boolean) {
-  const priceMatch = prompt.match(/(\d{4,7})\s*(₮|mnt|tug| tugrug)?/i);
+  if (isFreeText(prompt)) {
+    return 0;
+  }
+
+  const priceMatch = prompt.match(/(\d{1,3}(?:,\d{3})+|\d{4,7})\s*(₮|mnt|tug| tugrug)?/i);
   if (priceMatch) {
-    return Math.max(1000, Number(priceMatch[1]));
+    return Math.max(0, Number(priceMatch[1].replace(/,/g, "")));
   }
 
   if (isSmallEvent) return 25000;
@@ -536,10 +601,43 @@ function parsePositiveInteger(value?: string) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
+function parseTicketPrice(value?: string) {
+  if (!value) return undefined;
+  if (isFreeText(value)) return 0;
+  return parsePositiveInteger(value);
+}
+
+function parseCoordinate(value?: string) {
+  if (!value) return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 function cleanOptionalText(value?: string) {
   const cleaned = value?.trim();
   if (!cleaned || cleaned.toLowerCase() === "undefined") return undefined;
   return cleaned;
+}
+
+function cleanExperienceNotes(value?: string) {
+  const cleaned = cleanOptionalText(value);
+  if (!cleaned || cleaned.toLowerCase() === "auto") return undefined;
+  return cleaned;
+}
+
+function isFreeText(value: string) {
+  const normalized = value.toLowerCase();
+  return ["free", "unegui", "unetei bish", "0", "0₮", "0 tugrug", "0 mnt", "үнэгүй"].some((word) =>
+    normalized.includes(word)
+  );
+}
+
+function inferCity(value?: string) {
+  const normalized = value?.toLowerCase() ?? "";
+  if (normalized.includes("darkhan")) return "Darkhan";
+  if (normalized.includes("erdenet")) return "Erdenet";
+  if (normalized.includes("ulaanbaatar") || normalized.includes("ub")) return "Ulaanbaatar";
+  return "Ulaanbaatar";
 }
 
 function isSmallPrompt(prompt: string, venueCapacity: number) {
@@ -564,6 +662,41 @@ function resolveEventImage(image: string | undefined, categorySlug: string) {
   if (!image) return imageForCategory(categorySlug);
   if (/^(https?:\/\/|\/)/i.test(image)) return image;
   return imageForCategory(categorySlug);
+}
+
+function buildExperienceDescription(input: {
+  title: string;
+  category: CategoryChoice;
+  venue: VenueChoice;
+  isSmallEvent: boolean;
+  startsAt: Date;
+  quantityTotal: number;
+  price: number;
+  notes?: string;
+  imageDirection?: string;
+}) {
+  const dateLabel = input.startsAt.toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Ulaanbaatar"
+  });
+  const priceLabel = input.price === 0 ? "Free entry" : `${input.price.toLocaleString("en-US")} MNT`;
+  const notes = input.notes
+    ? `Creator notes: ${input.notes}`
+    : `Expect a focused ${input.category.name.toLowerCase()} experience built for a small, local audience.`;
+  const imageLine = input.imageDirection ? `Visual direction: ${input.imageDirection}` : null;
+
+  return [
+    `${input.title} is an AI-polished community event experience at ${input.venue.name}, ${input.venue.city}.`,
+    notes,
+    `What to expect: clear entry flow, a friendly host-led format, and a compact capacity of ${input.quantityTotal} ticket${input.quantityTotal === 1 ? "" : "s"}.`,
+    `When and where: ${dateLabel} at ${input.venue.name}.`,
+    `Ticketing: ${priceLabel}. ${input.isSmallEvent ? "One ticket per user and resale is disabled for this community event." : "Ticket limits and resale rules follow organizer settings."}`,
+    imageLine,
+    "Please arrive with your QR ticket ready for scanning."
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
 function titleCase(value: string) {
