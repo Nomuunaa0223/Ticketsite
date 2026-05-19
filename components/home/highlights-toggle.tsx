@@ -23,16 +23,66 @@ const BRAND_IMAGES = [
   "/brand/4deh.webp",
 ] as const;
 
-export function HighlightsToggle({ events }: { events: HighlightEvent[] }) {
-  const featured = events[0];
-  const cards = events.slice(1, 4);
+const FALLBACK_HIGHLIGHTS: HighlightEvent[] = [
+  {
+    title: "ЦЭНГЭЛДЭХ",
+    slug: "",
+    category: "Music",
+    categorySlug: "music",
+    venue: "Төв Цэнгэлдэх Хүрээлэн",
+    city: "Улаанбаатар",
+    dateLabel: "",
+    priceLabel: "",
+    summary: "",
+    badge: null,
+  },
+  {
+    title: "Монгол Хаан",
+    slug: "",
+    category: "Theater & Arts",
+    categorySlug: "theater-arts",
+    venue: "Sands театр",
+    city: "Singapore",
+    dateLabel: "",
+    priceLabel: "",
+    summary: "",
+    badge: null,
+  },
+  {
+    title: "ПУУЖИН БАЯРАА",
+    slug: "",
+    category: "Music",
+    categorySlug: "music",
+    venue: "Цэнгэлдэх хүрээлэн",
+    city: "Улаанбаатар",
+    dateLabel: "",
+    priceLabel: "",
+    summary: "",
+    badge: null,
+  },
+  {
+    title: "Цэнхэр шувуу Tribute",
+    slug: "",
+    category: "Music",
+    categorySlug: "music",
+    venue: "Portal.mn",
+    city: "Улаанбаатар",
+    dateLabel: "",
+    priceLabel: "",
+    summary: "",
+    badge: null,
+  },
+];
 
-  if (!featured) return null;
+export function HighlightsToggle({ events }: { events: HighlightEvent[] }) {
+  const highlightItems = events.length >= 4 ? events : FALLBACK_HIGHLIGHTS;
+  const featured = highlightItems[0];
+  const cards = highlightItems.slice(1, 4);
 
   return (
     <div className="space-y-4">
       <Link
-        href={`/events/${featured.slug}`}
+        href={eventHref(featured.slug) as never}
         className="group relative flex min-h-[220px] overflow-hidden rounded-2xl bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] transition hover:bg-white/[0.06] sm:min-h-[260px]"
       >
         {/* Mobile: full-bleed background image */}
@@ -84,8 +134,8 @@ export function HighlightsToggle({ events }: { events: HighlightEvent[] }) {
             null;
           return (
             <Link
-              key={event.slug}
-              href={`/events/${event.slug}`}
+              key={event.slug || event.title}
+              href={eventHref(event.slug) as never}
               className="group flex flex-col overflow-hidden rounded-2xl bg-white/[0.04] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)] transition hover:bg-white/[0.06]"
             >
               <div className="flex flex-col gap-1.5 p-3 sm:gap-2 sm:p-5">
@@ -117,4 +167,8 @@ export function HighlightsToggle({ events }: { events: HighlightEvent[] }) {
       </div>
     </div>
   );
+}
+
+function eventHref(slug: string) {
+  return slug ? `/events/${slug}` : "/events";
 }
