@@ -154,18 +154,6 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
         </div>
       </section>
 
-      <section className="relative bg-[linear-gradient(180deg,#06080d_0%,#070a11_100%)] px-4 pb-14 pt-10 sm:px-8 sm:pb-24 sm:pt-16 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="week-events-header">
-            <div className="week-events-header__title-wrap">
-              <h2 className="week-events-header__title font-goldman">{t("highlightsTitle")}</h2>
-            </div>
-
-          </div>
-          <HighlightsToggle events={highlightEvents} />
-        </div>
-      </section>
-
       {resaleListings.length > 0 && (
         <section className="relative bg-[linear-gradient(180deg,#06080d_0%,#07091000%)] px-4 pb-16 pt-10 sm:px-8 sm:pb-20 sm:pt-14 lg:px-8">
           <div className="mx-auto max-w-7xl">
@@ -174,63 +162,78 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
                 <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#ff7224]">Хоёрдогч зах зээл</p>
                 <h2 className="week-events-header__title font-goldman">Resale Тасалбарууд</h2>
               </div>
-              <Link href="/resale" className="week-events-header__cta font-bjcree text-[#ff7224] hover:text-[#ff9050]">
+              <Link href="/login" className="week-events-header__cta font-bjcree text-[#ff7224] hover:text-[#ff9050]">
                 Бүгдийг харах →
               </Link>
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {resaleListings.map((listing) => {
-                const thumb = listing.event.cardImageUrl ?? listing.event.imageUrl;
+                const thumb = listing.event.cardImageUrl ?? listing.event.imageUrl ?? "/uploads/1.jpg";
                 const total = toNumber(listing.askPrice) + toNumber(listing.buyerFee);
+                const d = new Date(listing.event.startsAt);
+                const datePrimary = new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit" }).format(d).toUpperCase();
+                const dateSecondary = new Intl.DateTimeFormat("en-US", { weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
+                const formattedPrice = listing.event.currency === "MNT"
+                  ? `${new Intl.NumberFormat("mn-MN", { maximumFractionDigits: 0 }).format(total)}₮`
+                  : formatCurrency(total, listing.event.currency);
                 return (
-                  <div key={listing.id} className="group flex flex-col overflow-hidden rounded-2xl bg-[#0e1424] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]">
-                    <div className="relative h-40 w-full overflow-hidden bg-white/[0.04]">
-                      {thumb ? (
-                        <Image
-                          src={thumb}
-                          alt={listing.event.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-white/[0.04]" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0e1424]/80 to-transparent" />
+                  <Link
+                    key={listing.id}
+                    href={`/resale/${listing.id}` as never}
+                    className="group relative flex flex-col overflow-hidden rounded-2xl bg-[#0d1017] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[inset_0_0_0_1px_rgba(255,114,36,0.2),0_28px_56px_rgba(0,0,0,0.55)]"
+                  >
+                    <div className="relative h-52 overflow-hidden">
+                      <Image
+                        src={thumb}
+                        alt={listing.event.title}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0d1017] via-[#0d1017]/15 to-transparent" />
+                      <span className="absolute left-3 top-3 rounded-full border border-white/10 bg-black/50 px-3 py-1 text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/90 backdrop-blur-md">
+                        {listing.event.category.name}
+                      </span>
                     </div>
-                    <div className="flex flex-1 flex-col gap-3 p-4">
-                      <div>
-                        <p className="text-[0.6rem] font-bold uppercase tracking-[0.12em] text-white/30">
-                          {listing.event.category.name}
+                    <div className="flex flex-1 flex-col gap-2 p-4">
+                      <div className="flex items-center gap-1.5 text-[0.7rem] font-semibold text-white/40">
+                        <span>{datePrimary}</span>
+                        <span className="text-white/20">·</span>
+                        <span className="truncate">{dateSecondary}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <h3 className="line-clamp-2 font-goldman text-[1.05rem] font-bold leading-snug text-white">
+                          {listing.event.title}
+                        </h3>
+                        <p className="truncate text-xs text-white/40">
+                          {listing.event.venue.name}, {listing.event.venue.city}
                         </p>
-                        <p className="mt-1 line-clamp-2 text-base font-bold text-white">{listing.event.title}</p>
-                        <p className="mt-0.5 text-xs text-white/40">{listing.ticketType.name}</p>
                       </div>
-                      <div className="flex flex-wrap gap-2 text-[0.7rem] text-white/40">
-                        <span>{formatDateTime(listing.event.startsAt)}</span>
-                        <span>·</span>
-                        <span>{listing.event.venue.name}</span>
-                      </div>
-                      <div className="mt-auto flex items-end justify-between gap-2">
-                        <div>
-                          <p className="text-[0.6rem] text-white/30">үнэ</p>
-                          <p className="text-lg font-bold text-white">{formatCurrency(total, listing.event.currency)}</p>
-                        </div>
-                        <Link
-                          href={`/resale/${listing.id}` as never}
-                          className="rounded-xl bg-[#ff7224] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#ff8c42]"
-                        >
+                      <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] pt-3">
+                        <p className="font-goldman text-lg font-bold text-white">{formattedPrice}</p>
+                        <span className="rounded-xl bg-[#ff7224] px-4 py-2.5 text-xs font-bold text-white shadow-[0_6px_18px_rgba(255,114,36,0.28)] transition-all duration-200 group-hover:bg-[#ff8442] group-hover:shadow-[0_10px_26px_rgba(255,114,36,0.42)]">
                           Авах
-                        </Link>
+                        </span>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
           </div>
         </section>
       )}
+
+      <section className="relative bg-[linear-gradient(180deg,#06080d_0%,#070a11_100%)] px-4 pb-14 pt-10 sm:px-8 sm:pb-24 sm:pt-16 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="week-events-header">
+            <div className="week-events-header__title-wrap">
+              <h2 className="week-events-header__title font-goldman">{t("highlightsTitle")}</h2>
+            </div>
+          </div>
+          <HighlightsToggle events={highlightEvents} />
+        </div>
+      </section>
 
       <section className="relative bg-[linear-gradient(180deg,#090c12_0%,#06080d_100%)] px-4 pb-24 pt-8 sm:px-8 sm:pb-28 sm:pt-12 lg:px-8 lg:pb-32">
         <div className="mx-auto max-w-7xl">
