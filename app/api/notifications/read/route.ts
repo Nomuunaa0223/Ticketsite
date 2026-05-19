@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { markAllNotificationsRead } from "@/lib/notifications";
+import { prisma } from "@/lib/prisma";
 
 export async function POST() {
   const user = await requireUser();
-  await markAllNotificationsRead(user.id);
-
+  await prisma.notification.deleteMany({ where: { userId: user.id } });
   return NextResponse.json({ ok: true });
 }
