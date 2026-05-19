@@ -4,25 +4,28 @@ import { FormEvent, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
 const quickPrompts = [
-  "Transparent fee tailbarla",
-  "Sports ticket olohod tusal",
-  "Notification yaaj irne?",
-  "Organizer dashboard yamar ve?"
+  "AI event draft uusge",
+  "Fee tailbarla",
+  "Resale yaj ajillah ve?",
+  "QR scan yamar ve?"
 ];
 
 type Message = {
   role: "assistant" | "user";
   text: string;
+  actionUrl?: string;
+  actionLabel?: string;
 };
 
 export function AiAgentDemoBanner() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [isGeneratingEvent, setIsGeneratingEvent] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      text: "Sain baina uu, bi Tixora assistant. Event, fee, resale, notification talaar asuuj bolno."
+      text: "Sain baina uu, bi Tixy Ai. Event, ticket, fee, resale, QR scan talaar asuuhad belen baina."
     }
   ]);
 
@@ -45,7 +48,7 @@ export function AiAgentDemoBanner() {
       return "Ta dashboard hesegt baina. Organizer, moderator, admin workflow talaar tusalj chadna.";
     }
 
-    return "Ta Tixora deer baina. Ticket, organizer, resale, notification talaar asuuj bolno.";
+    return "Ta Tixora deer baina. Ticket, organizer, resale, notification talaar Tixy Ai-aas asuuj bolno.";
   }, [pathname]);
 
   if (shouldHide) {
@@ -57,6 +60,10 @@ export function AiAgentDemoBanner() {
 
     if (normalized.includes("fee")) {
       return "Tixora deer fee nuugdmal bish. Ticket une, service fee, resale buyer fee gej yalgaj haruulna.";
+    }
+
+    if (normalized.includes("ticket") || normalized.includes("avah")) {
+      return "Ticket avahdaa event songood ticket type, quantity esvel seat-aa songono. Daraa ni tulburuu batalgaajuulahad ticket profile deer orno.";
     }
 
     if (normalized.includes("sport")) {
@@ -79,44 +86,112 @@ export function AiAgentDemoBanner() {
       return "QR access ni ownership-based. Check-in hiih ued current owner shalgagdaj, scan hiigdsen bol notification ochino.";
     }
 
-    return `${pageHint} Hervee husvel bi fee, notifications, resale, esvel organizer tools-iig iluu todorhoi tailbarlaj ogyo.`;
+    return `${pageHint} Hervee husvel bi fee, notifications, resale, QR scan, esvel organizer tools-iig iluu todorhoi tailbarlaj ogyo.`;
   }
 
-  function sendPrompt(prompt: string) {
+  function wantsEventDraft(prompt: string) {
+    const normalized = prompt.toLowerCase();
+    const hasEventWord = ["event", "арга хэмжээ", "concert", "festival", "workshop", "meeting"].some((word) =>
+      normalized.includes(word)
+    );
+    const hasCreateWord = ["uusge", "үүсгэ", "create", "generate", "hiigeed", "хий", "draft"].some((word) =>
+      normalized.includes(word)
+    );
+
+    return hasEventWord && hasCreateWord;
+  }
+
+  async function createAiEventDraft(prompt: string): Promise<Message> {
+    const response = await fetch("/api/ai/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt })
+    });
+    const data = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      event?: {
+        title: string;
+        status: string;
+        category: string;
+        venue: string;
+        editUrl: string;
+        actionUrl?: string;
+        isSmallEvent?: boolean;
+      };
+    };
+
+    if (!response.ok || !data.event) {
+      return {
+        role: "assistant",
+        text: data.error ?? "Tixy Ai event draft үүсгэж чадсангүй. Organizer эрхээр нэвтэрсэн эсэхээ шалгаарай."
+      };
+    }
+
+    return {
+      role: "assistant",
+      text: data.event.isSmallEvent && data.event.status === "PUBLISHED"
+        ? `Community event AI review-ээр нийтлэгдлээ: ${data.event.title}. Category: ${data.event.category}. Venue: ${data.event.venue}. One ticket per user.`
+        : `Event draft бэлэн боллоо: ${data.event.title}. Category: ${data.event.category}. Venue: ${data.event.venue}. Status: ${data.event.status}.`,
+      actionUrl: data.event.actionUrl ?? data.event.editUrl,
+      actionLabel: data.event.isSmallEvent && data.event.status === "PUBLISHED" ? "Event харах" : "Draft нээх"
+    };
+  }
+
+  async function sendPrompt(prompt: string) {
     const value = prompt.trim();
     if (!value) {
       return;
     }
 
     setIsOpen(true);
+    setInput("");
+
+    if (wantsEventDraft(value)) {
+      setIsGeneratingEvent(true);
+      setMessages((current) => [
+        ...current,
+        { role: "user", text: value },
+        { role: "assistant", text: "Tixy Ai event draft үүсгэж байна..." }
+      ]);
+
+      const reply = await createAiEventDraft(value);
+      setMessages((current) => [...current.slice(0, -1), reply]);
+      setIsGeneratingEvent(false);
+      return;
+    }
+
     setMessages((current) => [
       ...current,
       { role: "user", text: value },
       { role: "assistant", text: buildReply(value) }
     ]);
-    setInput("");
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    sendPrompt(input);
+    void sendPrompt(input);
   }
 
   return (
     <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex items-end justify-end sm:bottom-8 sm:right-8">
       <div className="pointer-events-auto flex flex-col items-end gap-4">
         {isOpen ? (
-          <div className="w-[calc(100vw-2rem)] max-w-[380px] overflow-hidden rounded-[1.8rem] border border-white/10 bg-black/95 shadow-[0_24px_70px_rgba(0,0,0,0.55)] backdrop-blur-xl">
-            <div className="border-b border-white/10 bg-[linear-gradient(135deg,#0c75e6_0%,#66b8ff_100%)] px-5 py-4">
+          <div className="w-[calc(100vw-2rem)] max-w-[380px] overflow-hidden rounded-[1.4rem] border border-white/15 bg-[#050505]/95 shadow-[0_24px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl">
+            <div className="border-b border-white/10 bg-[#0b0b0b] px-5 py-4 shadow-[inset_0_-1px_0_rgba(250,232,154,0.08)]">
               <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold text-white">Tixora AI Chat</p>
-                  <p className="mt-1 text-xs leading-6 text-white/80">{pageHint}</p>
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f6df8f]/30 bg-white p-1.5 shadow-[0_0_24px_rgba(246,223,143,0.18)]">
+                    <img src="/ai.png" alt="" className="h-full w-full object-contain" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-white">Tixy Ai</p>
+                    <p className="mt-1 text-xs leading-6 text-white/70">{pageHint}</p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="rounded-full border border-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-white/10"
+                  className="rounded-full border border-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/75 transition hover:border-[#f6df8f]/45 hover:bg-[#f6df8f]/10 hover:text-white"
                 >
                   Close
                 </button>
@@ -130,11 +205,19 @@ export function AiAgentDemoBanner() {
                     key={`${message.role}-${index}`}
                     className={`max-w-[88%] rounded-[1.3rem] px-4 py-3 text-sm leading-7 ${
                       message.role === "assistant"
-                        ? "bg-white/8 text-white"
-                        : "ml-auto bg-[linear-gradient(135deg,#0c75e6_0%,#66b8ff_100%)] text-white"
+                        ? "border border-white/10 bg-white/[0.06] text-white"
+                        : "ml-auto bg-white text-black"
                     }`}
                   >
                     {message.text}
+                    {message.actionUrl ? (
+                      <a
+                        href={message.actionUrl}
+                        className="mt-3 inline-flex rounded-full bg-[#f6df8f] px-3 py-1.5 text-xs font-bold text-black transition hover:bg-white"
+                      >
+                        {message.actionLabel ?? "Open"}
+                      </a>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -144,8 +227,9 @@ export function AiAgentDemoBanner() {
                   <button
                     key={prompt}
                     type="button"
-                    onClick={() => sendPrompt(prompt)}
-                    className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-white transition hover:bg-white/10"
+                    onClick={() => void sendPrompt(prompt)}
+                    disabled={isGeneratingEvent}
+                    className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white/85 transition hover:border-[#f6df8f]/40 hover:bg-[#f6df8f]/10 hover:text-white"
                   >
                     {prompt}
                   </button>
@@ -158,15 +242,16 @@ export function AiAgentDemoBanner() {
                   onChange={(event) => setInput(event.target.value)}
                   placeholder="Asuultaa bich..."
                   rows={3}
-                  className="w-full resize-none rounded-[1.2rem] border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-white/25"
+                  className="w-full resize-none rounded-[1rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#f6df8f]/45"
                 />
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-white/45">Demo assistant preview</p>
+                  <p className="text-xs text-white/45">Tixy Ai asuultand belen</p>
                   <button
                     type="submit"
-                    className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
+                    disabled={isGeneratingEvent}
+                    className="rounded-full bg-[#f6df8f] px-5 py-3 text-sm font-semibold text-black transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Send
+                    {isGeneratingEvent ? "Creating" : "Send"}
                   </button>
                 </div>
               </form>
@@ -177,14 +262,14 @@ export function AiAgentDemoBanner() {
         <button
           type="button"
           onClick={() => setIsOpen((current) => !current)}
-          aria-label="Open Tixora AI chat"
+          aria-label="Open Tixy Ai chat"
           className="group relative flex h-16 w-16 items-center justify-center rounded-full bg-black shadow-[0_16px_40px_rgba(0,0,0,0.45)] transition hover:scale-105"
         >
-          <span className="absolute inset-0 rounded-full bg-[linear-gradient(135deg,#0c75e6_0%,#1d8fff_38%,#66b8ff_100%)] p-[3px]">
+          <span className="absolute inset-0 rounded-full bg-[linear-gradient(135deg,#ffffff_0%,#f6df8f_54%,#ffffff_100%)] p-[2px]">
             <span className="block h-full w-full rounded-full bg-black" />
           </span>
-          <span className="relative z-10 text-3xl font-semibold leading-none text-white transition group-hover:text-white">
-            ?
+          <span className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white p-2 shadow-[0_0_26px_rgba(246,223,143,0.22)]">
+            <img src="/ai.png" alt="" className="h-full w-full object-contain" />
           </span>
         </button>
       </div>
