@@ -3,11 +3,27 @@
 import { FormEvent, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
-const quickPrompts = [
-  "AI event draft uusge",
-  "Fee tailbarla",
-  "Resale yaj ajillah ve?",
-  "QR scan yamar ve?"
+type EventDraftDetails = {
+  title?: string;
+  venue?: string;
+  dateTime?: string;
+  seats?: string;
+  price?: string;
+  image?: string;
+  category?: string;
+};
+
+const eventDraftQuestions: Array<{
+  key: keyof EventDraftDetails;
+  question: string;
+}> = [
+  { key: "title", question: "Event-iin ner yu baih ve?" },
+  { key: "venue", question: "Haana boloh ve? Venue ner, hot/district, esvel hayagaa bichne uu." },
+  { key: "dateTime", question: "Hezee boloh ve? Ognoo, tsagaa bichne uu. Jishee: 2026-06-20 19:00" },
+  { key: "seats", question: "Heden suudal/ticket zarah ve? Small community event tul ihdee 80 bolgono." },
+  { key: "price", question: "Neg ticket heden tugrug baih ve?" },
+  { key: "image", question: "Yamar zuragtai baih ve? Category, zuragnii sanaa, esvel image URL bichij bolno." },
+  { key: "category", question: "Yamar turliin event ve? music, sports, comedy, festival, conference, workshop geh met." }
 ];
 
 type Message = {
@@ -22,6 +38,8 @@ export function AiAgentDemoBanner() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isGeneratingEvent, setIsGeneratingEvent] = useState(false);
+  const [eventDraftDetails, setEventDraftDetails] = useState<EventDraftDetails | null>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -101,6 +119,56 @@ export function AiAgentDemoBanner() {
     return hasEventWord && hasCreateWord;
   }
 
+  function buildStructuredEventPrompt(details: EventDraftDetails) {
+    return [
+      "Create a USER small community event with these exact details.",
+      `Event name: ${details.title}`,
+      `Venue/location: ${details.venue}`,
+      `Date and time: ${details.dateTime}`,
+      `Ticket capacity: ${details.seats}`,
+      `Ticket price MNT: ${details.price}`,
+      `Image/art direction or URL: ${details.image}`,
+      `Category: ${details.category}`,
+      "Rules: isSmallEvent=true, one ticket per user, resale disabled, AI reviewed publish."
+    ].join("\n");
+  }
+
+  async function continueEventDraft(answer: string) {
+    if (currentQuestionIndex === null || !eventDraftDetails) return;
+
+    const currentQuestion = eventDraftQuestions[currentQuestionIndex];
+    const nextDetails = {
+      ...eventDraftDetails,
+      [currentQuestion.key]: answer
+    };
+    const nextQuestionIndex = currentQuestionIndex + 1;
+
+    setEventDraftDetails(nextDetails);
+
+    if (nextQuestionIndex < eventDraftQuestions.length) {
+      setCurrentQuestionIndex(nextQuestionIndex);
+      setMessages((current) => [
+        ...current,
+        { role: "user", text: answer },
+        { role: "assistant", text: eventDraftQuestions[nextQuestionIndex].question }
+      ]);
+      return;
+    }
+
+    setCurrentQuestionIndex(null);
+    setEventDraftDetails(null);
+    setIsGeneratingEvent(true);
+    setMessages((current) => [
+      ...current,
+      { role: "user", text: answer },
+      { role: "assistant", text: "Bayarlalaa. Odoo buh shaardlagatai medeeleltei bolloo. Tixy Ai event-iig uusgej baina..." }
+    ]);
+
+    const reply = await createAiEventDraft(buildStructuredEventPrompt(nextDetails));
+    setMessages((current) => [...current.slice(0, -1), reply]);
+    setIsGeneratingEvent(false);
+  }
+
   async function createAiEventDraft(prompt: string): Promise<Message> {
     const response = await fetch("/api/ai/events", {
       method: "POST",
@@ -146,8 +214,14 @@ export function AiAgentDemoBanner() {
     setIsOpen(true);
     setInput("");
 
+    if (currentQuestionIndex !== null) {
+      await continueEventDraft(value);
+      return;
+    }
+
     if (wantsEventDraft(value)) {
-      setIsGeneratingEvent(true);
+      setEventDraftDetails({});
+      setCurrentQuestionIndex(0);
       setMessages((current) => [
         ...current,
         { role: "user", text: value },
@@ -169,7 +243,40 @@ export function AiAgentDemoBanner() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void sendPrompt(input);
+    void sendUserPrompt(input);
+  }
+
+  async function sendUserPrompt(prompt: string) {
+    const value = prompt.trim();
+    if (!value) {
+      return;
+    }
+
+    setIsOpen(true);
+    setInput("");
+
+    if (currentQuestionIndex !== null) {
+      await continueEventDraft(value);
+      return;
+    }
+
+    if (wantsEventDraft(value)) {
+      setEventDraftDetails({});
+      setCurrentQuestionIndex(0);
+      setMessages((current) => [
+        ...current,
+        { role: "user", text: value },
+        { role: "assistant", text: "Medeelel dutuu baina. Event uusgehees umnu hedhen zuil asuuy." },
+        { role: "assistant", text: eventDraftQuestions[0].question }
+      ]);
+      return;
+    }
+
+    setMessages((current) => [
+      ...current,
+      { role: "user", text: value },
+      { role: "assistant", text: buildReply(value) }
+    ]);
   }
 
   return (
@@ -222,30 +329,20 @@ export function AiAgentDemoBanner() {
                 ))}
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {quickPrompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => void sendPrompt(prompt)}
-                    disabled={isGeneratingEvent}
-                    className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white/85 transition hover:border-[#f6df8f]/40 hover:bg-[#f6df8f]/10 hover:text-white"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-
               <form onSubmit={handleSubmit} className="space-y-3 border-t border-white/10 pt-4">
                 <textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  placeholder="Asuultaa bich..."
+                  placeholder={currentQuestionIndex !== null ? "Hariultaa bich..." : "Asuultaa bich..."}
                   rows={3}
                   className="w-full resize-none rounded-[1rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#f6df8f]/45"
                 />
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-white/45">Tixy Ai asuultand belen</p>
+                  <p className="text-xs text-white/45">
+                    {currentQuestionIndex !== null
+                      ? `${currentQuestionIndex + 1}/${eventDraftQuestions.length} medeelel tsugluulj baina`
+                      : "Tixy Ai asuultand belen"}
+                  </p>
                   <button
                     type="submit"
                     disabled={isGeneratingEvent}

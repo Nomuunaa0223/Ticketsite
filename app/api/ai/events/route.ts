@@ -23,6 +23,16 @@ type VenueChoice = {
   capacity: number;
 };
 
+type ParsedEventDetails = {
+  title?: string;
+  venue?: string;
+  dateTime?: string;
+  seats?: number;
+  price?: number;
+  image?: string;
+  category?: string;
+};
+
 export async function POST(request: Request) {
   try {
     const session = await getSessionFromRequest(request);
@@ -88,9 +98,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const category = chooseCategory(prompt, categories);
-    const venue = chooseVenue(prompt, venues, isCommunityFlow);
-    const draft = buildDraft(prompt, category, venue, isCommunityFlow);
+    const eventDetails = parseStructuredEventPrompt(prompt);
+    const category = chooseCategory(eventDetails.category ?? prompt, categories);
+    const venue = chooseVenue(eventDetails.venue ?? prompt, venues, isCommunityFlow);
+    const draft = buildDraft(prompt, category, venue, isCommunityFlow, eventDetails);
 
     const result = await prisma.$transaction(async (tx) => {
       const organizerProfile = isOrganizerFlow
@@ -360,15 +371,42 @@ function chooseVenue(prompt: string, venues: VenueChoice[], forceSmall = false) 
   return venues[0];
 }
 
-function buildDraft(prompt: string, category: CategoryChoice, venue: VenueChoice, forceSmall = false) {
-  const title = buildTitle(prompt, category);
+function parseStructuredEventPrompt(prompt: string): ParsedEventDetails {
+  const lines = prompt.split(/\r?\n/);
+  const valueFor = (label: string) => {
+    const line = lines.find((item) => item.toLowerCase().startsWith(`${label.toLowerCase()}:`));
+    return line?.slice(line.indexOf(":") + 1).trim();
+  };
+
+  return {
+    title: cleanOptionalText(valueFor("Event name")),
+    venue: cleanOptionalText(valueFor("Venue/location")),
+    dateTime: cleanOptionalText(valueFor("Date and time")),
+    seats: parsePositiveInteger(valueFor("Ticket capacity")),
+    price: parsePositiveInteger(valueFor("Ticket price MNT")),
+    image: cleanOptionalText(valueFor("Image/art direction or URL")),
+    category: cleanOptionalText(valueFor("Category"))
+  };
+}
+
+function buildDraft(
+  prompt: string,
+  category: CategoryChoice,
+  venue: VenueChoice,
+  forceSmall = false,
+  details: ParsedEventDetails = {}
+) {
+  const title = details.title ? titleCase(details.title).slice(0, 110) : buildTitle(prompt, category);
   const isSmallEvent = forceSmall || isSmallPrompt(prompt, venue.capacity);
-  const startsAt = chooseStartDate(prompt);
+  const startsAt = chooseStartDate(details.dateTime ?? prompt);
   const endsAt = new Date(startsAt.getTime() + (isSmallEvent ? 2 : 3) * 60 * 60 * 1000);
   const saleStartsAt = new Date();
   const saleEndsAt = new Date(startsAt.getTime() - 60 * 60 * 1000);
-  const quantityTotal = Math.max(10, Math.min(isSmallEvent ? 80 : 5000, Math.floor(venue.capacity * (isSmallEvent ? 0.45 : 0.85))));
-  const price = estimatePrice(prompt, category.slug, isSmallEvent);
+  const fallbackQuantity = Math.floor(venue.capacity * (isSmallEvent ? 0.45 : 0.85));
+  const requestedQuantity = details.seats ?? fallbackQuantity;
+  const quantityTotal = Math.max(10, Math.min(isSmallEvent ? 80 : 5000, requestedQuantity));
+  const price = details.price ?? estimatePrice(prompt, category.slug, isSmallEvent);
+  const imageUrl = resolveEventImage(details.image, category.slug);
   const summary = isSmallEvent
     ? `${title} is a small AI-reviewed community event at ${venue.name}.`
     : `${title} is an AI-generated ${category.name.toLowerCase()} draft at ${venue.name}, prepared for organizer review.`;
@@ -388,7 +426,7 @@ function buildDraft(prompt: string, category: CategoryChoice, venue: VenueChoice
     saleStartsAt,
     saleEndsAt,
     isSmallEvent,
-    imageUrl: imageForCategory(category.slug),
+    imageUrl,
     marketingCaption: `Ready for ${venue.city}: ${title}. Tickets coming soon on Tixora.`,
     marketingCaptions: [
       `Ready for ${venue.city}: ${title}. Tickets coming soon on Tixora.`,
@@ -418,6 +456,7 @@ function buildDraft(prompt: string, category: CategoryChoice, venue: VenueChoice
       reviewRequired: isSmallEvent
         ? ["venue/date accuracy", "community rules", "safety notes"]
         : ["event artwork", "final date/time", "venue availability", "ticket quantity", "legal/safety notes"],
+      artworkDirection: details.image,
       nextStep: isSmallEvent
         ? "Event is AI-reviewed and published as a small community event."
         : "Open the draft from organizer dashboard and submit after review."
@@ -452,9 +491,17 @@ function chooseStartDate(prompt: string) {
   const date = new Date();
   date.setMinutes(0, 0, 0);
 
-  const monthDay = normalized.match(/\b(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})\b/);
+  const monthDay = normalized.match(/\b(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})(?:[ t,]+(\d{1,2})(?::(\d{2}))?)?\b/);
   if (monthDay) {
-    const parsed = new Date(Number(monthDay[1]), Number(monthDay[2]) - 1, Number(monthDay[3]), 19, 0, 0, 0);
+    const parsed = new Date(
+      Number(monthDay[1]),
+      Number(monthDay[2]) - 1,
+      Number(monthDay[3]),
+      Number(monthDay[4] ?? 19),
+      Number(monthDay[5] ?? 0),
+      0,
+      0
+    );
     if (!Number.isNaN(parsed.getTime()) && parsed > new Date()) return parsed;
   }
 
@@ -480,6 +527,21 @@ function estimatePrice(prompt: string, categorySlug: string, isSmallEvent: boole
   return 35000;
 }
 
+function parsePositiveInteger(value?: string) {
+  if (!value) return undefined;
+  const match = value.replace(/,/g, "").match(/\d+/);
+  if (!match) return undefined;
+
+  const parsed = Number(match[0]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function cleanOptionalText(value?: string) {
+  const cleaned = value?.trim();
+  if (!cleaned || cleaned.toLowerCase() === "undefined") return undefined;
+  return cleaned;
+}
+
 function isSmallPrompt(prompt: string, venueCapacity: number) {
   const normalized = prompt.toLowerCase();
   return venueCapacity <= 250 || ["small", "community", "meetup", "workshop", "private", "intimate"].some((word) => normalized.includes(word));
@@ -496,6 +558,12 @@ function imageForCategory(slug: string) {
   };
 
   return map[slug] ?? "/uploads/1.jpg";
+}
+
+function resolveEventImage(image: string | undefined, categorySlug: string) {
+  if (!image) return imageForCategory(categorySlug);
+  if (/^(https?:\/\/|\/)/i.test(image)) return image;
+  return imageForCategory(categorySlug);
 }
 
 function titleCase(value: string) {
