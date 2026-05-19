@@ -92,7 +92,7 @@ export function LandingPageContent({
                   Upcoming
                 </p>
                 <h2 className="mt-1 font-goldman text-3xl font-bold text-white">
-                  This Week
+                  This Month
                 </h2>
               </div>
               <Link

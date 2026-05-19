@@ -233,11 +233,34 @@ export default async function AdminEventDetailPage({ params }: Props) {
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/30">Ticket types</p>
-                {event.ticketTypes.map((ticketType) => (
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/30">
+                  {event.ticketTypes.some((tt) => tt.startsAt) ? "Event days" : "Ticket types"}
+                </p>
+                {event.ticketTypes.map((ticketType, i) => (
                   <div key={ticketType.id} className="rounded-xl bg-white/[0.03] px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-white">{ticketType.name}</p>
+                      <div>
+                        {ticketType.startsAt ? (
+                          <>
+                            <p className="text-sm font-semibold text-white">
+                              {i + 1}-р өдөр &mdash;{" "}
+                              {new Date(ticketType.startsAt).toLocaleDateString("mn-MN", {
+                                month: "short",
+                                day: "numeric",
+                                weekday: "short",
+                              })}
+                            </p>
+                            <p className="mt-0.5 text-xs text-white/40">
+                              {new Date(ticketType.startsAt).toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}
+                              {ticketType.endsAt && (
+                                <> – {new Date(ticketType.endsAt).toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" })}</>
+                              )}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm font-semibold text-white">{ticketType.name}</p>
+                        )}
+                      </div>
                       <p className="font-goldman font-bold text-white">{formatCurrency(toNumber(ticketType.price), event.currency)}</p>
                     </div>
                     <p className="mt-1 text-xs text-white/40">

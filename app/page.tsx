@@ -207,6 +207,11 @@ export default async function HomePage() {
       const startsAt = new Date(event.startsAt);
       return startsAt >= now && startsAt <= nextWeekBoundary;
     })
+    .sort((a, b) => {
+      const aTime = a.publishedAt?.getTime() ?? a.createdAt.getTime();
+      const bTime = b.publishedAt?.getTime() ?? b.createdAt.getTime();
+      return bTime - aTime;
+    })
     .slice(0, 3)
     .map((event, index) => {
       const visual = cardVisuals[index] ?? cardVisuals[0];
@@ -219,7 +224,8 @@ export default async function HomePage() {
       );
       const startsAt = new Date(event.startsAt);
       const urgency = getWeekUrgency(startsAt, remaining, now);
-      const imageSrc = galleryImageSources[index] ?? galleryImageSources[0];
+      const imageSrc =
+        event.cardImageUrl ?? event.imageUrl ?? galleryImageSources[index] ?? galleryImageSources[0];
 
       return {
         title: event.title,

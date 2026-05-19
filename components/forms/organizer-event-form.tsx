@@ -5,17 +5,14 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { LocationPicker } from "@/components/forms/location-picker";
 
-type TicketType = {
-  name: string;
-  price: string;
-  quantityTotal: string;
-  hasSeatMap: boolean;
-  seatRows: string;
-  seatsPerRow: string;
-};
-
 type OrganizerEventFormProps = {
   categories: Array<{ id: string | number; name: string }>;
+};
+
+type EventDay = {
+  id: number;
+  startsAt: string;
+  endsAt: string;
 };
 
 function toIso(value: string) {
@@ -143,6 +140,10 @@ function ImageUploadSlot({
   );
 }
 
+function ordinal(n: number): string {
+  return `${n}-р өдөр`;
+}
+
 export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
   const router = useRouter();
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -153,9 +154,10 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
   const [venueLon, setVenueLon] = useState<number | null>(null);
   const [extraImages, setExtraImages] = useState<[string | null, string | null]>([null, null]);
 
-  const [tickets, setTickets] = useState<TicketType[]>([
-    { name: "General Admission", price: "", quantityTotal: "", hasSeatMap: false, seatRows: "", seatsPerRow: "" },
-  ]);
+  const [days, setDays] = useState<EventDay[]>([{ id: 1, startsAt: "", endsAt: "" }]);
+  const [ticketName, setTicketName] = useState("General Admission");
+  const [ticketPrice, setTicketPrice] = useState("");
+  const [ticketQty, setTicketQty] = useState("");
 
   function setExtraImage(i: 0 | 1, url: string) {
     setExtraImages((prev) => {
@@ -165,25 +167,17 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
     });
   }
 
-  function addTicket() {
-    setTickets((prev) => [
-      ...prev,
-      { name: "", price: "", quantityTotal: "", hasSeatMap: false, seatRows: "", seatsPerRow: "" },
-    ]);
+  function addDay() {
+    setDays((prev) => [...prev, { id: Date.now(), startsAt: "", endsAt: "" }]);
   }
 
-  function removeTicket(i: number) {
-    setTickets((prev) => prev.filter((_, idx) => idx !== i));
+  function removeDay(id: number) {
+    if (days.length <= 1) return;
+    setDays((prev) => prev.filter((d) => d.id !== id));
   }
 
-  function updateTicket(i: number, field: keyof TicketType, value: string) {
-    setTickets((prev) =>
-      prev.map((t, idx) => {
-        if (idx !== i) return t;
-        if (field === "hasSeatMap") return { ...t, hasSeatMap: value === "true" };
-        return { ...t, [field]: value };
-      })
-    );
+  function updateDay(id: number, field: "startsAt" | "endsAt", value: string) {
+    setDays((prev) => prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -192,6 +186,10 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
     setMessage(null);
 
     const form = new FormData(event.currentTarget);
+
+    const sortedDays = [...days].sort(
+      (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
+    );
 
     const relatedImages = extraImages
       .filter(Boolean)
@@ -204,29 +202,23 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
       title: String(form.get("title")),
       summary: String(form.get("summary")),
       description: String(form.get("description")),
-      startsAt: toIso(String(form.get("startsAt"))),
-      endsAt: toIso(String(form.get("endsAt"))),
+      startsAt: toIso(sortedDays[0].startsAt),
+      endsAt: toIso(sortedDays[sortedDays.length - 1].endsAt),
       saleStartsAt: toIso(String(form.get("saleStartsAt"))),
       saleEndsAt: toIso(String(form.get("saleEndsAt"))),
       currency: "MNT",
       platformFeeBps: 900,
       serviceFeeBps: 350,
-      ticketTypes: tickets.map((t) => {
-        const rows = t.hasSeatMap
-          ? t.seatRows.split(",").map((r) => r.trim()).filter(Boolean)
-          : [];
-        const perRow = t.hasSeatMap ? Number(t.seatsPerRow) || 0 : 0;
-        const autoQty = t.hasSeatMap && rows.length > 0 && perRow > 0 ? rows.length * perRow : null;
-        return {
-          name: t.name,
-          price: Number(t.price),
-          quantityTotal: autoQty ?? Number(t.quantityTotal),
-          maxPerOrder: 8,
-          resaleAllowed: true,
-          hasSeatMap: t.hasSeatMap,
-          ...(t.hasSeatMap ? { seatRows: t.seatRows, seatsPerRow: perRow } : {}),
-        };
-      }),
+      ticketTypes: sortedDays.map((day, i) => ({
+        name: ordinal(i + 1),
+        price: Number(ticketPrice),
+        quantityTotal: Number(ticketQty),
+        maxPerOrder: 8,
+        resaleAllowed: true,
+        hasSeatMap: false,
+        startsAt: toIso(day.startsAt),
+        endsAt: toIso(day.endsAt),
+      })),
       customVenue: {
         name: String(form.get("venueName")),
         city: String(form.get("venueCity")),
@@ -254,12 +246,17 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
     }
 
     event.currentTarget.reset();
-    setTickets([{ name: "General Admission", price: "", quantityTotal: "", hasSeatMap: false, seatRows: "", seatsPerRow: "" }]);
+    setDays([{ id: 1, startsAt: "", endsAt: "" }]);
+    setTicketName("General Admission");
+    setTicketPrice("");
+    setTicketQty("");
     setCoverImage(null);
     setExtraImages([null, null]);
     setMessage({ text: "Event request sent to admin review.", ok: true });
     router.refresh();
   }
+
+  const totalTickets = days.length * (Number(ticketQty) || 0);
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
@@ -346,16 +343,67 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
         </div>
       </Card>
 
-      {/* Dates */}
+      {/* Event Days */}
       <Card>
-        <SectionLabel>Dates &amp; times</SectionLabel>
+        <SectionLabel>Event days</SectionLabel>
+        <div className="grid gap-3">
+          {days.map((day, i) => (
+            <div key={day.id} className="rounded-xl bg-white/[0.03] p-4 ring-1 ring-white/[0.06]">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-[0.7rem] font-bold uppercase tracking-[0.2em] text-[#ff8b46]">
+                  {ordinal(i + 1)}
+                </span>
+                {days.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeDay(day.id)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.04] text-white/30 transition hover:bg-red-500/20 hover:text-red-400"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Эхлэх">
+                  <input
+                    type="datetime-local"
+                    required
+                    value={day.startsAt}
+                    onChange={(e) => updateDay(day.id, "startsAt", e.target.value)}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Дуусах">
+                  <input
+                    type="datetime-local"
+                    required
+                    value={day.endsAt}
+                    onChange={(e) => updateDay(day.id, "endsAt", e.target.value)}
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addDay}
+            className="flex items-center gap-2 rounded-xl border border-dashed border-white/10 px-4 py-3 text-sm text-white/40 transition hover:border-white/20 hover:text-white/60"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+            </svg>
+            Өдөр нэмэх
+          </button>
+        </div>
+      </Card>
+
+      {/* Sale Period */}
+      <Card>
+        <SectionLabel>Sale period</SectionLabel>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Starts at">
-            <input name="startsAt" type="datetime-local" required className={inputCls} />
-          </Field>
-          <Field label="Ends at">
-            <input name="endsAt" type="datetime-local" required className={inputCls} />
-          </Field>
           <Field label="Sale starts">
             <input name="saleStartsAt" type="datetime-local" required className={inputCls} />
           </Field>
@@ -365,123 +413,51 @@ export function OrganizerEventForm({ categories }: OrganizerEventFormProps) {
         </div>
       </Card>
 
-      {/* Ticket Types */}
+      {/* Ticket template */}
       <Card>
-        <SectionLabel>Ticket types</SectionLabel>
-        <div className="grid gap-3">
-          {tickets.map((ticket, i) => (
-            <div key={i} className="rounded-xl bg-white/[0.03] p-4 ring-1 ring-white/[0.06]">
-              <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
-                <Field label="Ticket name">
-                  <input
-                    value={ticket.name}
-                    onChange={(e) => updateTicket(i, "name", e.target.value)}
-                    required
-                    placeholder="General Admission"
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label="Үнэ (₮)">
-                  <input
-                    value={ticket.price}
-                    onChange={(e) => updateTicket(i, "price", e.target.value)}
-                    type="number"
-                    min="0"
-                    step="1"
-                    required
-                    placeholder="50000"
-                    className={inputCls}
-                  />
-                </Field>
-                {!ticket.hasSeatMap && (
-                  <Field label="Тоо хэмжээ">
-                    <input
-                      value={ticket.quantityTotal}
-                      onChange={(e) => updateTicket(i, "quantityTotal", e.target.value)}
-                      type="number"
-                      min="1"
-                      required={!ticket.hasSeatMap}
-                      placeholder="100"
-                      className={inputCls}
-                    />
-                  </Field>
-                )}
-                {tickets.length > 1 && (
-                  <div className="flex items-end pb-0.5">
-                    <button
-                      type="button"
-                      onClick={() => removeTicket(i)}
-                      className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-xl bg-white/[0.04] text-white/30 transition hover:bg-red-500/20 hover:text-red-400"
-                    >
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Суудлын зураглал тохиргоо */}
-              <div className="mt-3 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => updateTicket(i, "hasSeatMap", String(!ticket.hasSeatMap))}
-                  className={`flex h-5 w-9 shrink-0 items-center rounded-full transition ${ticket.hasSeatMap ? "bg-[#ff7224]" : "bg-white/[0.1]"}`}
-                >
-                  <span className={`ml-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${ticket.hasSeatMap ? "translate-x-4" : "translate-x-0"}`} />
-                </button>
-                <span className="text-[0.65rem] font-bold uppercase tracking-[0.14em] text-white/40">
-                  Суудлын зураглалтай
-                </span>
-              </div>
-
-              {ticket.hasSeatMap && (
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <Field label="Эгнээ (жш: A,B,C,D,E)">
-                    <input
-                      value={ticket.seatRows}
-                      onChange={(e) => updateTicket(i, "seatRows", e.target.value)}
-                      placeholder="A,B,C,D,E"
-                      required={ticket.hasSeatMap}
-                      className={inputCls}
-                    />
-                  </Field>
-                  <Field label="Суудал / эгнээ">
-                    <input
-                      value={ticket.seatsPerRow}
-                      onChange={(e) => updateTicket(i, "seatsPerRow", e.target.value)}
-                      type="number"
-                      min="1"
-                      max="50"
-                      placeholder="10"
-                      required={ticket.hasSeatMap}
-                      className={inputCls}
-                    />
-                  </Field>
-                  {ticket.seatRows && ticket.seatsPerRow && (
-                    <p className="text-[0.65rem] text-white/30 sm:col-span-2">
-                      Нийт:{" "}
-                      <span className="font-semibold text-[#ff7224]">
-                        {ticket.seatRows.split(",").filter((r) => r.trim()).length * (Number(ticket.seatsPerRow) || 0)}
-                      </span>{" "}
-                      суудал үүснэ
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={addTicket}
-            className="flex items-center gap-2 rounded-xl border border-dashed border-white/10 px-4 py-3 text-sm text-white/40 transition hover:border-white/20 hover:text-white/60"
-          >
-            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-            </svg>
-            Add ticket type
-          </button>
+        <SectionLabel>Ticket</SectionLabel>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Ticket name">
+            <input
+              value={ticketName}
+              onChange={(e) => setTicketName(e.target.value)}
+              required
+              minLength={2}
+              placeholder="General Admission"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Үнэ (₮)">
+            <input
+              value={ticketPrice}
+              onChange={(e) => setTicketPrice(e.target.value)}
+              type="number"
+              min="0"
+              step="1"
+              required
+              placeholder="50000"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="Тоо / өдөр">
+            <input
+              value={ticketQty}
+              onChange={(e) => setTicketQty(e.target.value)}
+              type="number"
+              min="1"
+              required
+              placeholder="100"
+              className={inputCls}
+            />
+          </Field>
         </div>
+        {ticketQty && (
+          <p className="mt-3 text-[0.65rem] text-white/30">
+            Нийт:{" "}
+            <span className="font-semibold text-[#ff7224]">{totalTickets.toLocaleString()}</span>
+            {" "}тасалбар ({days.length} өдөр × {Number(ticketQty).toLocaleString()})
+          </p>
+        )}
       </Card>
 
       <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">

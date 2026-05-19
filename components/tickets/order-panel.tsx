@@ -14,6 +14,8 @@ type TicketType = {
   quantitySold: number;
   maxPerOrder: number;
   hasSeatMap?: boolean;
+  startsAt?: string | null;
+  endsAt?: string | null;
 };
 
 type Props = {
@@ -28,6 +30,19 @@ function formatPrice(amount: number, currency: string): string {
     return `${new Intl.NumberFormat("mn-MN", { maximumFractionDigits: 0 }).format(amount)}₮`;
   }
   return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount);
+}
+
+function formatDayDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("mn-MN", { month: "short", day: "numeric", weekday: "short" });
+}
+
+function formatDayTime(startsAt: string, endsAt: string): string {
+  const s = new Date(startsAt);
+  const e = new Date(endsAt);
+  const fmt = (d: Date) =>
+    d.toLocaleTimeString("mn-MN", { hour: "2-digit", minute: "2-digit" });
+  return `${fmt(s)} – ${fmt(e)}`;
 }
 
 function useCountdown(target: Date) {
@@ -51,6 +66,7 @@ function useCountdown(target: Date) {
 export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Props) {
   const router = useRouter();
   const [quantities, setQuantities] = useState<Record<number, number>>({});
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [selectedSeats, setSelectedSeats] = useState<Record<number, number[]>>({});
   const [seatData, setSeatData] = useState<Record<number, SeatData[]>>({});
   const [seatLoading, setSeatLoading] = useState<Record<number, boolean>>({});
@@ -61,6 +77,17 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
   const saleEnd = new Date(salesEndsAt);
   const { days, hours, minutes, seconds, ended: isSaleEnded, ready } = useCountdown(saleEnd);
   const hasTickets = ticketTypes.length > 0;
+
+  // Multi-day: all ticket types have startsAt set
+  const isMultiDay = ticketTypes.length > 0 && ticketTypes.every((tt) => tt.startsAt);
+
+  // Set first available day on mount for multi-day events
+  useEffect(() => {
+    if (isMultiDay && selectedDay === null) {
+      const first = ticketTypes.find((tt) => (tt.quantityTotal - tt.quantitySold) > 0);
+      if (first) setSelectedDay(first.id);
+    }
+  }, [isMultiDay, ticketTypes, selectedDay]);
 
   function setQty(id: number, value: number) {
     setQuantities((prev) => ({ ...prev, [id]: value }));
@@ -97,7 +124,11 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
     }
   }
 
-  const orderItems = ticketTypes
+  const activeTicketTypes = isMultiDay
+    ? ticketTypes.filter((tt) => tt.id === selectedDay)
+    : ticketTypes;
+
+  const orderItems = activeTicketTypes
     .map((tt) => {
       if (tt.hasSeatMap) {
         const seats = selectedSeats[tt.id] ?? [];
@@ -178,7 +209,73 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
         </div>
       ) : (
         <form onSubmit={handleOrder} className="space-y-4">
-          {ticketTypes.map((tt) => {
+
+          {/* Multi-day: өдөр сонгогч */}
+          {isMultiDay && (
+            <div className="space-y-2">
+              <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-white/40">
+                Өдөр сонгох
+              </p>
+              <div className="grid gap-2">
+                {ticketTypes.map((tt) => {
+                  const remaining = tt.quantityTotal - tt.quantitySold;
+                  const isSoldOut = remaining <= 0;
+                  const isSelected = selectedDay === tt.id;
+
+                  return (
+                    <button
+                      key={tt.id}
+                      type="button"
+                      disabled={isSoldOut}
+                      onClick={() => {
+                        setSelectedDay(tt.id);
+                        setQuantities({});
+                        setSelectedSeats({});
+                        setExpandedSeatMap(null);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left transition ${
+                        isSoldOut
+                          ? "cursor-not-allowed opacity-40 bg-white/[0.02]"
+                          : isSelected
+                            ? "bg-[#ff7224]/15 ring-1 ring-[#ff7224]/50"
+                            : "bg-white/[0.03] hover:bg-white/[0.06]"
+                      }`}
+                    >
+                      <div>
+                        <p className={`text-sm font-semibold ${isSelected ? "text-[#ff8b46]" : "text-white"}`}>
+                          {tt.startsAt ? formatDayDate(tt.startsAt) : tt.name}
+                        </p>
+                        {tt.startsAt && tt.endsAt && (
+                          <p className="mt-0.5 text-xs text-white/40">
+                            {formatDayTime(tt.startsAt, tt.endsAt)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {isSoldOut ? (
+                          <span className="text-xs text-white/30">Дууссан</span>
+                        ) : (
+                          <span className="text-xs text-white/40">{remaining} үлдсэн</span>
+                        )}
+                        <div className={`h-4 w-4 rounded-full border-2 transition ${
+                          isSelected ? "border-[#ff7224] bg-[#ff7224]" : "border-white/20"
+                        }`}>
+                          {isSelected && (
+                            <svg viewBox="0 0 24 24" className="h-full w-full p-0.5 text-white" fill="none" stroke="currentColor" strokeWidth="3">
+                              <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Ticket type cards */}
+          {activeTicketTypes.map((tt) => {
             const remaining = tt.quantityTotal - tt.quantitySold;
             const isSoldOut = remaining <= 0;
             const qty = quantities[tt.id] ?? 0;
@@ -188,7 +285,19 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
 
             return (
               <div key={tt.id} className={`rounded-xl p-4 transition-colors sm:p-5 ${isSoldOut ? "opacity-40" : "bg-white/[0.03]"}`}>
-                <p className="text-base font-semibold text-white">{tt.name}</p>
+                {!isMultiDay && (
+                  <p className="text-base font-semibold text-white">{tt.name}</p>
+                )}
+                {isMultiDay && tt.startsAt && (
+                  <p className="text-sm font-semibold text-white">
+                    {formatDayDate(tt.startsAt)}
+                    {tt.endsAt && (
+                      <span className="ml-2 text-xs font-normal text-white/40">
+                        {formatDayTime(tt.startsAt, tt.endsAt)}
+                      </span>
+                    )}
+                  </p>
+                )}
                 {tt.description && <p className="mt-1 text-xs text-white/40">{tt.description}</p>}
 
                 <div className="mt-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
@@ -225,7 +334,6 @@ export function OrderPanel({ currency, salesEndsAt, ticketTypes, className }: Pr
                   )}
                 </div>
 
-                {/* Суудлын зураглал */}
                 {tt.hasSeatMap && isExpanded && (
                   <div className="mt-4 overflow-hidden rounded-xl bg-white/[0.02] p-4">
                     {seatLoading[tt.id] ? (

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 type RelatedImage = { type: string; title: string; url: string };
 
@@ -54,6 +55,94 @@ function toIso(value: string): string {
   return new Date(value).toISOString();
 }
 
+function ImageUploadSlot({
+  value,
+  onChange,
+  label,
+  aspect = "16/6",
+}: {
+  value: string | null;
+  onChange: (url: string) => void;
+  label: string;
+  aspect?: string;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const ref = useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setUploading(true);
+
+    try {
+      const form = new FormData();
+      form.set("file", file);
+
+      const res = await fetch("/api/uploads", { method: "POST", body: form });
+      const data = (await res.json()) as { url?: string; error?: string };
+
+      if (!res.ok || !data.url) {
+        setError(data.error ?? "Upload амжилтгүй боллоо.");
+      } else {
+        onChange(data.url);
+      }
+    } catch {
+      setError("Сүлжээний алдаа. Дахин оролдоно уу.");
+    } finally {
+      setUploading(false);
+      if (ref.current) ref.current.value = "";
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className={labelClass}>{label}</span>
+      <input ref={ref} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFile} />
+      <button
+        type="button"
+        onClick={() => ref.current?.click()}
+        disabled={uploading}
+        className="relative w-full overflow-hidden rounded-xl disabled:cursor-not-allowed"
+        style={{ aspectRatio: aspect }}
+      >
+        {value ? (
+          <Image src={value} alt={label} fill className="object-cover" sizes="100vw" />
+        ) : (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-white/[0.04] text-white/30 transition hover:bg-white/[0.07]">
+            {uploading ? (
+              <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round" />
+                <polyline points="17 8 12 3 7 8" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="12" y1="3" x2="12" y2="15" strokeLinecap="round" />
+              </svg>
+            )}
+            <span className="text-[0.7rem] font-semibold">
+              {uploading ? "Байршуулж байна..." : "Зураг оруулах"}
+            </span>
+          </div>
+        )}
+        {value && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition hover:opacity-100">
+            <span className="text-xs font-semibold text-white">
+              {uploading ? "Байршуулж байна..." : "Солих"}
+            </span>
+          </div>
+        )}
+      </button>
+      {error && (
+        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">{error}</p>
+      )}
+    </div>
+  );
+}
+
 export function OrganizerEventEditForm({ event, categories }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -63,11 +152,16 @@ export function OrganizerEventEditForm({ event, categories }: Props) {
   } | null>(null);
   const [useCustomVenue, setUseCustomVenue] = useState(false);
 
+  const [imageUrl, setImageUrl] = useState<string | null>(event.imageUrl);
+  const [cardImageUrl, setCardImageUrl] = useState<string | null>(event.cardImageUrl);
+  const [galleryImages, setGalleryImages] = useState<[string | null, string | null]>([
+    event.relatedImages[0]?.url ?? null,
+    event.relatedImages[1]?.url ?? null,
+  ]);
+
   const [values, setValues] = useState({
     categoryId: event.categoryId,
     title: event.title,
-    imageUrl: event.imageUrl ?? "",
-    cardImageUrl: event.cardImageUrl ?? "",
     summary: event.summary ?? "",
     description: event.description ?? "",
     startsAt: toLocalDatetime(event.startsAt),
@@ -96,17 +190,30 @@ export function OrganizerEventEditForm({ event, categories }: Props) {
     setValues((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
+  function setGalleryImage(i: 0 | 1, url: string) {
+    setGalleryImages((prev) => {
+      const next: [string | null, string | null] = [...prev] as [string | null, string | null];
+      next[i] = url;
+      return next;
+    });
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFeedback(null);
 
     startTransition(async () => {
       try {
+        const relatedImages = galleryImages
+          .filter(Boolean)
+          .map((url, i) => ({ type: "gallery", title: `Image ${i + 2}`, url: url! }));
+
         const payload: Record<string, unknown> = {
           categoryId: values.categoryId,
           title: values.title,
-          imageUrl: values.imageUrl || null,
-          cardImageUrl: values.cardImageUrl || null,
+          imageUrl: imageUrl || null,
+          cardImageUrl: cardImageUrl || null,
+          relatedImages: relatedImages.length ? relatedImages : [],
           summary: values.summary,
           description: values.description,
           startsAt: toIso(values.startsAt),
@@ -240,29 +347,37 @@ export function OrganizerEventEditForm({ event, categories }: Props) {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="imageUrl" className={labelClass}>Image URL</label>
-            <input
-              id="imageUrl"
-              name="imageUrl"
-              type="url"
-              value={values.imageUrl}
-              onChange={handleChange}
-              placeholder="https://..."
-              className={inputClass}
+        {/* Images */}
+        <div className="space-y-3">
+          <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#ff7224]">
+            Images
+          </p>
+          <ImageUploadSlot
+            value={imageUrl}
+            onChange={setImageUrl}
+            label="Cover image (main)"
+            aspect="16/6"
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ImageUploadSlot
+              value={cardImageUrl}
+              onChange={setCardImageUrl}
+              label="Card image"
+              aspect="4/3"
+            />
+            <ImageUploadSlot
+              value={galleryImages[0]}
+              onChange={(url) => setGalleryImage(0, url)}
+              label="Gallery image 1"
+              aspect="4/3"
             />
           </div>
-          <div>
-            <label htmlFor="cardImageUrl" className={labelClass}>Card Image URL</label>
-            <input
-              id="cardImageUrl"
-              name="cardImageUrl"
-              type="url"
-              value={values.cardImageUrl}
-              onChange={handleChange}
-              placeholder="https://..."
-              className={inputClass}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ImageUploadSlot
+              value={galleryImages[1]}
+              onChange={(url) => setGalleryImage(1, url)}
+              label="Gallery image 2"
+              aspect="4/3"
             />
           </div>
         </div>
