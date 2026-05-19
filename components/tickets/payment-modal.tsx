@@ -146,12 +146,8 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-4">
-      <div className="w-full max-w-sm rounded-t-3xl sm:rounded-2xl bg-[#0d1017] shadow-2xl">
-        {/* Mobile drag handle */}
-        <div className="flex justify-center pt-3 sm:hidden">
-          <div className="h-1 w-10 rounded-full bg-white/20" />
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm rounded-2xl bg-[#0d1017] shadow-2xl">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
@@ -187,10 +183,18 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
         </div>
 
         {/* Body */}
-        <div className="p-5 pb-10">
+        <div className="p-5 pb-6">
           {/* Method selection */}
           {step === "select" && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-4">
+              {/* Total amount */}
+              <div className="rounded-xl bg-white/[0.05] px-4 py-3 text-center">
+                <p className="text-[0.65rem] text-white/40 uppercase tracking-widest">Нийт төлөх дүн</p>
+                <p className="mt-1 text-2xl font-bold text-white">{totalPrice}</p>
+                <p className="mt-0.5 text-xs text-white/35">{totalQty} тасалбар</p>
+              </div>
+              <p className="text-xs text-white/40 text-center">Төлбөрийн хэрэгслээ сонгоно уу</p>
+              <div className="grid grid-cols-2 gap-3">
               {METHODS.map((m) => (
                 <button
                   key={m.id}
@@ -202,6 +206,7 @@ export function PaymentModal({ totalPrice, totalQty, onClose, onConfirm, onSucce
                   <span className="text-sm font-bold">{m.label}</span>
                 </button>
               ))}
+              </div>
             </div>
           )}
 
