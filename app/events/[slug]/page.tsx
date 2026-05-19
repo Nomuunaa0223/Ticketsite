@@ -85,16 +85,29 @@ export default async function EventDetailPage({ params }: Props) {
             />
           </div>
 
-          <div className="grid gap-6 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,27rem)] lg:p-6">
-            <div className="grid gap-6">
-              <div className="rounded-[1rem] bg-white/[0.03] p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]">
-                <h1 className="max-w-3xl font-goldman text-3xl font-bold leading-tight text-white sm:text-5xl">
+          <div className="grid gap-4 p-3 sm:gap-6 sm:p-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,27rem)] lg:p-6">
+
+            {/* Order panel — mobile дээр дээр, desktop дээр баруун талд */}
+            <div className="order-first lg:order-last lg:sticky lg:top-24 lg:self-start">
+              <OrderPanel
+                eventId={event.id}
+                currency={event.currency}
+                salesEndsAt={event.saleEndsAt.toISOString()}
+                ticketTypes={orderTicketTypes}
+                className="h-fit"
+              />
+            </div>
+
+            {/* Event info — mobile дээр доор, desktop дээр зүүн талд */}
+            <div className="order-last grid gap-4 sm:gap-6 lg:order-first">
+              <div className="rounded-2xl bg-white/[0.03] p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)] sm:p-5">
+                <h1 className="font-goldman text-2xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl">
                   {event.title}
                 </h1>
-                <p className="mt-4 max-w-3xl text-sm leading-7 text-white/74 sm:text-base">
+                <p className="mt-3 text-sm leading-7 text-white/70 sm:mt-4 sm:text-base">
                   {event.summary}
                 </p>
-                <div className="mt-5 flex flex-wrap gap-x-5 gap-y-3 text-[0.75rem] text-white/70 sm:text-sm">
+                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-white/60 sm:gap-x-5 sm:gap-y-3 sm:text-sm">
                   <div className="inline-flex items-center gap-2">
                     <EventMetaIcon kind="calendar" />
                     <span>{formatDateTime(event.startsAt)}</span>
@@ -110,32 +123,29 @@ export default async function EventDetailPage({ params }: Props) {
                 </div>
               </div>
 
-              <div className="rounded-[1rem] bg-white/[0.03] p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]">
+              <div className="rounded-2xl bg-white/[0.03] p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)] sm:p-5">
                 <p className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#ff8b46]">
                   About the experience
                 </p>
-                <p className="mt-4 text-sm leading-7 text-white/72 sm:text-[0.96rem]">
+                <p className="mt-3 text-sm leading-7 text-white/70 sm:mt-4 sm:text-[0.96rem]">
                   {event.description}
                 </p>
               </div>
 
               {galleryImages.length > 0 && (
-                <div className="rounded-[1rem] bg-white/[0.03] p-5 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)]">
-                  <p className="mb-4 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#ff8b46]">
+                <div className="rounded-2xl bg-white/[0.03] p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.03)] sm:p-5">
+                  <p className="mb-3 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#ff8b46]">
                     Photos
                   </p>
-                  <div className={`grid gap-3 ${galleryImages.length === 1 ? "" : "sm:grid-cols-2"}`}>
+                  <div className={`grid gap-2 sm:gap-3 ${galleryImages.length === 1 ? "" : "grid-cols-2"}`}>
                     {galleryImages.map((img, i) => (
-                      <div
-                        key={i}
-                        className="relative h-36 overflow-hidden rounded-xl sm:h-44"
-                      >
+                      <div key={i} className="relative h-28 overflow-hidden rounded-xl sm:h-44">
                         <Image
                           src={img.url}
                           alt={img.title ?? `Photo ${i + 1}`}
                           fill
                           className="object-cover transition duration-500 hover:scale-105"
-                          sizes="(max-width: 640px) 100vw, 50vw"
+                          sizes="(max-width: 640px) 50vw, 33vw"
                         />
                       </div>
                     ))}
@@ -143,11 +153,11 @@ export default async function EventDetailPage({ params }: Props) {
                 </div>
               )}
 
-              <div className="event-detail-shell rounded-[1rem] p-5">
+              <div className="event-detail-shell rounded-2xl p-4 sm:p-5">
                 <p className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-[#ff8b46]">
                   Venue Preview
                 </p>
-                <div className="mt-4">
+                <div className="mt-3 sm:mt-4">
                   <VenueMapPreview
                     name={event.venue.name}
                     latitude={event.venue.latitude}
@@ -155,18 +165,8 @@ export default async function EventDetailPage({ params }: Props) {
                   />
                 </div>
               </div>
-
             </div>
 
-            <div className="lg:sticky lg:top-24 lg:self-start">
-              <OrderPanel
-                eventId={event.id}
-                currency={event.currency}
-                salesEndsAt={event.saleEndsAt.toISOString()}
-                ticketTypes={orderTicketTypes}
-                className="h-fit"
-              />
-            </div>
           </div>
         </div>
       </div>

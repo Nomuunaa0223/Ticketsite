@@ -251,13 +251,13 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
   }
 
   return (
-    <div className={`rounded-2xl bg-[#0d1017] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.4)] sm:p-7 ${className ?? ""}`}>
+    <div className={`rounded-2xl bg-[#0d1017] p-3 shadow-[0_24px_60px_rgba(0,0,0,0.4)] sm:p-6 ${className ?? ""}`}>
 
       {/* Тоолуур */}
       {!isSaleEnded && (
-        <div className="mb-6 rounded-xl bg-white/[0.04] px-5 py-4">
-          <p className="text-sm text-white/40">Тасалбар зарагдаж дуусахад:</p>
-          <p className="mt-1.5 text-lg font-bold text-white" suppressHydrationWarning>
+        <div className="mb-4 rounded-xl bg-white/[0.04] px-4 py-3 sm:mb-6 sm:px-5 sm:py-4">
+          <p className="text-xs text-white/40 sm:text-sm">Тасалбар зарагдаж дуусахад:</p>
+          <p className="mt-1 text-base font-bold text-white sm:mt-1.5 sm:text-lg" suppressHydrationWarning>
             {ready ? (
               <>
                 {days > 0 && <span>{days} өдөр </span>}
@@ -364,9 +364,9 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
             const isExpanded = expandedSeatMap === tt.id;
 
             return (
-              <div key={tt.id} className={`rounded-xl p-4 transition-colors sm:p-5 ${isSoldOut ? "opacity-40" : "bg-white/[0.03]"}`}>
+              <div key={tt.id} className={`rounded-xl p-3 transition-colors sm:p-5 ${isSoldOut ? "opacity-40" : "bg-white/[0.03]"}`}>
                 {!isMultiDay && (
-                  <p className="text-base font-semibold text-white">{tt.name}</p>
+                  <p className="text-sm font-semibold text-white sm:text-base">{tt.name}</p>
                 )}
                 {isMultiDay && tt.startsAt && (
                   <p className="text-sm font-semibold text-white">
@@ -380,8 +380,8 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
                 )}
                 {tt.description && <p className="mt-1 text-xs text-white/40">{tt.description}</p>}
 
-                <div className="mt-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-                  <p className="break-words text-lg font-bold text-white">{formatPrice(tt.price, currency)}</p>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <p className="text-base font-bold text-white sm:text-lg">{formatPrice(tt.price, currency)}</p>
 
                   {isSoldOut ? (
                     <p className="text-sm text-white/30">Дууссан</p>
@@ -389,7 +389,7 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
                     <button
                       type="button"
                       onClick={() => handleToggleSeatMap(tt.id)}
-                      className="flex items-center gap-2 rounded-xl bg-white/[0.07] px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/[0.12]"
+                      className="flex items-center gap-2 rounded-xl bg-white/[0.07] px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/[0.12]"
                     >
                       <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
                         <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -400,15 +400,15 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
                       {isExpanded ? "Хаах" : seats.length > 0 ? `${seats.length} суудал сонгосон` : "Суудал сонгох"}
                     </button>
                   ) : (
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       <button type="button" onClick={() => setQty(tt.id, Math.max(0, qty - 1))}
-                        className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.08] text-white transition hover:bg-white/[0.14]">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14" strokeLinecap="round" /></svg>
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.08] text-white transition hover:bg-white/[0.14] sm:h-10 sm:w-10">
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14" strokeLinecap="round" /></svg>
                       </button>
-                      <span className="w-6 text-center text-base font-bold text-white">{qty}</span>
+                      <span className="w-5 text-center text-sm font-bold text-white sm:w-6 sm:text-base">{qty}</span>
                       <button type="button" onClick={() => setQty(tt.id, Math.min(maxQty, qty + 1))}
-                        className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.08] text-white transition hover:bg-white/[0.14]">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.08] text-white transition hover:bg-white/[0.14] sm:h-10 sm:w-10">
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" strokeLinecap="round" /></svg>
                       </button>
                     </div>
                   )}
