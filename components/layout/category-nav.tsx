@@ -41,7 +41,7 @@ export function CategoryNav({ className, activeSlug }: Props) {
     >
       <Link
         href="/events"
-        className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+        className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:py-2 sm:text-sm ${
           !currentSlug
             ? "bg-[#ff7224] text-white"
             : "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white"
@@ -53,7 +53,7 @@ export function CategoryNav({ className, activeSlug }: Props) {
         <Link
           key={cat.slug}
           href={`/events#${cat.slug}`}
-          className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:py-2 sm:text-sm ${
             currentSlug === cat.slug
               ? "bg-[#ff7224] text-white"
               : "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white"
