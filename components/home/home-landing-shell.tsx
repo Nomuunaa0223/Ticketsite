@@ -35,7 +35,7 @@ type Props = {
 };
 
 export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomingWeekEvents, resaleListings }: Props) {
-  const { t } = useLang();
+  const { lang, t } = useLang();
 
   const categoryTiles = [
     { label: t("catSports"), slug: "sports", icon: "sports" as const },
@@ -159,11 +159,11 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
           <div className="mx-auto max-w-7xl">
             <div className="week-events-header">
               <div className="week-events-header__title-wrap">
-                <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#ff7224]">Хоёрдогч зах зээл</p>
-                <h2 className="week-events-header__title font-goldman">Resale Тасалбарууд</h2>
+                <p className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-[#ff7224]">{t("resaleEyebrow")}</p>
+                <h2 className="week-events-header__title font-goldman">{t("resaleTitle")}</h2>
               </div>
               <Link href="/login" className="week-events-header__cta font-bjcree text-[#ff7224] hover:text-[#ff9050]">
-                Бүгдийг харах →
+                {t("viewAll")} →
               </Link>
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -171,8 +171,9 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
                 const thumb = listing.event.cardImageUrl ?? listing.event.imageUrl ?? "/uploads/1.jpg";
                 const total = toNumber(listing.askPrice) + toNumber(listing.buyerFee);
                 const d = new Date(listing.event.startsAt);
-                const datePrimary = new Intl.DateTimeFormat("en-US", { month: "short", day: "2-digit" }).format(d).toUpperCase();
-                const dateSecondary = new Intl.DateTimeFormat("en-US", { weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
+                const dateLocale = lang === "mn" ? "mn-MN" : "en-US";
+                const datePrimary = new Intl.DateTimeFormat(dateLocale, { month: "short", day: "2-digit" }).format(d).toUpperCase();
+                const dateSecondary = new Intl.DateTimeFormat(dateLocale, { weekday: "long", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
                 const formattedPrice = listing.event.currency === "MNT"
                   ? `${new Intl.NumberFormat("mn-MN", { maximumFractionDigits: 0 }).format(total)}₮`
                   : formatCurrency(total, listing.event.currency);
@@ -212,7 +213,7 @@ export function HomeLandingShell({ highlightEvents, trendingGalleryItems, upcomi
                       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.07] pt-3">
                         <p className="font-goldman text-lg font-bold text-white">{formattedPrice}</p>
                         <span className="rounded-xl bg-[#ff7224] px-4 py-2.5 text-xs font-bold text-white shadow-[0_6px_18px_rgba(255,114,36,0.28)] transition-all duration-200 group-hover:bg-[#ff8442] group-hover:shadow-[0_10px_26px_rgba(255,114,36,0.42)]">
-                          Авах
+                          {t("resaleBuyCta")}
                         </span>
                       </div>
                     </div>
