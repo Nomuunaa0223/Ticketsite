@@ -8,6 +8,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
 enum Role {
   USER
   ORGANIZER
@@ -43,6 +47,12 @@ enum EventStatus {
   REJECTED
   CANCELLED
   COMPLETED
+}
+
+enum EventVisibility {
+  PUBLIC
+  PRIVATE
+  UNLISTED
 }
 
 enum OrderStatus {
@@ -82,8 +92,24 @@ enum AuditActorType {
 
 enum SeatStatus {
   AVAILABLE
-  RESERVED
+  RESERVED // temporary hold during checkout
   SOLD
+}
+
+// Tier per seat or ticket type — drives pricing + UI color
+enum SeatCategoryType {
+  GA        // General Admission (no assigned seat)
+  STANDARD
+  PREMIUM
+  VIP
+  ACCESSIBLE // wheelchair / reduced-mobility
+}
+
+enum AiDraftStatus {
+  GENERATING
+  READY
+  PUBLISHED
+  DISCARDED
 }
 
 enum NotificationType {
@@ -96,6 +122,7 @@ enum NotificationType {
   EVENT_REJECTED
   NEW_EVENT
   TICKET_SOLD
+  SEAT_RESERVATION_EXPIRING
 }
 
 enum NotificationChannel {
@@ -103,43 +130,54 @@ enum NotificationChannel {
   EMAIL
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────────────────────────────────────────
+
 model User {
-  id                        Int                      @id @default(autoincrement())
-  email                     String                   @unique
-  passwordHash              String?
-  fullName                  String
-  phone                     String?
-  avatarUrl                 String?
-  role                      Role                     @default(USER)
-  status                    UserStatus               @default(ACTIVE)
-  organizerId               Int?
-  organizer                 Organizer?               @relation(fields: [organizerId], references: [id])
-  emailVerifiedAt           DateTime?
-  organizerProfile          OrganizerProfile?
-  approvedOrganizerProfiles OrganizerProfile[]       @relation("OrganizerApprovedBy")
-  reviewedOrganizerApplications OrganizerApplication[] @relation("OrganizerApplicationReviewedBy")
-  passwordSetupTokens       PasswordSetupToken[]
-  createdEvents             Event[]                  @relation("EventCreator")
-  reviewedEvents            Event[]                  @relation("EventReviewer")
-  orders                    Order[]
-  payments                  Payment[]
-  ownedTickets              Ticket[]                 @relation("TicketCurrentOwner")
-  initiatedCheckIns         CheckIn[]                @relation("CheckInActor")
-  resaleListingsForSale     ResaleListing[]          @relation("ResaleSeller")
-  purchasedResales          ResaleListing[]          @relation("ResaleBuyer")
-  ownershipTransfersFrom    TicketOwnershipHistory[] @relation("OwnershipFromUser")
-  ownershipTransfersTo      TicketOwnershipHistory[] @relation("OwnershipToUser")
-  auditLogs                 AuditLog[]               @relation("AuditActor")
-  notifications             Notification[]
-  createdAt                 DateTime                 @default(now())
-  updatedAt                 DateTime                 @updatedAt
+  id                            Int                      @id @default(autoincrement())
+  email                         String                   @unique
+  passwordHash                  String?
+  fullName                      String
+  phone                         String?
+  avatarUrl                     String?
+  role                          Role                     @default(USER)
+  status                        UserStatus               @default(ACTIVE)
+  organizerId                   Int?
+  emailVerifiedAt               DateTime?
+  organizer                     Organizer?               @relation(fields: [organizerId], references: [id])
+  organizerProfile              OrganizerProfile?
+  approvedOrganizerProfiles     OrganizerProfile[]       @relation("OrganizerApprovedBy")
+  reviewedOrganizerApplications OrganizerApplication[]   @relation("OrganizerApplicationReviewedBy")
+  passwordSetupTokens           PasswordSetupToken[]
+  createdEvents                 Event[]                  @relation("EventCreator")
+  reviewedEvents                Event[]                  @relation("EventReviewer")
+  orders                        Order[]
+  payments                      Payment[]
+  ownedTickets                  Ticket[]                 @relation("TicketCurrentOwner")
+  initiatedCheckIns             CheckIn[]                @relation("CheckInActor")
+  resaleListingsForSale         ResaleListing[]          @relation("ResaleSeller")
+  purchasedResales              ResaleListing[]          @relation("ResaleBuyer")
+  ownershipTransfersFrom        TicketOwnershipHistory[] @relation("OwnershipFromUser")
+  ownershipTransfersTo          TicketOwnershipHistory[] @relation("OwnershipToUser")
+  auditLogs                     AuditLog[]               @relation("AuditActor")
+  notifications                 Notification[]
+  seatReservations              SeatReservation[]
+  aiDrafts                      AiEventDraft[]
+  createdAt                     DateTime                 @default(now())
+  updatedAt                     DateTime                 @updatedAt
 
   @@index([role, status])
   @@index([organizerId])
+  @@index([email])
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ORGANIZER
+// ─────────────────────────────────────────────────────────────────────────────
+
 model OrganizerApplication {
-  id                Int                         @id @default(autoincrement())
+  id                Int                        @id @default(autoincrement())
   companyName       String
   contactName       String
   email             String
@@ -147,12 +185,12 @@ model OrganizerApplication {
   description       String
   websiteUrl        String?
   socialUrl         String?
-  status            OrganizerApplicationStatus  @default(PENDING)
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
+  status            OrganizerApplicationStatus @default(PENDING)
   reviewedAt        DateTime?
   reviewedByAdminId Int?
-  reviewedByAdmin   User?                       @relation("OrganizerApplicationReviewedBy", fields: [reviewedByAdminId], references: [id])
+  reviewedByAdmin   User?                      @relation("OrganizerApplicationReviewedBy", fields: [reviewedByAdminId], references: [id])
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
 
   @@index([status, createdAt])
   @@index([email])
@@ -172,6 +210,32 @@ model Organizer {
   @@index([contactEmail])
 }
 
+model OrganizerProfile {
+  id               Int             @id @default(autoincrement())
+  userId           Int             @unique
+  companyName      String
+  slug             String          @unique
+  description      String?
+  websiteUrl       String?
+  registrationCode String?
+  logoUrl          String?
+  bannerUrl        String?
+  status           OrganizerStatus @default(PENDING)
+  approvedAt       DateTime?
+  approvedById     Int?
+  // denormalized counters — updated on order completion for fast dashboard queries
+  totalRevenue     Decimal         @default(0) @db.Decimal(12, 2)
+  totalTicketsSold Int             @default(0)
+  user             User            @relation(fields: [userId], references: [id])
+  approvedBy       User?           @relation("OrganizerApprovedBy", fields: [approvedById], references: [id])
+  events           Event[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([status])
+  @@index([slug])
+}
+
 model PasswordSetupToken {
   id        Int       @id @default(autoincrement())
   userId    Int
@@ -184,25 +248,9 @@ model PasswordSetupToken {
   @@index([userId, usedAt, expiresAt])
 }
 
-model OrganizerProfile {
-  id           Int             @id @default(autoincrement())
-  userId       Int             @unique
-  companyName  String
-  slug         String          @unique
-  description  String?
-  websiteUrl   String?
-  registrationCode String?
-  status       OrganizerStatus @default(PENDING)
-  approvedAt   DateTime?
-  approvedById Int?
-  user         User            @relation(fields: [userId], references: [id])
-  approvedBy   User?           @relation("OrganizerApprovedBy", fields: [approvedById], references: [id])
-  events       Event[]
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-
-  @@index([status])
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// CATEGORIES
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Category {
   id            Int           @id @default(autoincrement())
@@ -233,22 +281,85 @@ model Subcategory {
   @@index([categoryId, isActive])
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// VENUES & SEAT MAP STRUCTURE
+// ─────────────────────────────────────────────────────────────────────────────
+
 model Venue {
-  id         Int      @id @default(autoincrement())
-  name       String
-  city       String
-  country    String
-  address    String
-  timezone   String
-  capacity   Int
-  latitude   Float?
-  longitude  Float?
-  events     Event[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          Int            @id @default(autoincrement())
+  name        String
+  city        String
+  country     String
+  address     String
+  timezone    String         @default("Asia/Ulaanbaatar")
+  capacity    Int
+  latitude    Float?
+  longitude   Float?
+  mapImageUrl String?        // venue floor plan / overhead image
+  events      Event[]
+  seatMaps    VenueSeatMap[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@index([city, country])
 }
+
+// Reusable seat map template for a venue.
+// One venue can have multiple layouts (full capacity, half, standing, etc.)
+model VenueSeatMap {
+  id          Int            @id @default(autoincrement())
+  venueId     Int
+  name        String         // "Full Capacity Layout", "Standing + VIP"
+  description String?
+  svgTemplate String?        // base SVG coordinate grid for UI rendering
+  isDefault   Boolean        @default(false)
+  venue       Venue          @relation(fields: [venueId], references: [id])
+  sections    VenueSection[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([venueId, isDefault])
+}
+
+// Named zone within a venue map: Floor A, Upper Balcony, VIP Box, Pit, etc.
+model VenueSection {
+  id          Int            @id @default(autoincrement())
+  seatMapId   Int
+  name        String         // "Floor", "Upper Balcony", "VIP Box"
+  shortCode   String         // "FL", "UB", "VIP" — used in seat labels
+  color       String?        // hex for UI rendering, e.g. "#FF7224"
+  capacity    Int
+  description String?
+  sortOrder   Int            @default(0)
+  svgPath     String?        // SVG path data for this section's polygon on the map
+  seatMap     VenueSeatMap   @relation(fields: [seatMapId], references: [id])
+  rows        SeatRow[]
+  seats       Seat[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([seatMapId, shortCode])
+  @@index([seatMapId, sortOrder])
+}
+
+// Individual row within a section: "A", "B", "Row 1", "Row 12"
+model SeatRow {
+  id        Int          @id @default(autoincrement())
+  sectionId Int
+  label     String       // "A", "B", "1", "2"
+  sortOrder Int          @default(0)
+  section   VenueSection @relation(fields: [sectionId], references: [id])
+  seats     Seat[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([sectionId, label])
+  @@index([sectionId, sortOrder])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EVENTS
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Event {
   id             Int             @id @default(autoincrement())
@@ -270,11 +381,15 @@ model Event {
   saleStartsAt   DateTime
   saleEndsAt     DateTime
   status         EventStatus     @default(DRAFT)
+  visibility     EventVisibility @default(PUBLIC)
   reviewNotes    String?
   publishedAt    DateTime?
-  isTrending     Boolean          @default(false)
+  isTrending     Boolean         @default(false)
   trendingOrder  Int?
-  currency       String          @default("USD")
+  isSmallEvent   Boolean         @default(false)  // enforces 1 ticket per user at app level
+  aiGenerated    Boolean         @default(false)
+  aiDraftId      Int?            @unique
+  currency       String          @default("MNT")
   platformFeeBps Int             @default(900)
   serviceFeeBps  Int             @default(350)
   transparentFee Boolean         @default(true)
@@ -284,6 +399,7 @@ model Event {
   category       Category         @relation(fields: [categoryId], references: [id])
   subcategory    Subcategory?     @relation(fields: [subcategoryId], references: [id])
   venue          Venue            @relation(fields: [venueId], references: [id])
+  aiDraft        AiEventDraft?    @relation(fields: [aiDraftId], references: [id])
   ticketTypes    TicketType[]
   orders         Order[]
   tickets        Ticket[]
@@ -293,35 +409,100 @@ model Event {
   updatedAt      DateTime         @updatedAt
 
   @@index([status, startsAt])
+  @@index([visibility, status, startsAt])
   @@index([isTrending, trendingOrder])
   @@index([organizerId, status])
   @@index([categoryId, startsAt])
+  @@index([venueId, startsAt])
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TICKET TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+
 model TicketType {
-  id             Int             @id @default(autoincrement())
+  id             Int              @id @default(autoincrement())
   eventId        Int
   name           String
   description    String?
-  price          Decimal         @db.Decimal(10, 2)
+  price          Decimal          @db.Decimal(10, 2)
   quantityTotal  Int
-  quantitySold   Int             @default(0)
-  maxPerOrder    Int             @default(8)
-  resaleAllowed  Boolean         @default(true)
-  resalePriceCap Decimal?        @db.Decimal(10, 2)
-  hasSeatMap     Boolean         @default(false)
+  quantitySold   Int              @default(0)
+  maxPerOrder    Int              @default(8)
+  resaleAllowed  Boolean          @default(true)
+  resalePriceCap Decimal?         @db.Decimal(10, 2)
+  hasSeatMap     Boolean          @default(false)
+  seatCategory   SeatCategoryType @default(STANDARD)
+  sortOrder      Int              @default(0)
   startsAt       DateTime?
   endsAt         DateTime?
-  event          Event           @relation(fields: [eventId], references: [id])
+  event          Event            @relation(fields: [eventId], references: [id])
   orderItems     OrderItem[]
   tickets        Ticket[]
   seats          Seat[]
   resaleListings ResaleListing[]
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@index([eventId])
+  @@index([eventId, sortOrder])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEATS — enhanced for rich seat map UI
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Seat {
+  id           Int              @id @default(autoincrement())
+  ticketTypeId Int
+  sectionId    Int?             // optional link to VenueSection for rich maps
+  rowId        Int?             // optional link to SeatRow for rich maps
+  row          String           // row label: "A", "B", "1"
+  number       Int              // seat number within row
+  label        String           // display label: "A-12", "VIP-5", "Floor-3"
+  // Pixel coordinates for SVG/canvas rendering (origin = top-left of map)
+  xPos         Float?
+  yPos         Float?
+  rotation     Float?           // seat angle in degrees for angled sections
+  category     SeatCategoryType @default(STANDARD)
+  isAccessible Boolean          @default(false) // wheelchair / reduced-mobility
+  status       SeatStatus       @default(AVAILABLE)
+  color        String?          // per-seat color override (e.g. special seats)
+  ticketType   TicketType       @relation(fields: [ticketTypeId], references: [id])
+  section      VenueSection?    @relation(fields: [sectionId], references: [id])
+  seatRow      SeatRow?         @relation(fields: [rowId], references: [id])
+  ticket       Ticket?
+  reservation  SeatReservation?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@unique([ticketTypeId, row, number])
+  @@index([ticketTypeId, status])
+  @@index([sectionId, status])
+  @@index([status])
+}
+
+// Temporary seat hold while user is in checkout.
+// Prevents double-booking race conditions.
+// TTL: 15 minutes. Cleanup via cron or on seat fetch.
+model SeatReservation {
+  id        Int      @id @default(autoincrement())
+  seatId    Int      @unique
+  userId    Int
+  sessionId String   // device/browser session token for anonymous tracking
+  expiresAt DateTime
+  seat      Seat     @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])              // for cleanup jobs: DELETE WHERE expiresAt < NOW()
+  @@index([userId, expiresAt])
+  @@index([sessionId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORDERS & PAYMENTS
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Order {
   id         Int             @id @default(autoincrement())
@@ -332,7 +513,7 @@ model Order {
   buyerFee   Decimal         @db.Decimal(10, 2)
   sellerFee  Decimal         @default(0) @db.Decimal(10, 2)
   total      Decimal         @db.Decimal(10, 2)
-  currency   String          @default("USD")
+  currency   String          @default("MNT")
   user       User            @relation(fields: [userId], references: [id])
   event      Event           @relation(fields: [eventId], references: [id])
   items      OrderItem[]
@@ -344,6 +525,7 @@ model Order {
 
   @@index([userId, status])
   @@index([eventId, status])
+  @@index([userId, createdAt])
 }
 
 model OrderItem {
@@ -356,10 +538,13 @@ model OrderItem {
   lineBuyerFee  Decimal    @db.Decimal(10, 2)
   lineSellerFee Decimal    @default(0) @db.Decimal(10, 2)
   lineTotal     Decimal    @db.Decimal(10, 2)
-  order         Order      @relation(fields: [orderId], references: [id])
+  order         Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
   ticketType    TicketType @relation(fields: [ticketTypeId], references: [id])
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+
+  @@index([orderId])
+  @@index([ticketTypeId])
 }
 
 model Payment {
@@ -367,9 +552,11 @@ model Payment {
   orderId           Int           @unique
   userId            Int
   amount            Decimal       @db.Decimal(10, 2)
-  currency          String        @default("USD")
+  currency          String        @default("MNT")
+  // provider: "QPay" | "SocialPay" | "Alipay" | "LendMN" | "direct"
   provider          String
   providerReference String?
+  providerMetadata  Json?         // raw response from payment gateway
   status            PaymentStatus @default(PENDING)
   paidAt            DateTime?
   metadata          Json?
@@ -379,7 +566,13 @@ model Payment {
   updatedAt         DateTime      @updatedAt
 
   @@index([userId, status])
+  @@index([provider, status])
+  @@index([status, createdAt])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TICKETS
+// ─────────────────────────────────────────────────────────────────────────────
 
 model Ticket {
   id                 Int                      @id @default(autoincrement())
@@ -408,6 +601,8 @@ model Ticket {
 
   @@index([currentOwnerId, status])
   @@index([eventId, status])
+  @@index([qrToken])   // critical path: QR scan lookup must be < 5ms
+  @@index([orderId])
 }
 
 model CheckIn {
@@ -416,12 +611,19 @@ model CheckIn {
   eventId       Int
   checkedInById Int
   scannedAt     DateTime @default(now())
+  deviceId      String?  // scanner device ID for audit trail
+  notes         String?
   ticket        Ticket   @relation(fields: [ticketId], references: [id])
   event         Event    @relation(fields: [eventId], references: [id])
   checkedInBy   User     @relation("CheckInActor", fields: [checkedInById], references: [id])
 
   @@index([eventId, scannedAt])
+  @@index([checkedInById, scannedAt])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESALE MARKETPLACE
+// ─────────────────────────────────────────────────────────────────────────────
 
 model ResaleListing {
   id           Int          @id @default(autoincrement())
@@ -450,13 +652,19 @@ model ResaleListing {
   @@index([ticketId, status])
   @@index([eventId, status])
   @@index([sellerId, status])
+  @@index([status, expiresAt]) // expiry cleanup job
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OWNERSHIP HISTORY
+// ─────────────────────────────────────────────────────────────────────────────
 
 model TicketOwnershipHistory {
   id          Int      @id @default(autoincrement())
   ticketId    Int
   fromUserId  Int?
   toUserId    Int
+  // "PURCHASE" | "RESALE" | "TRANSFER" | "AI_GRANT" | "REFUND"
   acquiredVia String
   notes       String?
   createdAt   DateTime @default(now())
@@ -468,21 +676,40 @@ model TicketOwnershipHistory {
   @@index([toUserId, createdAt])
 }
 
-model Seat {
-  id           Int        @id @default(autoincrement())
-  ticketTypeId Int
-  row          String
-  number       Int
-  label        String
-  status       SeatStatus @default(AVAILABLE)
-  ticketType   TicketType @relation(fields: [ticketTypeId], references: [id])
-  ticket       Ticket?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+// ─────────────────────────────────────────────────────────────────────────────
+// AI EVENT DRAFTS
+// ─────────────────────────────────────────────────────────────────────────────
 
-  @@unique([ticketTypeId, row, number])
-  @@index([ticketTypeId, status])
+model AiEventDraft {
+  id                   Int           @id @default(autoincrement())
+  createdById          Int
+  organizerId          Int?
+  prompt               String        // original user prompt
+  status               AiDraftStatus @default(GENERATING)
+  generatedTitle       String?
+  generatedSummary     String?
+  generatedDescription String?
+  marketingCaption     String?       // short social media caption
+  suggestedPrice       Decimal?      @db.Decimal(10, 2)
+  estimatedAudience    Int?
+  suggestedCategory    String?
+  suggestedVenueName   String?
+  suggestedStartDate   DateTime?
+  rawResponse          Json?         // full LLM response for debugging / re-use
+  modelUsed            String?       // e.g. "claude-sonnet-4-6"
+  tokensUsed           Int?
+  createdBy            User          @relation(fields: [createdById], references: [id])
+  publishedEvent       Event?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([createdById, status])
+  @@index([status, createdAt])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT & NOTIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
 
 model AuditLog {
   id          Int            @id @default(autoincrement())
@@ -493,30 +720,33 @@ model AuditLog {
   entityId    Int
   description String?
   metadata    Json?
+  ipAddress   String?
+  userAgent   String?
   createdAt   DateTime       @default(now())
   actorUser   User?          @relation("AuditActor", fields: [actorUserId], references: [id])
 
   @@index([entityType, entityId, createdAt])
   @@index([actorUserId, createdAt])
+  @@index([action, createdAt])
 }
 
 model Notification {
-  id          Int                 @id @default(autoincrement())
-  userId      Int
-  type        NotificationType
-  channel     NotificationChannel @default(APP)
-  title       String
-  message     String
-  actionUrl   String?
-  eventId     Int?
-  ticketId    Int?
-  orderId     Int?
-  dedupeKey   String?             @unique
-  isRead      Boolean             @default(false)
-  readAt      DateTime?
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  user        User                @relation(fields: [userId], references: [id])
+  id        Int                 @id @default(autoincrement())
+  userId    Int
+  type      NotificationType
+  channel   NotificationChannel @default(APP)
+  title     String
+  message   String
+  actionUrl String?
+  eventId   Int?
+  ticketId  Int?
+  orderId   Int?
+  dedupeKey String?             @unique
+  isRead    Boolean             @default(false)
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  user      User                @relation(fields: [userId], references: [id])
 
   @@index([userId, isRead, createdAt])
   @@index([userId, type, createdAt])
