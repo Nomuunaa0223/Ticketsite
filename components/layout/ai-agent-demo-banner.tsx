@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 type EventDraftDetails = {
@@ -41,6 +41,7 @@ type Message = {
 
 export function AiAgentDemoBanner() {
   const pathname = usePathname();
+  const messageListRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [isAskingAgent, setIsAskingAgent] = useState(false);
@@ -58,6 +59,12 @@ export function AiAgentDemoBanner() {
   ]);
 
   const shouldHide = pathname === "/" || pathname === "/login";
+
+  useEffect(() => {
+    const messageList = messageListRef.current;
+    if (!messageList) return;
+    messageList.scrollTo({ top: messageList.scrollHeight, behavior: "smooth" });
+  }, [messages, isOpen]);
 
   const pageHint = useMemo(() => {
     if (pathname.startsWith("/events")) {
@@ -455,11 +462,11 @@ export function AiAgentDemoBanner() {
         : "Tixy Ai asuultand belen";
 
   return (
-    <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex items-end justify-end sm:bottom-8 sm:right-8">
-      <div className="pointer-events-auto flex flex-col items-end gap-4">
-        {isOpen ? (
-          <div className="w-[calc(100vw-2rem)] max-w-[380px] overflow-hidden rounded-[1.4rem] border border-white/15 bg-[#050505]/95 shadow-[0_24px_70px_rgba(0,0,0,0.58)] backdrop-blur-xl">
-            <div className="border-b border-white/10 bg-[#0b0b0b] px-5 py-4 shadow-[inset_0_-1px_0_rgba(250,232,154,0.08)]">
+    <>
+      {isOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-3 py-4 backdrop-blur-sm sm:px-6">
+          <div className="flex h-[min(760px,calc(100vh-2rem))] w-full max-w-[620px] flex-col overflow-hidden rounded-[1.2rem] border border-white/15 bg-[#050505]/95 shadow-[0_24px_90px_rgba(0,0,0,0.68)]">
+            <div className="shrink-0 border-b border-white/10 bg-[#0b0b0b] px-4 py-4 shadow-[inset_0_-1px_0_rgba(250,232,154,0.08)] sm:px-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex min-w-0 items-start gap-3">
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f6df8f]/30 bg-white p-1.5 shadow-[0_0_24px_rgba(246,223,143,0.18)]">
@@ -480,12 +487,12 @@ export function AiAgentDemoBanner() {
               </div>
             </div>
 
-            <div className="space-y-4 p-4">
-              <div className="max-h-[300px] space-y-3 overflow-y-auto pr-1">
+            <div className="flex min-h-0 flex-1 flex-col p-3 sm:p-4">
+              <div ref={messageListRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
                 {messages.map((message, index) => (
                   <div
                     key={`${message.role}-${index}`}
-                    className={`max-w-[88%] whitespace-pre-line rounded-[1.3rem] px-4 py-3 text-sm leading-7 ${
+                    className={`max-w-[92%] whitespace-pre-line break-words rounded-[1.1rem] px-4 py-3 text-sm leading-7 sm:max-w-[86%] ${
                       message.role === "assistant"
                         ? "border border-white/10 bg-white/[0.06] text-white"
                         : "ml-auto bg-white text-black"
@@ -507,7 +514,7 @@ export function AiAgentDemoBanner() {
                 ))}
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-3 border-t border-white/10 pt-4">
+              <form onSubmit={handleSubmit} className="mt-4 shrink-0 space-y-3 border-t border-white/10 pt-4">
                 {attachedImageUrl ? (
                   <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-2">
                     <img src={attachedImageUrl} alt="" className="h-12 w-16 rounded-xl object-cover" />
@@ -529,8 +536,8 @@ export function AiAgentDemoBanner() {
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
                   placeholder={isReviewingDraft ? "Uurchluh zuilee bich esvel 'uusge'..." : currentQuestionIndex !== null ? "Hariultaa bich..." : "Asuultaa bich..."}
-                  rows={3}
-                  className="w-full resize-none rounded-[1rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#f6df8f]/45"
+                  rows={2}
+                  className="max-h-28 w-full resize-none rounded-[1rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#f6df8f]/45"
                 />
 
                 <div className="flex flex-wrap items-center gap-2">
@@ -552,7 +559,7 @@ export function AiAgentDemoBanner() {
                   >
                     Location
                   </button>
-                  <p className="ml-auto text-xs text-white/45">{progressLabel}</p>
+                  <p className="ml-auto max-w-[12rem] truncate text-xs text-white/45">{progressLabel}</p>
                 </div>
 
                 <div className="flex items-center justify-end">
@@ -567,8 +574,11 @@ export function AiAgentDemoBanner() {
               </form>
             </div>
           </div>
-        ) : null}
+        </div>
+      ) : null}
 
+      <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex items-end justify-end sm:bottom-8 sm:right-8">
+        <div className="pointer-events-auto flex flex-col items-end gap-4">
         <button
           type="button"
           onClick={() => setIsOpen((current) => !current)}
@@ -583,7 +593,8 @@ export function AiAgentDemoBanner() {
           </span>
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
