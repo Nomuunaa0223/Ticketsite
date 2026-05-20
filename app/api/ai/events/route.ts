@@ -8,7 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slugs";
 
 const aiEventRequestSchema = z.object({
-  prompt: z.string().min(8).max(3000)
+  prompt: z.string().min(8).max(3000),
+  imageUrl: z.string().max(1000).optional()
 });
 
 type CategoryChoice = {
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
     const isOrganizerFlow = user.role === "ORGANIZER" && !!user.organizerProfile;
     const isCommunityFlow = user.role === "USER";
 
-    const { prompt } = aiEventRequestSchema.parse(await request.json());
+    const { prompt, imageUrl } = aiEventRequestSchema.parse(await request.json());
 
     const [categories, venues, agent] = await Promise.all([
       prisma.category.findMany({
@@ -105,6 +106,10 @@ export async function POST(request: Request) {
     }
 
     const eventDetails = parseStructuredEventPrompt(prompt);
+    const submittedImageUrl = normalizeSubmittedImageUrl(imageUrl);
+    if (submittedImageUrl) {
+      eventDetails.imageUrl = submittedImageUrl;
+    }
     const category = chooseCategory(eventDetails.category ?? prompt, categories);
     const venue = await getOrCreateVenueFromDetails(eventDetails, venues, isCommunityFlow);
     const draft = buildDraft(prompt, category, venue, isCommunityFlow, eventDetails);
@@ -328,6 +333,8 @@ export async function POST(request: Request) {
           startsAt: result.event.startsAt,
           category: result.event.category.name,
           venue: result.event.venue.name,
+          imageUrl: result.event.imageUrl,
+          cardImageUrl: result.event.cardImageUrl,
           editUrl: result.actionUrl,
           actionUrl: result.actionUrl,
           isSmallEvent: result.event.isSmallEvent
@@ -590,7 +597,7 @@ function estimatePrice(prompt: string, categorySlug: string, isSmallEvent: boole
     return 0;
   }
 
-  const priceMatch = prompt.match(/(\d{1,3}(?:,\d{3})+|\d{4,7})\s*(₮|mnt|tug| tugrug)?/i);
+  const priceMatch = prompt.match(/(\d{1,3}(?:,\d{3})+|\d{5,7})\s*(₮|mnt|tug| tugrug)?/i);
   if (priceMatch) {
     return Math.max(0, Number(priceMatch[1].replace(/,/g, "")));
   }
@@ -615,7 +622,11 @@ function parsePositiveInteger(value?: string) {
 function parseTicketPrice(value?: string) {
   if (!value) return undefined;
   if (isFreeText(value)) return 0;
-  return parsePositiveInteger(value);
+  const digits = value.replace(/,/g, "").match(/\d+/)?.[0];
+  if (!digits) return undefined;
+
+  const parsed = Number(digits);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
 function parseCoordinate(value?: string) {
@@ -634,6 +645,12 @@ function cleanExperienceNotes(value?: string) {
   const cleaned = cleanOptionalText(value);
   if (!cleaned || cleaned.toLowerCase() === "auto") return undefined;
   return cleaned;
+}
+
+function normalizeSubmittedImageUrl(value?: string) {
+  const cleaned = cleanOptionalText(value);
+  if (!cleaned) return undefined;
+  return /^(https?:\/\/|\/uploads\/)/i.test(cleaned) ? cleaned : undefined;
 }
 
 function isFreeText(value: string) {

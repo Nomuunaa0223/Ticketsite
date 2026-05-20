@@ -90,6 +90,7 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
   const [expandedSeatMap, setExpandedSeatMap] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [isSubmittingFreeOrder, setIsSubmittingFreeOrder] = useState(false);
   const [seatSessionId, setSeatSessionId] = useState("");
 
   const saleEnd = new Date(salesEndsAt);
@@ -220,11 +221,31 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
     })
     .filter((item) => item.quantity > 0);
 
-  function handleOrder(e: React.FormEvent) {
+  const orderTotalQty = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+  const orderTotalAmount = orderItems.reduce((sum, item) => {
+    const ticketType = ticketTypes.find((tt) => tt.id === item.ticketTypeId);
+    return sum + (ticketType ? ticketType.price * item.quantity : 0);
+  }, 0);
+  const selectedOrderIsFree = orderItems.length > 0 && orderTotalAmount === 0;
+  const activeTicketsAreFree = activeTicketTypes.length > 0 && activeTicketTypes.every((tt) => tt.price === 0);
+
+  async function handleOrder(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (orderItems.length === 0) {
       setError("Тасалбар сонгоно уу.");
+      return;
+    }
+    if (selectedOrderIsFree) {
+      setIsSubmittingFreeOrder(true);
+      try {
+        const orderId = await submitOrder();
+        handlePaymentSuccess(orderId);
+      } catch (orderError) {
+        setError(orderError instanceof Error ? orderError.message : "Захиалга үүсгэхэд алдаа гарлаа.");
+      } finally {
+        setIsSubmittingFreeOrder(false);
+      }
       return;
     }
     setPaymentOpen(true);
@@ -439,25 +460,21 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
 
           {/* Нийт дүн */}
           {orderItems.length > 0 && (() => {
-            const totalQty = orderItems.reduce((s, item) => s + item.quantity, 0);
-            const totalAmount = orderItems.reduce((s, item) => {
-              const tt = ticketTypes.find((t) => t.id === item.ticketTypeId);
-              return s + (tt ? tt.price * item.quantity : 0);
-            }, 0);
+            const totalQty = orderTotalQty;
             return (
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/[0.05] px-4 py-3">
                 <div>
                   <p className="text-[0.65rem] text-white/40">Нийт дүн</p>
-                  <p className="text-xl font-bold text-white">{formatPrice(totalAmount, currency)}</p>
+                  <p className="text-xl font-bold text-white">{formatPrice(orderTotalAmount, currency)}</p>
                 </div>
                 <p className="text-xs text-white/35">{totalQty} тасалбар</p>
               </div>
             );
           })()}
 
-          <button type="submit" disabled={orderItems.length === 0}
+          <button type="submit" disabled={orderItems.length === 0 || isSubmittingFreeOrder}
             className="w-full rounded-full bg-[#ff7224] py-4 text-base font-bold text-white transition hover:bg-[#e5641a] disabled:opacity-50">
-            Худалдан авах
+            {isSubmittingFreeOrder ? "Захиалж байна..." : selectedOrderIsFree || activeTicketsAreFree ? "Захиалах" : "Худалдан авах"}
           </button>
 
           {error && (
@@ -467,15 +484,10 @@ export function OrderPanel({ eventId, currency, salesEndsAt, ticketTypes, classN
       )}
 
       {paymentOpen && (() => {
-        const totalQty = orderItems.reduce((s, item) => s + item.quantity, 0);
-        const totalAmount = orderItems.reduce((s, item) => {
-          const tt = ticketTypes.find((t) => t.id === item.ticketTypeId);
-          return s + (tt ? tt.price * item.quantity : 0);
-        }, 0);
         return (
           <PaymentModal
-            totalPrice={formatPrice(totalAmount, currency)}
-            totalQty={totalQty}
+            totalPrice={formatPrice(orderTotalAmount, currency)}
+            totalQty={orderTotalQty}
             onClose={() => setPaymentOpen(false)}
             onConfirm={submitOrder}
             onSuccess={handlePaymentSuccess}

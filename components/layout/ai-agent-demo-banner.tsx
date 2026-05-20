@@ -155,7 +155,9 @@ export function AiAgentDemoBanner() {
     const normalizedAnswer = answer.toLowerCase().trim();
     const answerValue = currentQuestion.key === "venue" && eventDraftDetails.latitude && ["ok", "current", "location", "attached"].includes(normalizedAnswer)
       ? eventDraftDetails.venue ?? answer
-      : answer;
+      : currentQuestion.key === "price"
+        ? normalizeDraftPrice(answer)
+        : answer;
     const nextDetails = {
       ...eventDraftDetails,
       [currentQuestion.key]: answerValue
@@ -224,7 +226,7 @@ export function AiAgentDemoBanner() {
     const response = await fetch("/api/ai/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: buildStructuredEventPrompt(details) })
+      body: JSON.stringify({ prompt: buildStructuredEventPrompt(details), imageUrl: details.imageUrl ?? undefined })
     });
     const data = (await response.json().catch(() => ({}))) as {
       error?: string;
@@ -236,6 +238,8 @@ export function AiAgentDemoBanner() {
         editUrl: string;
         actionUrl?: string;
         isSmallEvent?: boolean;
+        imageUrl?: string | null;
+        cardImageUrl?: string | null;
       };
     };
 
@@ -253,7 +257,7 @@ export function AiAgentDemoBanner() {
         : `Event draft belen bolloo: ${data.event.title}. Category: ${data.event.category}. Venue: ${data.event.venue}. Status: ${data.event.status}.`,
       actionUrl: data.event.actionUrl ?? data.event.editUrl,
       actionLabel: data.event.isSmallEvent && data.event.status === "PUBLISHED" ? "Event harah" : "Draft neeh",
-      imageUrl: details.imageUrl
+      imageUrl: data.event.cardImageUrl ?? data.event.imageUrl ?? details.imageUrl
     };
   }
 
@@ -636,8 +640,8 @@ function reviseDraftDetails(details: EventDraftDetails, instruction: string, att
   const price = normalized.match(/(\d{1,3}(?:,\d{3})+|\d{1,7})\s*(mnt|tugrug|tug|₮)?/i)?.[1];
   if (normalized.includes("free") || normalized.includes("unegui") || normalized.includes("үнэгүй")) {
     revised.price = "free";
-  } else if (price && (normalized.includes("une") || normalized.includes("price") || normalized.includes("төг"))) {
-    revised.price = price;
+  } else if (price && (normalized.includes("une") || normalized.includes("price") || normalized.includes("төг") || isReviewingPriceChange(normalized))) {
+    revised.price = normalizeDraftPrice(price);
   }
 
   const imageUrl = instruction.match(/https?:\/\/\S+|\/uploads\/\S+/i)?.[0];
@@ -653,6 +657,16 @@ function reviseDraftDetails(details: EventDraftDetails, instruction: string, att
   }
 
   return revised;
+}
+
+function normalizeDraftPrice(value: string) {
+  if (/(^|\s)(free|unegui|үнэгүй)(\s|$)/i.test(value)) return "free";
+  const digits = value.replace(/,/g, "").match(/\d+/)?.[0];
+  return digits ?? value;
+}
+
+function isReviewingPriceChange(value: string) {
+  return /^\s*\d{1,7}\s*(mnt|tugrug|tug|₮)?\s*$/i.test(value);
 }
 
 function extractAfter(value: string, keys: string[]) {
