@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLang } from "@/components/layout/lang-context";
 
 export function NavNotificationBell() {
+  const { t } = useLang();
   const [unread, setUnread] = useState(0);
   const router = useRouter();
 
@@ -26,7 +28,7 @@ export function NavNotificationBell() {
     <button
       type="button"
       onClick={handleClick}
-      aria-label="Notifications"
+      aria-label={t("headerNotifications")}
       className="relative flex h-8 w-8 items-center justify-center text-white/70 transition hover:text-white focus-visible:outline-none sm:h-9 sm:w-9"
     >
       <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useLang } from "@/components/layout/lang-context";
 
 type Props = {
   initial: string;
@@ -11,7 +12,7 @@ type Props = {
 
 const menuItems = [
   {
-    label: "Profile",
+    labelKey: "userMenuProfile",
     href: "/profile",
     icon: (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -21,7 +22,7 @@ const menuItems = [
     ),
   },
   {
-    label: "Notifications",
+    labelKey: "userMenuNotifications",
     href: "/notifications",
     icon: (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -31,7 +32,7 @@ const menuItems = [
     ),
   },
   {
-    label: "My Resale",
+    labelKey: "userMenuMyResale",
     href: "/my-resale",
     icon: (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -46,6 +47,7 @@ const menuItems = [
 ] as const;
 
 export function UserNavDropdown({ initial, fullName }: Props) {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -87,13 +89,13 @@ export function UserNavDropdown({ initial, fullName }: Props) {
           <div className="py-1">
             {menuItems.map((item) => (
               <Link
-                key={item.href + item.label}
+                key={item.href + item.labelKey}
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-white/70 transition hover:bg-white/[0.06] hover:text-white"
               >
                 <span className="text-white/40">{item.icon}</span>
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             ))}
           </div>
@@ -108,7 +110,7 @@ export function UserNavDropdown({ initial, fullName }: Props) {
                 <polyline points="16 17 21 12 16 7" />
                 <line x1="21" y1="12" x2="9" y2="12" />
               </svg>
-              Logout
+              {t("userMenuLogout")}
             </button>
           </div>
         </div>

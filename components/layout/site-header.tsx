@@ -4,6 +4,7 @@ import { UserNavDropdown } from "@/components/layout/user-nav-dropdown";
 import { LangDropdown } from "@/components/layout/lang-dropdown";
 import { NavSearch } from "@/components/layout/nav-search";
 import { NavNotificationBell } from "@/components/layout/nav-notification-bell";
+import { SiteHeaderJoinLink, SiteHeaderUserLinks } from "@/components/layout/site-header-links";
 
 export async function SiteHeader() {
   const user = await getCurrentUser();
@@ -16,22 +17,7 @@ export async function SiteHeader() {
           <Link href="/" className="flex shrink-0 items-center text-[#ff7224]">
             <span className="site-header__logo login-card__brand">TIXORA</span>
           </Link>
-          {user && (
-            <>
-              <Link
-                href="/resale"
-                className="font-goldman ml-4 mt-2 hidden text-sm font-semibold text-white/60 transition hover:text-white md:block lg:ml-10"
-              >
-                RESALE
-              </Link>
-              <Link
-                href={"/special" as never}
-                className="font-goldman mt-2 hidden text-sm font-semibold text-white/60 transition hover:text-white md:block"
-              >
-                SPECIAL
-              </Link>
-            </>
-          )}
+          {user ? <SiteHeaderUserLinks /> : null}
         </div>
 
         <nav className="flex min-w-0 shrink items-center justify-end gap-1.5 text-sm text-white/82 sm:gap-4">
@@ -43,9 +29,7 @@ export async function SiteHeader() {
               <UserNavDropdown initial={initial} fullName={user.fullName} />
             </>
           ) : (
-            <Link href="/login" className="header-join-btn">
-              Join Now
-            </Link>
+            <SiteHeaderJoinLink />
           )}
         </nav>
       </div>

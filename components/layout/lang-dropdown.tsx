@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useLang } from "@/components/layout/lang-context";
 
 export function LangDropdown() {
-  const { lang, setLang } = useLang();
+  const { lang, setLang, t } = useLang();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -24,7 +24,7 @@ export function LangDropdown() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Change language"
+        aria-label={t("headerChangeLanguage")}
         className="flex h-8 w-8 items-center justify-center rounded-full text-white/70 transition hover:bg-[#ff7224]/10 hover:text-[#ff7224] focus-visible:outline-none sm:h-9 sm:w-9"
       >
         <svg viewBox="0 0 24 24" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

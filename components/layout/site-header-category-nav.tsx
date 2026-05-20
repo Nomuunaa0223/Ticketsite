@@ -3,17 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useLang } from "@/components/layout/lang-context";
 
 const categoryLinks = [
-  { label: "Sports", slug: "sports" },
-  { label: "Music", slug: "music" },
-  { label: "Theater & Arts", slug: "theater-arts" },
-  { label: "Comedy", slug: "comedy" },
-  { label: "Festival", slug: "festival" },
-  { label: "Conference", slug: "conference" }
+  { labelKey: "catSports", slug: "sports" },
+  { labelKey: "catMusic", slug: "music" },
+  { labelKey: "catTheater", slug: "theater-arts" },
+  { labelKey: "catComedy", slug: "comedy" },
+  { labelKey: "catFestival", slug: "festival" },
+  { labelKey: "catConference", slug: "conference" }
 ] as const;
 
 export function SiteHeaderCategoryNav() {
+  const { t } = useLang();
   const pathname = usePathname();
   const [activeCategory, setActiveCategory] = useState("");
 
@@ -41,7 +43,7 @@ export function SiteHeaderCategoryNav() {
               isActive ? "border-b border-[#ff7224] pb-1 text-[#ff7224]" : ""
             }`}
           >
-            {category.label}
+            {t(category.labelKey)}
           </Link>
         );
       })}

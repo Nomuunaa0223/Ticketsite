@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useLang } from "@/components/layout/lang-context";
 
 type Result = {
   slug: string;
@@ -13,6 +14,7 @@ type Result = {
 };
 
 export function NavSearch() {
+  const { t } = useLang();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
@@ -71,7 +73,7 @@ export function NavSearch() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Search events"
+          aria-label={t("headerSearchAria")}
           className="flex h-8 w-8 shrink-0 items-center justify-center text-white/70 transition hover:text-white sm:h-9 sm:w-9"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -86,7 +88,7 @@ export function NavSearch() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Хайх..."
+            placeholder={t("headerSearchPlaceholder")}
             className="flex-1 bg-transparent pr-3 text-sm text-white placeholder-white/30 outline-none"
           />
         )}
@@ -95,9 +97,9 @@ export function NavSearch() {
       {open && (query.length > 0) && (
         <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-72 overflow-hidden rounded-xl bg-[#0e1220] shadow-xl ring-1 ring-white/10 sm:w-80 sm:max-w-none">
           {loading ? (
-            <p className="px-4 py-3 text-xs text-white/40">Хайж байна...</p>
+            <p className="px-4 py-3 text-xs text-white/40">{t("headerSearchLoading")}</p>
           ) : results.length === 0 ? (
-            <p className="px-4 py-3 text-xs text-white/40">Илэрц олдсонгүй</p>
+            <p className="px-4 py-3 text-xs text-white/40">{t("headerSearchEmpty")}</p>
           ) : (
             <div>
               {results.map((event) => (
