@@ -2,6 +2,7 @@ import { AiAgentType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z, ZodError } from "zod";
 import { getSessionFromRequest } from "@/lib/auth";
+import { generateGeminiText, getGeminiStatus } from "@/lib/ai/gemini";
 import { createTixoraTools } from "@/lib/ai/langchain-tools";
 import { getOpenAIClient } from "@/lib/ai/openai";
 import { recommendEvents, serializeRecommendedEvent } from "@/lib/ai/recommendations";
@@ -58,6 +59,7 @@ const openAiTools = [
 ];
 
 type FallbackEvent = Awaited<ReturnType<typeof getFallbackEvents>>[number];
+type PricedEvent = Awaited<ReturnType<typeof searchEventsWithTicketPrices>>[number];
 
 async function createFallbackResponse(message: string, userId?: number) {
   const intent = detectFallbackIntent(message);
@@ -107,6 +109,18 @@ async function createFallbackResponse(message: string, userId?: number) {
     };
   }
 
+  if (intent === "event-price") {
+    const events = await searchEventsWithTicketPrices(message);
+
+    return {
+      answer: events.length
+        ? "DB-ees event-iin ticket type bolon une oldloo."
+        : "Event-iin ner todorhoi oldsongui. Event-iin neriig iluu todorhoi bichvel ticket-iin une-g DB-ees haraad helne.",
+      events: events.map(serializePricedEvent),
+      provider: "free-fallback"
+    };
+  }
+
   if (intent === "nearest-event") {
     const events = await getFallbackEvents({ nearestOnly: true });
     const first = events[0];
@@ -142,6 +156,33 @@ async function createFallbackResponse(message: string, userId?: number) {
   };
 }
 
+async function createGeminiResponse(message: string, userId?: number) {
+  if (!getGeminiStatus().enabled) return null;
+
+  const context = await createFallbackResponse(message, userId);
+  const answer = await generateGeminiText(
+    [
+      "User message:",
+      message,
+      "",
+      "Tixora live platform context as JSON:",
+      JSON.stringify(context, null, 2),
+      "",
+      "Write a helpful final answer for the user. If events or tickets are present, summarize the best options with dates, venue, and price when available. If no relevant data is present, say that clearly and suggest what to try next. Do not invent events, prices, seats, or ticket ownership.",
+    ].join("\n")
+  );
+
+  if (!answer) return null;
+
+  return {
+    ...context,
+    answer,
+    provider: "gemini",
+    model: env.GEMINI_CHAT_MODEL,
+    contextProvider: context.provider,
+  };
+}
+
 function detectFallbackIntent(message: string) {
   const normalized = message.toLowerCase();
 
@@ -158,6 +199,22 @@ function detectFallbackIntent(message: string) {
     ])
   ) {
     return "latest-ticket";
+  }
+
+  if (
+    includesAny(normalized, [
+      "une",
+      "price",
+      "hed",
+      "tasalbar hed",
+      "ticket price",
+      "ticket une",
+      "тасалбар",
+      "үнэ",
+      "хэд"
+    ])
+  ) {
+    return "event-price";
   }
 
   if (
@@ -229,6 +286,77 @@ async function getFallbackEvents(options: { nearestOnly?: boolean; showOnly?: bo
   });
 }
 
+async function searchEventsWithTicketPrices(message: string) {
+  const tokens = extractEventSearchTokens(message).slice(0, 6);
+  if (!tokens.length) return [];
+
+  return prisma.event.findMany({
+    where: {
+      status: "PUBLISHED",
+      visibility: "PUBLIC",
+      startsAt: { gte: new Date() },
+      OR: tokens.flatMap((token) => [
+        { title: { contains: token, mode: "insensitive" as const } },
+        { summary: { contains: token, mode: "insensitive" as const } },
+        { description: { contains: token, mode: "insensitive" as const } },
+        { category: { name: { contains: token, mode: "insensitive" as const } } },
+        { venue: { name: { contains: token, mode: "insensitive" as const } } }
+      ])
+    },
+    include: {
+      category: true,
+      venue: true,
+      ticketTypes: {
+        orderBy: { price: "asc" },
+        take: 8
+      }
+    },
+    orderBy: { startsAt: "asc" },
+    take: 5
+  });
+}
+
+function extractEventSearchTokens(message: string) {
+  const stopWords = new Set([
+    "event",
+    "ticket",
+    "tickets",
+    "tasalbar",
+    "tasalbariin",
+    "une",
+    "hed",
+    "price",
+    "avah",
+    "avmaar",
+    "baina",
+    "bna",
+    "ve",
+    "yu",
+    "yamar",
+    "iin",
+    "ni",
+    "тасалбар",
+    "үнэ",
+    "хэд",
+    "юу",
+    "ямар",
+    "the",
+    "is",
+    "what"
+  ]);
+
+  return Array.from(
+    new Set(
+      message
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+        .split(/\s+/)
+        .map((token) => token.trim())
+        .filter((token) => token.length >= 2 && !stopWords.has(token))
+    )
+  );
+}
+
 function serializeFallbackEvent(event: FallbackEvent) {
   const availableTicket = event.ticketTypes.find((ticketType) => ticketType.quantityTotal > ticketType.quantitySold);
   const lowestTicket = availableTicket ?? event.ticketTypes[0];
@@ -245,6 +373,33 @@ function serializeFallbackEvent(event: FallbackEvent) {
     city: event.venue.city,
     lowestPrice: lowestTicket ? Number(lowestTicket.price) : null,
     available: lowestTicket ? Math.max(0, lowestTicket.quantityTotal - lowestTicket.quantitySold) : 0,
+    source: "postgres"
+  };
+}
+
+function serializePricedEvent(event: PricedEvent) {
+  const availableTicket = event.ticketTypes.find((ticketType) => ticketType.quantityTotal > ticketType.quantitySold);
+  const lowestTicket = availableTicket ?? event.ticketTypes[0];
+
+  return {
+    id: event.id,
+    title: event.title,
+    slug: event.slug,
+    summary: event.summary,
+    startsAt: event.startsAt,
+    imageUrl: event.cardImageUrl ?? event.imageUrl,
+    category: event.category.name,
+    venue: event.venue.name,
+    city: event.venue.city,
+    lowestPrice: lowestTicket ? Number(lowestTicket.price) : null,
+    ticketTypes: event.ticketTypes.map((ticketType) => ({
+      id: ticketType.id,
+      name: ticketType.name,
+      price: Number(ticketType.price),
+      quantityTotal: ticketType.quantityTotal,
+      quantitySold: ticketType.quantitySold,
+      available: Math.max(0, ticketType.quantityTotal - ticketType.quantitySold)
+    })),
     source: "postgres"
   };
 }
@@ -271,16 +426,18 @@ export async function POST(request: Request) {
     const session = await getSessionFromRequest(request);
     const userId = session ? Number(session.sub) : undefined;
     const { message } = agentRequestSchema.parse(await request.json());
+    const geminiStatus = getGeminiStatus();
+    const defaultModel = geminiStatus.enabled ? env.GEMINI_CHAT_MODEL : env.OPENAI_CHAT_MODEL;
 
     const agent = await prisma.aiAgent.upsert({
       where: { slug: "tixora-support-agent" },
-      update: { isActive: true, defaultModel: env.OPENAI_CHAT_MODEL },
+      update: { isActive: true, defaultModel },
       create: {
         slug: "tixora-support-agent",
         name: "Tixora Support Agent",
         type: AiAgentType.SUPPORT,
-        description: "AI support and recommendation agent powered by OpenAI, LangChain tools, PostgreSQL, Redis, and Pinecone.",
-        defaultModel: env.OPENAI_CHAT_MODEL,
+        description: "AI support and recommendation agent powered by OpenAI/Gemini, LangChain tools, PostgreSQL, Redis, and Pinecone.",
+        defaultModel,
         systemPrompt:
           "You are Tixora's ticket assistant. Help with event discovery, seat availability, user tickets, resale guidance, and organizer analytics. Be concise and practical.",
         toolManifest: {
@@ -297,14 +454,22 @@ export async function POST(request: Request) {
             status: "RUNNING",
             input: { message },
             startedAt: new Date(),
-            modelUsed: env.OPENAI_CHAT_MODEL
+            modelUsed: defaultModel
           }
         })
       : null;
 
+    if (geminiStatus.enabled) {
+      const output = await createGeminiResponse(message, userId);
+      if (output) {
+        await finishRun(run?.id, output);
+        return NextResponse.json(output);
+      }
+    }
+
     const client = getOpenAIClient();
     if (!client) {
-      const output = await createFallbackResponse(message, userId);
+      const output = (await createGeminiResponse(message, userId)) ?? (await createFallbackResponse(message, userId));
       await finishRun(run?.id, output);
       return NextResponse.json(output);
     }
@@ -333,7 +498,7 @@ export async function POST(request: Request) {
       });
 
     if (!first) {
-      const output = await createFallbackResponse(message, userId);
+      const output = (await createGeminiResponse(message, userId)) ?? (await createFallbackResponse(message, userId));
       await finishRun(run?.id, output);
       return NextResponse.json(output);
     }
@@ -387,7 +552,7 @@ export async function POST(request: Request) {
       : first;
 
     if (!final) {
-      const output = await createFallbackResponse(message, userId);
+      const output = (await createGeminiResponse(message, userId)) ?? (await createFallbackResponse(message, userId));
       await finishRun(run?.id, output);
       return NextResponse.json(output);
     }
